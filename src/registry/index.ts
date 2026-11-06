@@ -691,10 +691,10 @@ export const registry: RegistryEntry[] = [
     slug: "logo-marquee",
     title: "Logo marquee",
     description:
-      "An endless strip of customer logos scrolls sideways at a steady pace and pauses on hover, used on Ironclad website",
+      "An endless strip of logos scrolls sideways at a slow, steady pace, and a linked logo grows and pauses the strip on hover, used on Sophos website",
     category: "animations",
     group: "carousels",
-    source: "https://ironcladapp.com/",
+    source: "https://www.sophos.com/en-us",
     componentName: "LogoMarquee",
     files: [
       {
@@ -705,17 +705,42 @@ export const registry: RegistryEntry[] = [
     usageProps: ["logos={logos}"],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A full-width strip of logos (customers, partners or award badges) that drifts sideways forever at a slow, steady pace, so the row reads as \"there are many of these\" without asking for attention. It should feel calm and constant: no easing, no jumps, no visible seam.",
+      trigger:
+        "Starts on load and never stops. Pointer hover on a linked logo pauses the whole strip (devices that really hover only), and so does keyboard focus on a linked logo; leaving resumes from the same spot.",
+      states: [
+        "Track: six identical copies of the logos in one row, every logo {gap}px apart (including between copies). It moves from `translateX(0)` to `translateX(calc(-50% - {gap}px / 2))`, exactly three copies, then restarts, so copy four lands where copy one began and the loop has no seam.",
+        "Logos: {logoHeight}px tall from 1024px wide (60px below), each at its natural width.",
+        "Linked logo on hover (1024px+): `scale({hoverScale})`, from the centre{hoverScale|1= (that is, no scale)|*=}. Unlinked logos don't react.",
+      ],
+      timing: [
+        "Strip: `linear`, infinite. Its speed is {speed}px per second: measure one copy's width (the track's full width ÷ 6) and set the duration to `3 × copyWidth ÷ {speed}` seconds, clamped to 10–200s. Re-measure when the logos load or the layout changes.",
+        "Hover scale: 300ms, `cubic-bezier(0.4, 0, 0.2, 1)`, in and out.",
+      ],
+      interruption:
+        "Pausing freezes the strip mid-move and resuming continues from there (`animation-play-state`, not a restart). The hover scale reverses from wherever it is if the pointer leaves mid-grow. A re-measure only changes the duration, so the speed adjusts without the strip jumping back.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the strip doesn't move: show one copy of the logos as a normal horizontal scroll area, and the hover scale applies without its transition.",
+      responsive:
+        "Logos are 60px tall below 1024px and {logoHeight}px from 1024px; the hover scale is only from 1024px. The speed stays {speed}px/s at every width.",
+      rules: [
+        "Animate only `transform` on the track, with a CSS keyframe animation; don't move it with JS each frame or with `left` or `margin`.",
+        "Use `gap` on the track (not margins on the logos), so the gap between copies equals the gap between logos and the `- gap / 2` correction lines the loop up exactly.",
+        "Copies two to six are `aria-hidden` and their links `tabIndex={-1}`, so screen readers and keyboard users meet each logo once.",
+      ],
+      checks: [
+        "Watch one logo for 10 seconds: it moves about {speed*10}px, at a constant speed.",
+        "Watch the strip for a full loop: no jump, gap or overlap at any point.",
+        "Hover a linked logo on desktop: it grows to {hoverScale}× over 300ms and the whole strip stops; move off and the strip carries on from the same place.",
+        "Hover an unlinked logo: nothing happens.",
+        "At 375px: logos are 60px tall and the strip moves at the same speed.",
+        "Turn on reduced motion: the strip stands still and can be scrolled sideways.",
+      ],
+    },
     controls: [
-      {
-        type: "number",
-        name: "secondsPerLogo",
-        label: "Seconds per logo",
-        default: 7.35,
-        min: 1,
-        max: 15,
-        step: 0.05,
-        unit: "s",
-      },
+      { type: "number", name: "speed", label: "Speed", default: 30, min: 5, max: 120, step: 1, unit: "px/s" },
       {
         type: "select",
         name: "direction",
@@ -727,27 +752,18 @@ export const registry: RegistryEntry[] = [
         ],
       },
       { type: "boolean", name: "pauseOnHover", label: "Pause on hover", default: true },
-      { type: "color", name: "background", label: "Background", default: "#F2F1EE" },
-      {
-        type: "number",
-        name: "gap",
-        label: "Gap (992px+)",
-        default: 80,
-        min: 16,
-        max: 160,
-        step: 4,
-        unit: "px",
-      },
-      { type: "boolean", name: "fadeEdges", label: "Fade edges", default: false },
-      { type: "boolean", name: "grayscale", label: "Grayscale", default: false },
+      { type: "number", name: "hoverScale", label: "Hover scale", default: 1.1, min: 1, max: 1.3, step: 0.01 },
+      { type: "number", name: "gap", label: "Gap", default: 70, min: 16, max: 160, step: 2, unit: "px" },
+      { type: "number", name: "logoHeight", label: "Logo height", default: 80, min: 32, max: 120, step: 2, unit: "px" },
+      { type: "color", name: "background", label: "Background", default: "#EDF2F9" },
     ],
     promptNotes: [
-      "`logos` is an array of `{ src, alt }`. Every logo is fitted into a 112×44 box (`logoWidth` / `logoHeight`), so export logos at that ratio with their own padding baked in, as the original does.",
-      "Speed is set per logo (7.35s each, which matches the original's 250s loop for 34 logos), so the pace stays the same however many logos the CMS returns. Lists shorter than 2560px wide are repeated automatically, so the loop never shows a gap.",
-      "It's pure CSS with no client JavaScript, so it works in a Server Component. The keyframes ship inside the component in a React 19 `<style href precedence>` tag; on React 18, move that @keyframes rule into the global CSS.",
-      "Spacing is 40px each side at 992px and wider, 20px below (the original's breakpoint). Keep `min-[992px]:` rather than a Tailwind default breakpoint.",
-      "Accessibility: screen readers hear each logo once (the copies are aria-hidden). With prefers-reduced-motion the strip stops and becomes a horizontal scroll area. Pause on hover only applies to devices that can hover.",
-      "It renders plain <img> tags. If the site has its own Image component (e.g. components/common/Image), swap it in and keep the fixed width and height.",
+      "`logos` is an array of `{ src, alt, href?, newTab? }`. Logos are shown at a fixed height and their natural width, so export them trimmed, with no padding baked in. Logos with an `href` become links that grow and pause the strip on hover; the rest are plain images.",
+      "`heading` (optional) renders centred above the strip, 40px above it, max 310px wide on phones. The original's is Lexend Exa 24px weight 300 in #0A143A; the Sophos homepage instance has none.",
+      "Speed matches the original, which sets each loop (three copies) to one copy's width ÷ 10 seconds: about 30px/s, clamped to a 10-200s loop. Keep the measurement rather than a fixed duration, so the pace doesn't change with the number of logos.",
+      "It is a Client Component (\"use client\") because it measures its width with a ResizeObserver. The keyframes and pause rules ship inside the component in a React 19 `<style href precedence>` tag; on React 18, move them into the global CSS.",
+      "Section padding is 20px top and bottom on phones and 180px from 1024px, on #EDF2F9, as in the original. Change them with `className` if the page needs different spacing.",
+      "It renders plain <img> tags. If the site has its own Image component, swap it in and keep the fixed height with auto width.",
     ],
   },
   {
@@ -973,7 +989,7 @@ export const registry: RegistryEntry[] = [
     slug: "focus-scroll",
     title: "Focus scroll",
     description:
-      "A media column pins in place while text blocks scroll past, crossfading to the visual for the block in focus, used on Sophos website",
+      "A media column pins in place while text blocks scroll past, crossfading to the visual for the block in focus, with a swipeable card row on phones, used on Sophos website",
     category: "animations",
     group: "pin-scrollers",
     source: "https://www.sophos.com/en-us",
@@ -985,13 +1001,51 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageProps: [
-      "items={items.map((item) => ({\n    media: <img src={item.image} alt={item.imageAlt} className=\"size-full object-contain\" />,\n    content: <YourTextBlock {...item} />,\n  }))}",
+      "items={items.map((item) => ({\n    media: <img src={item.image} alt={item.imageAlt} />,\n    content: <YourTextBlock title={item.title} body={item.body} />,\n    action: item.cta && <a href={item.cta.href}>{item.cta.label}</a>,\n  }))}",
     ],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A feature section where a column of visuals pins in place while short text blocks scroll past beside it. As each block comes into focus, the pinned visual crossfades to match it, so the reader always sees the picture for what they're reading. On phones it becomes a row of glass cards to swipe through, with a progress bar. It should feel calm and editorial: the swap is a soft fade, never a slide or a jump.",
+      trigger:
+        "Pinned layout (720px+): the page's scroll position. Each text block has a focus zone that starts when the block's top reaches `{stickyTop} - 10 + blockHeight / 4` px from the viewport top and ends when its bottom reaches `{stickyTop} - 10 + blockHeight / 2`. Scrolling down into a zone, or back up into one, makes that block active; leaving a zone changes nothing. Phone layout (below 720px): a horizontal swipe or drag past a fifth of the card width.",
+      states: [
+        "Media column: `position: sticky; top: {stickyTop}px`. The active visual is in the flow at opacity 1; the others are stacked on top of it (absolute, same top-left) at opacity 0 and ignore the pointer.",
+        "Text blocks: {inactiveOpacity|1=nothing changes on them; they scroll normally|*=out-of-focus blocks fade to opacity {inactiveOpacity}, the active one is at 1}.",
+        "Before the first zone the first visual shows; after the last zone the last one stays.",
+        "Phone row: cards are one row-width (100% - 20px) apart, so the next card peeks in on the right. Moving shifts the row with `translateX(-index × 100%)`.",
+        "Phone progress bar: a 5px pill whose fill width is `(index + 1) / count`.",
+      ],
+      timing: [
+        "Crossfade: {duration}ms, `cubic-bezier(0.4, 0, 0.2, 1)`, outgoing and incoming at the same time.",
+        "Phone row and progress fill: {slideDuration}ms, CSS `ease`.",
+        "No delays and no stagger.",
+      ],
+      interruption:
+        "Crossfade: if the active block changes mid-fade, each visual fades from its current opacity towards its new target; nothing snaps. Scrolling fast past several zones in one frame activates the last zone passed in the scroll direction (as ScrollTrigger fires onEnter for each in order). Phone row: a move asked for while the row is still sliding ({slideDuration}ms) is ignored. While dragging, the row follows the finger 1:1 (0.35 of the drag past the first or last card) with its transition off; on release it moves one card if the drag passed a fifth of the card width, otherwise springs back.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the visual still swaps at the same scroll points but instantly, without the fade, and the phone row and progress bar jump without sliding. Scrolling itself is user-driven, so pinning stays.",
+      responsive:
+        "Breakpoints are on the component's own width (container queries), matching the original's container widths. 720px+: pinned layout, media 50%, text `50% - 40px`, 40px gap, text blocks 40px top and bottom padding. 960px+: text blocks at least 270px tall. 1220px+: media {mediaWidth}%, gap {gap}px, text blocks at least 450px tall with 105px top / 155px bottom padding (60px bottom on the last). Below 720px: the phone card row.",
+      rules: [
+        "Pin with `position: sticky`, not by fixing the element or translating it on scroll. The fade is `opacity` only.",
+        "Don't add GSAP or a carousel library either. The original uses GSAP ScrollTrigger (only its onEnter/onEnterBack callbacks, no scrub) for the swap and react-slick for the phone row; its values are matched here: `waitForAnimate: true`, `touchThreshold: 5`, `edgeFriction: 0.35`, speed 500, `ease`.",
+        "Read scroll positions in a passive scroll listener, at most once per animation frame, and only set state when the active block changes, so scrolling doesn't re-render.",
+        "Don't put it inside an ancestor with `overflow: hidden`; that breaks sticky. Use `overflow-x: clip` on the section to clip the peeking phone card.",
+      ],
+      checks: [
+        "Scroll down slowly: each visual fades to the next over {duration}ms as its text block's top passes about a quarter of the block's height below the pin line, and the media column stays pinned {stickyTop}px from the top.",
+        "Stop between two blocks: the last focused visual stays; nothing fades back.",
+        "Scroll back up: the previous visual returns as its block's bottom comes back past the pin line + half its height.",
+        "Fling past everything to the bottom: the last visual shows, with no flicker through the others.",
+        "At 375px: glass cards with the next one peeking in, a progress bar at a third full. Swipe about 65px: it moves one card over {slideDuration}ms and the bar grows. Swipe 30px: it springs back.",
+        "Swipe twice quickly on the phone row: it moves one card, not two.",
+        "Turn on reduced motion: visuals swap without fading, and the phone row jumps.",
+      ],
+    },
     controls: [
       { type: "number", name: "stickyTop", label: "Sticky top", default: 180, min: 0, max: 240, step: 2, unit: "px" },
-      { type: "number", name: "mediaHeight", label: "Media height", default: 450, min: 280, max: 560, step: 10, unit: "px" },
       { type: "number", name: "mediaWidth", label: "Media width", default: 60, min: 40, max: 70, step: 1, unit: "%" },
       { type: "number", name: "gap", label: "Gap", default: 80, min: 24, max: 160, step: 4, unit: "px" },
       {
@@ -1006,17 +1060,25 @@ export const registry: RegistryEntry[] = [
       },
       { type: "number", name: "duration", label: "Crossfade", default: 500, min: 0, max: 1200, step: 10, unit: "ms" },
       { type: "number", name: "inactiveOpacity", label: "Inactive text", default: 1, min: 0.2, max: 1, step: 0.05 },
+      { type: "number", name: "slideDuration", label: "Phone slide", default: 500, min: 0, max: 1200, step: 10, unit: "ms" },
+      {
+        type: "select",
+        name: "theme",
+        label: "Theme",
+        default: "dark",
+        options: [
+          { label: "Dark", value: "dark" },
+          { label: "Light", value: "light" },
+        ],
+      },
     ],
     promptNotes: [
-      "`items` is an array of `{ media, content }` React nodes: `media` is the visual for the pinned column (usually an image with `object-contain`, filling the box), `content` is the text block (title, copy, CTA). The component handles layout and spacing; style the content with the site's typography.",
-      "The section heading and intro above it are not part of this component - render them separately in the section.",
+      "`items` is an array of `{ media, content, action }` React nodes. `media` is the visual (usually an `<img>` with real alt text; it's shown at full column width, natural height, `object-fit: contain`). `content` is the text block (title and copy), styled with the site's typography. `action` is an optional link or button: 43px under the text in the pinned layout, pinned to the bottom of the card on phones.",
+      "Both layouts are in the DOM and a container query shows one, so `media` and `content` render twice. Keep ids out of them.",
+      "`theme` sets the phone cards and progress bar: \"dark\" (white at 10% with a 30% white border, white bar on a 20% #D9D9D9 track) for dark sections, \"light\" (black at 10%, 30% black border, #001A47 bar on its 20% track, and 20px side padding on the media) for light ones. The section background, heading and intro above it aren't part of this component; the original's are #001A47 with a background image (dark) or #EDF2F9 (light), and a 44px Lexend Exa weight-300 heading.",
       "`stickyTop` should be the site header's height + 62px (the original's header is 118px, so 180). Pass the real value if the header height differs.",
-      "Focus logic matches the original's GSAP ScrollTrigger without needing GSAP: a block becomes active when its top passes `stickyTop - 10 + height/4` scrolling down, or its bottom passes `stickyTop - 10 + height/2` scrolling up. Between zones the last active block stays. Crossfade is 500ms cubic-bezier(0.4, 0, 0.2, 1). Keep these unless asked.",
-      "Text blocks are at least `mediaHeight` tall with 105px top / 155px bottom padding, as in the original, which spaces the swaps out. `inactiveOpacity` defaults to 1 (no dimming, like the original); lower it to fade out-of-focus text.",
-      "Pins once the component itself is 900px wide (`minWidth`). It's a container query on the component's own width, not the viewport, so in a narrow column it stacks even on a wide screen and the text column never gets squeezed. Below that, each item renders as its media followed by its text (the original pins from a 768px viewport and swaps to a swipe carousel below it, which is a separate component). Keep the breakpoint a container query; don't turn it back into a media query.",
-      "It is a Client Component (\"use client\"): it needs a scroll listener. The listener is passive, checks positions once per animation frame and only sets state when the active item changes.",
-      "Don't put it inside an ancestor with `overflow: hidden` - that breaks position: sticky. Use `overflow: clip` if the section needs to clip a background; an `overflow: auto` scroll container also works.",
-      "Accessibility: hidden media are aria-hidden, so give each image real alt text. Reduced motion: the media still swaps, without the fade.",
+      "In the original, the card title is Lexend Exa 32px weight 300 and the copy Inter 14px (16px from 960px), white on dark. The CTA is a 14px bold white link with an arrow that slides 5px right on hover (100ms linear, from 1280px).",
+      "It is a Client Component (\"use client\"): it needs a scroll listener and the phone row's state.",
     ],
   },
   {

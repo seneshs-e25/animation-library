@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { ControlValues } from "./types";
 import { FillSweepButton } from "./interactions/button-hovers/fill-sweep-button";
 import { CornerBloomButton } from "./interactions/button-hovers/corner-bloom-button";
@@ -43,69 +43,54 @@ function PlaceholderCard({ index }: { index: number }) {
   );
 }
 
-/** Skeleton dashboard standing in for a product screenshot, tinted per item. */
-function PlaceholderScreen({ index, accent }: { index: number; accent: string }) {
-  const bar = "rounded-full bg-white/[0.08]";
-  return (
-    <div className="flex size-full flex-col overflow-hidden rounded-[18px] bg-[#0d1426] p-2.5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] ring-1 ring-white/10">
-      <div className="flex items-center gap-1.5 px-2 pb-2.5">
-        <span className="size-2 rounded-full bg-white/15" />
-        <span className="size-2 rounded-full bg-white/15" />
-        <span className="size-2 rounded-full bg-white/15" />
-        <span className="ml-3 font-mono text-[10px] text-white/40">0{index + 1}</span>
-      </div>
-      <div className="grid flex-1 grid-cols-[22%_1fr] gap-2.5 rounded-[10px] bg-white/[0.03] p-3">
-        <div className="flex flex-col gap-2.5 pt-1">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className={`${bar} h-2`} style={i === index ? { background: accent } : undefined} />
-          ))}
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <div className="grid grid-cols-3 gap-2.5">
-            {Array.from({ length: 3 }, (_, i) => (
-              <div
-                key={i}
-                className="h-16 rounded-lg"
-                style={{ background: accent, opacity: 0.85 - i * 0.2 }}
-              />
-            ))}
-          </div>
-          <div className="flex-1 rounded-lg bg-white/[0.04] p-3">
-            <div className="flex h-full items-end gap-1.5">
-              {[40, 65, 50, 80, 55, 90, 70, 60, 85, 45, 75, 95].map((h, i) => (
-                <div
-                  key={i}
-                  className="flex-1 rounded-sm"
-                  style={{ height: `${(h + index * 13) % 100 || 30}%`, background: accent, opacity: 0.35 }}
-                />
-              ))}
-            </div>
-          </div>
-          <div className={`${bar} h-2 w-3/4`} />
-          <div className={`${bar} h-2 w-1/2`} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const focusItems = [
+/** The three cards from the Sophos homepage's focus scroll, with its live assets. */
+const sophosFocusItems = [
   {
-    title: "Shared intelligence",
-    body: "Every signal seen across the network sharpens detection for everyone, automatically. The platform doesn't just grow; it learns.",
-    accent: "#3b6cff",
+    image: "blt42a78cf9d8648881/6a54d4dad673fe0078ddeac3/compounding-intellingence.png",
+    alt: "Compounding Intelligence",
+    title: "Compounding Intelligence",
+    body: "Every new threat seen across the 625,000+ organizations Sophos defends elevates protection for all, automatically. The system does not just get bigger; it gets smarter.",
+    cta: "About Sophos Fusion",
   },
   {
-    title: "Response in seconds",
-    body: "Automated playbooks contain threats the moment they appear, so analysts start from a resolved case instead of an alert queue.",
-    accent: "#14b8a6",
+    image: "blte650b166bed241e4/6a54d52becf12353050b02aa/fusion-ai.png",
+    alt: "Fusion AI",
+    title: "Fusion AI",
+    body: "Fusion AI is the intelligence layer within Sophos Fusion. Fusion AI handles the speed and scale. Human experts own the trust boundary and remain accountable.",
   },
   {
-    title: "One view of everything",
-    body: "Endpoints, cloud, identity and network events land in a single timeline, with the context to act on them.",
-    accent: "#a855f7",
+    image: "bltd70a872aa22945b2/693bb2b3e6132f47d358208a/new3.webp",
+    alt: "Sophos Integrations",
+    title: "Open Ecosystem",
+    body: "Sophos Fusion is fully open, integrating natively with Sophos solutions and 500+ third-party technologies.",
+    cta: "Integrations with Sophos",
   },
 ];
+
+/** Sophos's white text link: label plus an arrow that nudges right on hover. */
+function SophosArrowLink({ children, color }: { children: ReactNode; color: string }) {
+  return (
+    <a
+      href="#"
+      style={{ color }}
+      className="group/link relative flex pr-[25px] font-sans text-[14px] leading-[1.3] font-bold tracking-[-0.01em]"
+    >
+      {children}
+      <svg
+        aria-hidden
+        viewBox="140 10 14 10"
+        className="absolute top-[calc(50%-5px)] right-[5px] h-[10px] w-[14px] transition-[right] duration-100 ease-linear min-[1280px]:group-hover/link:right-0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="square"
+      >
+        <path d="M148.301 11L152.301 15L148.301 19" strokeLinejoin="round" />
+        <path d="M151.699 15H141.699" />
+      </svg>
+    </a>
+  );
+}
 
 const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"] });
 const interTight = Inter_Tight({ weight: ["300", "400"], subsets: ["latin"] });
@@ -350,11 +335,26 @@ function StoryArt({ colors, index }: { colors: string[]; index: number }) {
   );
 }
 
-/** Placeholder brands for the demo (in `public/demo-logos`). */
-const demoLogos = [
-  "Northwind", "Lumen", "Orbit", "Fernway", "Quanta", "Halcyon",
-  "Kestrel", "Meridian", "Solace", "Tidal", "Vertex", "Brightly",
-].map((name) => ({ src: `/demo-logos/${name.toLowerCase()}.svg`, alt: name }));
+/**
+ * The award badges from the Sophos homepage's logo carousel (Contentstack
+ * URLs, requested at 2x the 80px display height). They aren't links there;
+ * the demo links them so the hover grow-and-pause can be tried.
+ */
+const sophosBadges = [
+  ["blt4124e4a7728eca52/68bfd94a4a2c2d0c93120daa/logo1.svg", 212, "Leading Security Professional - IDC"],
+  ["bltedd2215ee779ae09/68bfd97a2607de7389581be5/logo3.svg", 190, "Award badge 2"],
+  ["bltbeb58dcd136cc453/68bfd9b29594d8214e3f11f4/logo2.svg", 228, "Award badge 3"],
+  ["blt39a5c8a3df6dffc5/68bfd9df5f14882ccd08bff3/logo4.svg", 174, "Award badge 4"],
+  ["blt04ade86f97fb2ced/68bfda15cf846b59a63a3009/logo5.svg", 420, "Award badge 5"],
+  ["blt730d903d1656032b/68bfda45a726cb16c3e18263/logo6.svg", 100, "Award badge 6"],
+  ["blt1416d763e609eafe/68bfda62ecaecc77acf65b9e/logo-6.svg", 226, "Award badge 7"],
+  ["bltc46d7e64be517bbe/691d76a35fca1a19c2e05c56/logo5_2.svg", 420, "Award badge 8"],
+  ["blt2c7b24f932c86132/691d76bde2e2cd28abcbb7a2/logo5_1.svg", 420, "Award badge 9"],
+].map(([path, width, alt]) => ({
+  src: `https://images.contentstack.io/v3/assets/blt38f1f401b66100ad/${path}?width=${width}`,
+  alt: alt as string,
+  href: "#",
+}));
 
 /**
  * Live previews, keyed by registry slug. Each preview receives the current
@@ -468,14 +468,14 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   ),
   "logo-marquee": ({ values }) => (
     <LogoMarquee
-      logos={demoLogos}
-      secondsPerLogo={values.secondsPerLogo as number}
+      logos={sophosBadges}
+      speed={values.speed as number}
       direction={values.direction as "left" | "right"}
       pauseOnHover={values.pauseOnHover as boolean}
+      hoverScale={values.hoverScale as number}
       background={values.background as string}
       gap={values.gap as number}
-      fadeEdges={values.fadeEdges as boolean}
-      grayscale={values.grayscale as boolean}
+      logoHeight={values.logoHeight as number}
     />
   ),
   "stacking-cards": ({ values }) => (
@@ -538,34 +538,62 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       <div className="h-[600px]" />
     </div>
   ),
-  "focus-scroll": ({ values }) => (
-    // Sticky needs a scroll container, so the preview scrolls inside itself.
-    <div className="h-[640px] overflow-y-auto overscroll-contain bg-[#001A47] px-6 md:px-10">
-      <p className="py-16 text-center text-sm text-white/50">Scroll inside the preview ↓</p>
-      <FocusScroll
-        stickyTop={values.stickyTop as number}
-        mediaHeight={values.mediaHeight as number}
-        mediaWidth={values.mediaWidth as number}
-        gap={values.gap as number}
-        mediaSide={values.mediaSide as "left" | "right"}
-        duration={values.duration as number}
-        inactiveOpacity={values.inactiveOpacity as number}
-        items={focusItems.map((item, i) => ({
-          media: <PlaceholderScreen index={i} accent={item.accent} />,
-          content: (
-            <div className="text-white">
-              <h3 className="mb-3 text-[32px] leading-[1.15] font-light tracking-tight">{item.title}</h3>
-              <p className="text-base leading-[1.6] text-white/80">{item.body}</p>
-              <a href="#" className="mt-10 inline-flex items-center gap-2 text-sm font-semibold">
-                Learn more <span aria-hidden>→</span>
-              </a>
+  "focus-scroll": ({ values }) => {
+    const light = values.theme === "light";
+    const text = light ? "#0A143A" : "#FFFFFF";
+    return (
+      // Sticky needs a scroll container, so the preview scrolls inside itself.
+      <div className="h-[640px] overflow-x-hidden overflow-y-auto overscroll-contain" style={{ background: light ? "#EDF2F9" : "#001A47" }}>
+        <section className={`${lexendExa.className} relative px-5 py-20 min-[1024px]:py-[180px]`}>
+          {!light && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/demo-images/focus-scroll/focus-scroll-bg.webp"
+              alt=""
+              className="pointer-events-none absolute top-0 right-0 h-[1016px] w-[499px] md:h-full md:w-full"
+            />
+          )}
+          <div className="relative z-1 mx-auto max-w-[1220px]">
+            <div className="mx-auto mb-[62px] max-w-[1035px] text-center" style={{ color: text }}>
+              <h2 className="mb-[15px] text-[38px] leading-[1.1] font-light tracking-[-0.095em] min-[1024px]:mb-5 min-[1024px]:text-[44px] min-[1024px]:tracking-[-0.1em]">
+                Cyber Resilience for the Agentic AI Era
+              </h2>
+              <p className="font-sans text-[16px] leading-[1.6]" style={{ color: light ? "#464646" : "#FFFFFF" }}>
+                Agentic AI has collapsed attack timelines to seconds. Sophos solutions match AI attack velocity and
+                sophistication, stopping AI- and human-led threats before they can impact your business.
+              </p>
             </div>
-          ),
-        }))}
-      />
-      <div className="h-[420px]" />
-    </div>
-  ),
+            <FocusScroll
+              stickyTop={values.stickyTop as number}
+              mediaWidth={values.mediaWidth as number}
+              gap={values.gap as number}
+              mediaSide={values.mediaSide as "left" | "right"}
+              duration={values.duration as number}
+              inactiveOpacity={values.inactiveOpacity as number}
+              slideDuration={values.slideDuration as number}
+              theme={light ? "light" : "dark"}
+              items={sophosFocusItems.map((item) => ({
+                // eslint-disable-next-line @next/next/no-img-element
+                media: <img src={sophosAsset(item.image, 1464)} alt={item.alt} draggable={false} />,
+                content: (
+                  <div style={{ color: text }}>
+                    <h3 className="mb-2.5 text-[32px] leading-[1.15] font-light tracking-[-0.09em] @min-[720px]:mb-0 @min-[960px]:mb-5">
+                      {item.title}
+                    </h3>
+                    <p className="font-sans text-[14px] leading-[1.8] tracking-[0.02em] @min-[960px]:text-[16px] @min-[960px]:leading-[1.6] @min-[960px]:tracking-[-0.01em]">
+                      {item.body}
+                    </p>
+                  </div>
+                ),
+                action: item.cta ? <SophosArrowLink color={text}>{item.cta}</SophosArrowLink> : undefined,
+              }))}
+            />
+          </div>
+        </section>
+        <div className="h-[420px]" />
+      </div>
+    );
+  },
   "scroll-text-reveal": ({ values }) => (
     // The reveal is tied to scroll, so the preview scrolls inside itself.
     <div className="h-[640px] overflow-y-auto overscroll-contain bg-white">
