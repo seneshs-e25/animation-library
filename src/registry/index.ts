@@ -797,7 +797,7 @@ export const registry: RegistryEntry[] = [
     slug: "spotlight-slider",
     title: "Spotlight slider",
     description:
-      "One testimonial card in focus while its neighbours peek in blurred and faded, moved by arrows, swipes or a row of logo tabs, used on Sophos website",
+      "One testimonial card in focus while its neighbours peek in blurred and shrunk, autoplaying until someone uses the arrows, swipes, dots or a row of logo tabs, used on Sophos website",
     category: "animations",
     group: "carousels",
     source: "https://www.sophos.com/en-us",
@@ -809,12 +809,56 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageProps: [
-      "items={stories.map((story) => ({\n    label: story.company,\n    tab: <img src={story.logo} alt={story.company} />,\n    content: (\n      <SpotlightSlide\n        logo={<img src={story.logo} alt=\"\" />}\n        quote={story.quote}\n        name={story.name}\n        role={story.role}\n        media={<img src={story.image} alt=\"\" />}\n        onPlay={() => openVideo(story.video)}\n      />\n    ),\n  }))}",
+      "items={stories.map((story) => ({\n    label: story.company,\n    tab: <img src={story.logo} alt=\"\" />,\n    content: (\n      <SpotlightSlide\n        logo={<img src={story.logo} alt={story.company} />}\n        quote={story.quote}\n        name={story.name}\n        role={story.role}\n        media={<img src={story.image} alt=\"\" />}\n        onPlay={() => openVideo(story.video)}\n      />\n    ),\n  }))}",
     ],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A testimonial carousel where one card sits in focus in the middle and its neighbours peek in from both sides, blurred and slightly shrunk, so the row reads as \"one story, more to come\". Changing slide glides the row sideways while the new card sharpens into focus. It should feel smooth and unhurried, never flashy.",
+      trigger:
+        "{autoplay|true=Autoplay: once 30% of the slider is in view, it moves to the next slide every {interval}ms. Any arrow, dot or logo-tab click, swipe, Left/Right key press or click on the focused card stops autoplay for good; hovering the slides with a mouse pauses it until the pointer leaves. |*=}The prev/next arrows (768px+), the logo tabs (1024px+), the dots (below 1024px), a horizontal swipe or drag past 50px, and Left/Right keys while focus is inside the slider each move it.",
+      states: [
+        "Track: a flex row of full-width slides inside a centred viewport with `overflow: visible`, moved by `translateX(-index × 100%)`. The section clips the peeking neighbours at its edges.",
+        "Focused card: `opacity: 1; filter: blur(0); scale: 1`.",
+        "Neighbour cards, slider 1024px+ wide: `opacity: {inactiveOpacity}; filter: blur({inactiveBlur}px); scale: {inactiveScale}`. They don't respond to the pointer.",
+        "Neighbour cards, below 1024px: `filter: blur({inactiveBlur}px); scale: 0.9 0.95` (narrower than tall), with no fade.",
+        "Dots: the active dot widens from 10px to 30px and takes the accent colour; the others are 10px circles.",
+        "Logo tabs: inactive logos are `grayscale(1)` at 0.9 opacity; the active one is in full colour. From 1280px, hovering a tab brings its colour back too.",
+        "Arrows: white 50px circles with an accent chevron; on hover the fill becomes the accent and the chevron white. At the {loop|true=ends they stay enabled because the row wraps|*=first and last slide the matching arrow is disabled and nothing moves}.",
+      ],
+      timing: [
+        "Row slide: {duration}ms, CSS `ease`.",
+        "Card focus change (opacity, blur, scale): {focusDuration}ms, `cubic-bezier(0.4, 0, 0.2, 1)`, starting at the same moment as the row slide, so the new card is sharp before the row stops.",
+        "Dot width: 150ms, `cubic-bezier(0.4, 0, 0.2, 1)`. Arrow colours: 300ms `ease-in-out`.",
+        "{autoplay|true=Autoplay: each slide holds for {interval}ms; the timer restarts after every change. {loop|true=After the last slide it wraps to the first.|*=It stops on the last slide.}|*=No autoplay.}",
+      ],
+      interruption:
+        "Every input retargets the row from wherever it is: clicking an arrow or tab mid-slide moves on to the new slide without waiting or snapping. While dragging, the row follows the finger 1:1 (a quarter of that past the first or last slide, like a rubber band) and its transition is off; on release it animates to the nearest valid slide over {duration}ms. A drag doesn't also click a link in the slide.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, there's no autoplay, the row jumps to the new slide and the cards switch focus instantly. All controls still work.",
+      responsive:
+        "Focused slide width: 320px below 768px (never wider than the slider minus 40px), 620px from 768px, 830px from 1024px, {slideWidth}px from 1280px. Arrows show from 768px, sitting at the left and right of a 1220px-max area. Logo tabs replace the dots from 1024px (dots show at every width when there are no tabs).",
+      rules: [
+        "Move the row with `transform: translateX`, never `left` or scroll position, and transition `opacity`, `filter` and `scale` on the cards, nothing else.",
+        "Don't add a carousel library either (the original uses react-slick; this matches it without one).",
+        "Only the focused card is interactive: make the others `inert` so Tab skips them. If a slide holds a `<video>`, pause it when the slide loses focus and play it once a slide comes into focus.",
+        "Measure the breakpoints on the slider's own width (container queries), not the window, so it adapts to the column it sits in.",
+      ],
+      checks: [
+        "On load, the middle card is sharp and its neighbours peek in both sides, blurred and slightly smaller{inactiveOpacity|1=|*= (and faded on wide screens)}.",
+        "Click next: the row glides one card over {duration}ms and the new card sharpens within {focusDuration}ms.",
+        "{autoplay|true=Scroll the slider into view and wait: it moves every {interval}ms. Hover the slides and it holds. Click any control and it never autoplays again.|*=Nothing moves until you use a control.}",
+        "Click next twice quickly: the row goes straight to the second card with no snap.",
+        "On a 375px phone: no arrows, dots under the slider, neighbours blurred and scaled 0.9 × 0.95 but not faded, and a swipe changes slide.",
+        "Tab through the slider: only the focused card's controls get focus.",
+        "Turn on reduced motion: no autoplay, slides change instantly.",
+      ],
+    },
     controls: [
-      { type: "number", name: "slideWidth", label: "Slide width", default: 1012, min: 600, max: 1200, step: 4, unit: "px" },
+      { type: "boolean", name: "autoplay", label: "Autoplay", default: true },
+      { type: "number", name: "interval", label: "Interval", default: 5000, min: 2000, max: 10000, step: 500, unit: "ms" },
+      { type: "number", name: "slideWidth", label: "Slide width", default: 1012, min: 830, max: 1200, step: 2, unit: "px" },
       { type: "number", name: "duration", label: "Slide", default: 500, min: 150, max: 1200, step: 10, unit: "ms" },
       { type: "number", name: "focusDuration", label: "Focus", default: 150, min: 0, max: 800, step: 10, unit: "ms" },
       { type: "number", name: "inactiveOpacity", label: "Side opacity", default: 0.3, min: 0, max: 1, step: 0.05 },
@@ -829,17 +873,14 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "loop", label: "Loop", default: false },
     ],
     promptNotes: [
-      "The file exports two components: `SpotlightSlider` (the carousel: track, peeking neighbours, arrows, logo tabs, dots) and `SpotlightSlide` (the Sophos testimonial card layout). Any content can go in a slide; `SpotlightSlide` is the usual one.",
-      "`items` is an array of `{ content, label, tab }`. `label` names the slide for screen readers and the tab buttons. `tab` is the logo in the row under the slider (when the slider is 1024px+ wide); below that, dots replace it. Leave `tab` out on every item, or pass `showTabs={false}`, to hide the tabs; the dots then show at every width so phones always have a control besides swiping. `showDots={false}` hides the dots.",
-      "Motion matches the original (Slick): the track moves one slide with `translateX` over 500ms `ease`; non-focused cards are `opacity: .3; filter: blur(5px); scale: .95`, transitioned over 150ms cubic-bezier(.4,0,.2,1), so the new card sharpens while the row is still sliding. It stops at the first and last slide (`loop` is off), and the matching arrow is disabled there.",
-      "The focused slide is 1012px wide (`slideWidth`) inside a 1220px area (`maxWidth`) with 50px white round arrows at its left and right edges. When the slider is narrower than 768px the arrows hide and the slide is the full width minus 20px each side, with swipe to move. All breakpoints are container queries (Tailwind `@container` with `@min-[…]:` variants and `@container` rules in the style tag) on the component's own width, so it adapts to the column it sits in; keep them that way. Neighbours peek past the slide and are clipped by the component's root (`overflow-x: clip`), so put it in a full-width section.",
-      "Interaction: drag or swipe more than 50px changes slide (rubber-bands at the ends), clicking a peeking card focuses it, Left/Right keys work while focus is inside the slider. Non-focused cards are `inert`, so Tab only reaches the focused card's play button.",
-      "`SpotlightSlide`: black card (`cardBackground` on the slider; tab dividers are `dividerColor`, inactive dots `dotColor`). It is its own container: from a 900px-wide card the text and media sit side by side with a min-height of 460px (below that, text on top and media underneath, 212px tall, 349px from a 600px card). Checked against the card's width, not the viewport, so the play button never covers the quote. Left text column 480px wide with 40px padding: white logo (max 180×36px, pushed to the top), a green `#00F2B3` quote mark, the quote (24px / 1.15, weight 300, -0.08em tracking, closing quote added for you), name (18px) and role (14px). The media sits right, 868px wide and 72px past the card edge, under a black-to-transparent gradient 489px wide. Pass `onPlay` to show the 90px white play button (60px on mobile), which scales to 1.1 on hover over 200ms.",
+      "The file exports two components: `SpotlightSlider` (the carousel: track, peeking neighbours, autoplay, arrows, logo tabs, dots) and `SpotlightSlide` (the Sophos testimonial card layout). Any content can go in a slide; `SpotlightSlide` is the usual one.",
+      "`items` is an array of `{ content, label, tab }`. `label` names the slide for screen readers and the tab buttons. `tab` is the logo in the row under the slider (1024px+); pass the colour logo, the slider greys out the inactive ones. Leave `tab` out on every item, or pass `showTabs={false}`, to hide the tabs; the dots then show at every width. `showDots={false}` hides the dots.",
+      "`SpotlightSlide`: black card. From an 800px-wide card the text and media sit side by side with a min-height of 460px; below that, text on top and media underneath (212px tall, 349px from a 600px card). Left text column 480px wide with 40px padding (30px on small cards): white logo (max 180×38px, pushed to the top), the outlined quote mark fading out to the bottom right, the quote (24px / 1.15, weight 300, -0.08em tracking, closing quote added for you), name (18px) and role (14px). The media sits right, 868px wide and 72px past the card edge, under a black-to-transparent gradient 489px wide.",
+      "`SpotlightSlide` options: `onPlay` shows a 90px play button (60px on small cards) that scales to 1.1 on hover over 200ms; `playIcon` replaces its default white circle (the original uses its own play image). `pattern={{ wide, narrow }}` overlays a decorative image on the card's right side (1012×569 on wide cards, 327px wide on small ones), above the media and under the text.",
       "The original uses Lexend Exa (Google Font) for the quote and name and Inter for the role; the component inherits the site's font, so load Lexend Exa on the section if you want the match. The section around it is #EDF2F9 with a 44px weight-300 heading; the heading and 'See all case studies' button aren't part of this component.",
       "Opening the video (the original uses a Fancybox iframe modal for YouTube) is up to the site: `onPlay` is a plain callback.",
-      "It is a Client Component (\"use client\"). State is only the active index and the drag offset; the track position, fades and blur are CSS transitions.",
-      "Performance: `filter: blur()` on large cards repaints during the 150ms focus change only. If it janks on low-end devices, set `inactiveBlur={0}` and rely on the opacity and scale.",
-      "Reduced motion: the row jumps and cards switch without transitions.",
+      "It is a Client Component (\"use client\"). State is the active index, the drag offset and the autoplay flags; the track position, fades and blur are CSS transitions.",
+      "Performance: `filter: blur()` on large cards repaints during the focus change only. If it janks on low-end devices, set `inactiveBlur={0}` and rely on the opacity and scale.",
     ],
   },
   {

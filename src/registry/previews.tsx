@@ -124,35 +124,49 @@ const awards = [
   { badge: "innovator", name: "Clearwave Digital Innovator" },
 ];
 
-/** Fictional case studies for the spotlight slider demo. */
-const caseStudies = [
+/** Contentstack asset URL, resized and converted on the fly. */
+const sophosAsset = (path: string, width: number) =>
+  `https://images.contentstack.io/v3/assets/blt38f1f401b66100ad/${path}?width=${width}&quality=80&format=auto`;
+
+const SOPHOS_PLAY = "bltca7dff4bb3f5f3f3/68be735553f91553ee14919c/play.png";
+
+/** The four testimonials from the Sophos homepage's slider, with its live assets. */
+const sophosStories = [
   {
-    company: "Northwind",
-    quote: "Our partnership works because someone is watching around the clock. Without that speed, an attack costs us hundreds of thousands, if not millions.",
-    name: "Dana Whitfield",
-    role: "VP of Security, Northwind Logistics",
-    colors: ["#3b5bdb", "#0b1440"],
+    company: "Executech",
+    logo: "blt2478904f49048dc8/691c14bdb48b452fde3f7ead/Executech-Logo-color.png",
+    image: "bltd836ca65b829760c/693bb9fd272fd0afc63fee5c/video-executech.webp",
+    quote:
+      "Our partnership with Sophos is so powerful because they do have folks watching 24/7. Without that type of speed, the attacks are successful, in the order of hundreds of thousands, if not millions, of dollars.",
+    name: "Tyler Rasmussen",
+    role: "VP of Cybersecurity, Executech",
   },
   {
-    company: "Halcyon",
-    quote: "We need a product that can protect everybody. What we got is one central place where we can protect all of our data.",
-    name: "Marcus Lee",
-    role: "Director of IT, Halcyon Sports & Entertainment",
-    colors: ["#1971c2", "#0a2540"],
+    company: "Canucks Sports & Entertainment",
+    logo: "bltffb906c544188c4a/691c142daf699df92ae164bc/Rogers_Arena_Logo-color.png",
+    image: "bltee40cd6799851cf0/693bba7ace3188997b2c7476/video-rogers-arena-1_(1).webp",
+    quote:
+      "We need to make sure we have a product that can protect everybody. What Sophos provides us is one central way where we can protect the data.",
+    name: "Tim Hemming",
+    role: "Director of IT, Canucks Sports & Entertainment",
   },
   {
-    company: "Kestrel",
-    quote: "Managed detection and response lets our small team sleep at night. Threats are stopped before we even open the alert.",
-    name: "Priya Raman",
-    role: "Head of Infrastructure, Kestrel Health",
-    colors: ["#0c8599", "#062a33"],
+    company: "Thrive Pet Healthcare",
+    logo: "bltfe329ff4ba4835c2/6946c61267fae3424a0489e4/Thrive.png",
+    image: "bltbb955f04f06168d2/693bbab032d9c058ab57ef22/video-thrive-pet-1_(2).webp",
+    quote:
+      "Sophos Managed Detection and Response helps us look at every single endpoint, look at the activities, and spot something potentially malicious, so that I do not have a virus propagation throughout our environment.",
+    name: "Tony Ombellaro",
+    role: "Senior Director of Information Security, Thrive Pet Health Care",
   },
   {
-    company: "Meridian",
-    quote: "One endpoint agent, one console, and a clear picture of every device we own. Rollout took days, not months.",
-    name: "Tom Okafor",
-    role: "CISO, Meridian Financial",
-    colors: ["#6741d9", "#1a0f40"],
+    company: "KDC/ONE",
+    logo: "bltb0b6230505405f80/69205738cd0826d083c71c06/logo_2.png",
+    image: "bltae55dc1c8e6640d5/693bbae063486e092d07cfde/video-kdc-one-1_(1).webp",
+    quote:
+      "If we get cyber attacked, production stops. Reputation of the company would be harmed. Hackers know that. The power is to discover and react.",
+    name: "Robert J. Laurin",
+    role: "IT VP Security and Operations, KDC/ONE",
   },
 ];
 
@@ -581,9 +595,13 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   "spotlight-slider": ({ values }) => (
     <div className={`${lexendExa.className} min-w-0 bg-[#EDF2F9] py-16`}>
       <h2 className="mx-auto mb-12 max-w-[640px] px-6 text-center text-[32px] leading-[1.1] font-light tracking-[-0.1em] text-[#0A143A] md:text-[44px]">
-        How businesses stay secure with Acme
+        How businesses
+        <br />
+        stay secure with Sophos
       </h2>
       <SpotlightSlider
+        autoplay={values.autoplay as boolean}
+        interval={values.interval as number}
         slideWidth={values.slideWidth as number}
         duration={values.duration as number}
         focusDuration={values.focusDuration as number}
@@ -597,19 +615,26 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         showTabs={values.showTabs as boolean}
         showDots={values.showDots as boolean}
         loop={values.loop as boolean}
-        items={caseStudies.map((story, i) => ({
+        items={sophosStories.map((story) => ({
           label: story.company,
           // eslint-disable-next-line @next/next/no-img-element
-          tab: <img src={`/demo-logos/${story.company.toLowerCase()}.svg`} alt="" />,
+          tab: <img src={sophosAsset(story.logo, 384)} alt="" />,
           content: (
             <SpotlightSlide
               accent={values.accent as string}
               // eslint-disable-next-line @next/next/no-img-element
-              logo={<img src={`/demo-logos/${story.company.toLowerCase()}.svg`} alt={story.company} />}
+              logo={<img src={sophosAsset(story.logo, 360)} alt={story.company} />}
               quote={story.quote}
               name={story.name}
               role={<span className="font-sans">{story.role}</span>}
-              media={<StoryArt colors={story.colors} index={i} />}
+              // eslint-disable-next-line @next/next/no-img-element
+              media={<img src={sophosAsset(story.image, 1736)} alt="" draggable={false} />}
+              // eslint-disable-next-line @next/next/no-img-element
+              playIcon={<img src={sophosAsset(SOPHOS_PLAY, 180)} alt="" className="size-full drop-shadow-[0_54px_81px_rgba(0,26,71,0.5)]" />}
+              pattern={{
+                wide: "/demo-images/spotlight-slider/slider-with-logos-pattern-desktop.webp",
+                narrow: "/demo-images/spotlight-slider/slider-with-logos-pattern-mobile.webp",
+              }}
               onPlay={() => {}}
             />
           ),
