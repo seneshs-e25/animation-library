@@ -817,7 +817,7 @@ export const registry: RegistryEntry[] = [
       intent:
         "A testimonial carousel where one card sits in focus in the middle and its neighbours peek in from both sides, blurred and slightly shrunk, so the row reads as \"one story, more to come\". Changing slide glides the row sideways while the new card sharpens into focus. It should feel smooth and unhurried, never flashy.",
       trigger:
-        "{autoplay|true=Autoplay: once 30% of the slider is in view, it moves to the next slide every {interval}ms. Any arrow, dot or logo-tab click, swipe, Left/Right key press or click on the focused card stops autoplay for good; hovering the slides with a mouse pauses it until the pointer leaves. |*=}The prev/next arrows (768px+), the logo tabs (1024px+), the dots (below 1024px), a horizontal swipe or drag past 50px, and Left/Right keys while focus is inside the slider each move it.",
+        "{autoplay|true=Autoplay: once 30% of the slider is in view, it moves to the next slide every {interval}ms. Any arrow, dot or logo-tab click, swipe, Left/Right key press or click on the focused card stops autoplay for good; hovering the slides with a mouse pauses it until the pointer leaves. |*=}The prev/next arrows (768px+), the logo tabs (1024px+), the dots (below 1024px), a horizontal swipe or drag past a fifth of the slide width, and Left/Right keys while focus is inside the slider each move it.",
       states: [
         "Track: a flex row of full-width slides inside a centred viewport with `overflow: visible`, moved by `translateX(-index × 100%)`. The section clips the peeking neighbours at its edges.",
         "Focused card: `opacity: 1; filter: blur(0); scale: 1`.",
@@ -830,18 +830,18 @@ export const registry: RegistryEntry[] = [
       timing: [
         "Row slide: {duration}ms, CSS `ease`.",
         "Card focus change (opacity, blur, scale): {focusDuration}ms, `cubic-bezier(0.4, 0, 0.2, 1)`, starting at the same moment as the row slide, so the new card is sharp before the row stops.",
-        "Dot width: 150ms, `cubic-bezier(0.4, 0, 0.2, 1)`. Arrow colours: 300ms `ease-in-out`.",
+        "Dot width: 150ms, `cubic-bezier(0.4, 0, 0.2, 1)`. Arrow colours: 300ms, `cubic-bezier(0.4, 0, 0.2, 1)`.",
         "{autoplay|true=Autoplay: each slide holds for {interval}ms; the timer restarts after every change. {loop|true=After the last slide it wraps to the first.|*=It stops on the last slide.}|*=No autoplay.}",
       ],
       interruption:
-        "Every input retargets the row from wherever it is: clicking an arrow or tab mid-slide moves on to the new slide without waiting or snapping. While dragging, the row follows the finger 1:1 (a quarter of that past the first or last slide, like a rubber band) and its transition is off; on release it animates to the nearest valid slide over {duration}ms. A drag doesn't also click a link in the slide.",
+        "A slide change can't be interrupted: any move asked for while the row is still sliding ({duration}ms) is ignored, whether it comes from an arrow, tab, dot, key, swipe or autoplay. Two quick clicks on Next move one slide. While dragging, the row follows the finger 1:1 (0.35 of the drag past the first or last slide, like a rubber band) with its transition off. On release it moves one slide if the drag passed a fifth of the slide width (about 200px on a 1012px slide, 64px on a 320px one), otherwise it springs back, both over {duration}ms. A drag doesn't also click a link in the slide.",
       reducedMotion:
         "Under `prefers-reduced-motion: reduce`, there's no autoplay, the row jumps to the new slide and the cards switch focus instantly. All controls still work.",
       responsive:
         "Focused slide width: 320px below 768px (never wider than the slider minus 40px), 620px from 768px, 830px from 1024px, {slideWidth}px from 1280px. Arrows show from 768px, sitting at the left and right of a 1220px-max area. Logo tabs replace the dots from 1024px (dots show at every width when there are no tabs).",
       rules: [
         "Move the row with `transform: translateX`, never `left` or scroll position, and transition `opacity`, `filter` and `scale` on the cards, nothing else.",
-        "Don't add a carousel library either (the original uses react-slick; this matches it without one).",
+        "Don't add a carousel library either. The original uses react-slick, and its interaction values are Slick defaults this matches without one: `waitForAnimate: true` (input ignored mid-slide), `touchThreshold: 5` (swipe past a fifth of the slide width), `edgeFriction: 0.35`. If the site already runs Slick, keep those settings.",
         "Only the focused card is interactive: make the others `inert` so Tab skips them. If a slide holds a `<video>`, pause it when the slide loses focus and play it once a slide comes into focus.",
         "Measure the breakpoints on the slider's own width (container queries), not the window, so it adapts to the column it sits in.",
       ],
@@ -849,8 +849,10 @@ export const registry: RegistryEntry[] = [
         "On load, the middle card is sharp and its neighbours peek in both sides, blurred and slightly smaller{inactiveOpacity|1=|*= (and faded on wide screens)}.",
         "Click next: the row glides one card over {duration}ms and the new card sharpens within {focusDuration}ms.",
         "{autoplay|true=Scroll the slider into view and wait: it moves every {interval}ms. Hover the slides and it holds. Click any control and it never autoplays again.|*=Nothing moves until you use a control.}",
-        "Click next twice quickly: the row goes straight to the second card with no snap.",
-        "On a 375px phone: no arrows, dots under the slider, neighbours blurred and scaled 0.9 × 0.95 but not faded, and a swipe changes slide.",
+        "Click Next twice within 150ms: the row moves one slide, not two.",
+        "On desktop, drag the row 100px and let go: it springs back. Drag about 210px: it changes slide.",
+        "Drag 200px right on the first slide: the row moves about 70px, then springs back.",
+        "On a 375px phone: no arrows, dots under the slider, neighbours blurred and scaled 0.9 × 0.95 but not faded, and a swipe of about 65px changes slide.",
         "Tab through the slider: only the focused card's controls get focus.",
         "Turn on reduced motion: no autoplay, slides change instantly.",
       ],

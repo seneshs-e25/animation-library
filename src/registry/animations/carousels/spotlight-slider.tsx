@@ -60,8 +60,14 @@ type SpotlightSliderProps = Omit<React.ComponentProps<"div">, "children"> & {
   interval?: number;
 };
 
-/** A drag further than this (px) changes slide. */
-const SWIPE_THRESHOLD = 50;
+/**
+ * Interaction values are react-slick's defaults, which the original runs on:
+ * a drag changes slide past 1/TOUCH_THRESHOLD of the slide width
+ * (`touchThreshold: 5`), and past the first or last slide the row moves
+ * EDGE_FRICTION of the drag (`edgeFriction: 0.35`).
+ */
+const TOUCH_THRESHOLD = 5;
+const EDGE_FRICTION = 0.35;
 
 /**
  * Spotlight slider: one card in focus in the middle, the cards either side
@@ -74,7 +80,9 @@ const SWIPE_THRESHOLD = 50;
  * - The track is a flex row of full-width slides inside a centred viewport
  *   with `overflow: visible`, so neighbours peek past its edges. The root
  *   clips them at the section edge. Changing slide moves the track with
- *   `translateX(-index * 100%)` over 500ms `ease` (Slick's default).
+ *   `translateX(-index * 100%)` over 500ms `ease` (Slick's default). Like
+ *   Slick's `waitForAnimate`, any move asked for while the row is still
+ *   sliding (arrow, tab, dot, key, autoplay or swipe) is ignored.
  * - Cards that aren't in focus get `filter: blur(5px); scale: .9 .95`, and
  *   from 1024px also `opacity: .3; scale: .95`, transitioned over 150ms
  *   cubic-bezier(.4,0,.2,1), so the new card sharpens while the row is
@@ -82,7 +90,8 @@ const SWIPE_THRESHOLD = 50;
  * - Autoplay advances every 5s once 30% of the slider is in view, pauses
  *   while the pointer is over the slides, stops at the last slide (unless
  *   `loop`), and stops for good on any interaction.
- * - Pointer drag follows the finger and changes slide past 50px. Left/Right
+ * - Pointer drag follows the finger and changes slide past a fifth of
+ *   the slide width (0.35× resistance past the ends). Left/Right
  *   keys work when focus is inside. Off-screen cards are `inert`, so tab
  *   order only reaches the focused one. A `<video>` in a slide plays when
  *   its slide comes into focus and pauses when it leaves.
@@ -129,14 +138,25 @@ export function SpotlightSlider({
   const rootRef = React.useRef<HTMLDivElement>(null);
   const start = React.useRef<{ x: number; y: number; id: number } | null>(null);
   const moved = React.useRef(false);
+  const threshold = React.useRef(0);
+  // Until when the row is still sliding; moves asked for before then are dropped.
+  const busyUntil = React.useRef(0);
   const id = React.useId().replace(/[^a-zA-Z0-9-]/g, "");
 
   const go = React.useCallback(
     (i: number) => {
       if (count === 0) return;
-      setIndex(loop ? (i + count) % count : Math.min(Math.max(i, 0), count - 1));
+      const next = loop ? (i + count) % count : Math.min(Math.max(i, 0), count - 1);
+      const now = performance.now();
+      if (now < busyUntil.current) return;
+      setIndex((current) => {
+        if (next === current) return current;
+        const instant = duration <= 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        busyUntil.current = instant ? 0 : now + duration;
+        return next;
+      });
     },
-    [count, loop],
+    [count, loop, duration],
   );
 
   /** A user action: move, and stop autoplay for good. */
@@ -200,6 +220,8 @@ export function SpotlightSlider({
     if (e.button !== 0) return;
     start.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
     moved.current = false;
+    // The track's parent is the slide-wide viewport.
+    threshold.current = (e.currentTarget as HTMLElement).parentElement!.clientWidth / TOUCH_THRESHOLD;
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -215,7 +237,7 @@ export function SpotlightSlider({
     }
     // Resist past the ends, like a rubber band.
     const atEdge = (dx > 0 && !canPrev) || (dx < 0 && !canNext);
-    setDrag(atEdge ? dx * 0.25 : dx);
+    setDrag(atEdge ? dx * EDGE_FRICTION : dx);
   };
 
   const onPointerEnd = (e: React.PointerEvent) => {
@@ -223,8 +245,9 @@ export function SpotlightSlider({
     if (!s || s.id !== e.pointerId) return;
     start.current = null;
     if (drag !== null) {
-      if (drag <= -SWIPE_THRESHOLD && canNext) go(index + 1);
-      else if (drag >= SWIPE_THRESHOLD && canPrev) go(index - 1);
+      // While the row is still sliding, go() drops this and the row springs back.
+      if (drag <= -threshold.current && canNext) go(index + 1);
+      else if (drag >= threshold.current && canPrev) go(index - 1);
     }
     setDrag(null);
   };
@@ -421,7 +444,7 @@ function ArrowButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "group absolute top-1/2 z-2 hidden size-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-white text-(--ss-accent) shadow-[0_34px_40px_rgba(0,26,71,0.1),0_5px_20px_rgba(0,26,71,0.05)] outline-none transition-colors duration-300 ease-in-out @min-[768px]:flex",
+        "group absolute top-1/2 z-2 hidden size-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-white text-(--ss-accent) shadow-[0_34px_40px_rgba(0,26,71,0.1),0_5px_20px_rgba(0,26,71,0.05)] outline-none transition-colors duration-300 ease-[cubic-bezier(.4,0,.2,1)] @min-[768px]:flex",
         "focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-(--ss-accent)",
         "enabled:[@media(hover:hover)]:hover:bg-(--ss-accent) enabled:[@media(hover:hover)]:hover:text-white disabled:cursor-default",
         className,
