@@ -641,7 +641,7 @@ export const registry: RegistryEntry[] = [
     slug: "scroll-text-reveal",
     title: "Scroll text reveal",
     description:
-      "A dimmed statement fills in letter by letter as it scrolls through the viewport, after fading up into place, used on NetApp AI website",
+      "A dimmed statement fills in letter by letter as its section scrolls through the viewport, after fading up into place, used on NetApp AI website",
     category: "animations",
     group: "scroll-triggers",
     source: "https://netapp.ai/",
@@ -659,10 +659,10 @@ export const registry: RegistryEntry[] = [
       intent:
         "A large statement that reads like it's being written as you scroll: the text starts dimmed and fills in {split|word=word|*=letter} by {split|word=word|*=letter}, in reading order, as it passes through the viewport. It should feel tied to the reader's own scrolling, never on a timer.",
       trigger:
-        "Scroll position. The fill is driven by the text element's own view timeline (CSS `view-timeline`), so it moves forward as you scroll down and backward as you scroll up.{rise|true= The first time the block enters the viewport it also fades up into place once.|*=}",
+        "Scroll position. The fill is driven by a CSS view timeline on {timeline|self=the text element itself|*=the closest `<section>` around the text, not the text}, so it moves forward as you scroll down and backward as you scroll up.{rise|true= The first time 20% of the text is in view it also fades up into place, once.|*=}",
       states: [
         "Every {split|word=word|*=character} starts at `opacity: {dimOpacity}` and ends at `opacity: 1`.",
-        "The fill runs between `cover {start}%` and `cover {end}%` of the element's view timeline (0% = its top meets the bottom of the viewport, 100% = its bottom leaves the top). Each {split|word=word|*=character} gets its own equal slice of that range in reading order, so the brightness sweeps through the text.",
+        "The fill runs between `cover {start}%` and `cover {end}%` of {timeline|self=the text's|*=the section's} view timeline (0% = its top meets the bottom of the viewport, 100% = its bottom leaves the top; 50% is the moment it sits centred, so {end}% finishes the text just before that). Each {split|word=word|*=character} gets its own equal slice of that range, numbered across lines in reading order (line breaks take no slice), so the brightness sweeps through the text.",
         "{rise|true=Rise on enter: from `opacity: 0; translateY({riseDistance}px)` to `opacity: 1; translateY(0)`, once.|*=}",
       ],
       timing: [
@@ -674,13 +674,15 @@ export const registry: RegistryEntry[] = [
       reducedMotion:
         "Under `prefers-reduced-motion: reduce`, there's no rise and no dimming: the text is simply shown at full opacity.",
       rules: [
-        "Use a CSS scroll-driven animation (`animation-timeline: view()` / `view-timeline`) for the fill, not a scroll listener. Browsers without support (Firefox today) show the text at full opacity.",
+        "Drive the fill with a CSS scroll-driven animation: name a `view-timeline` on {timeline|self=the text element|*=the section} and give each span `animation-timeline` with its own `animation-range`.",
+        "Fallback, as in the original: where `animation-timeline` isn't supported (Firefox) and in WebKit (Safari freezes some of ~100 concurrent scroll-driven animations at their first frame), set `animation: none` on the spans and write the same opacities from a passive scroll listener once per animation frame, using the same `cover` progress maths.",
         "Split the text into one `aria-hidden` span per {split|word=word|*=character} and give screen readers the full sentence once in a visually hidden copy.",
-        "The text must render visible in the server HTML; only hide it for the rise after hydration, and only if it starts below the fold, so nothing flashes and nothing depends on JavaScript.",
+        "The text must render visible in the server HTML; only hide it for the rise after hydration, and only if it starts entirely off screen, then play the rise when 20% of it is in view. Nothing flashes and nothing depends on JavaScript.",
         "No ancestor between the text and the page scroller may have `overflow: hidden`, `auto` or `scroll` (the timeline would attach to it and freeze); use `overflow: clip` to clip decorations.",
       ],
       checks: [
-        "Scroll the text up through the viewport: it fills in {split|word=word|*=letter} by {split|word=word|*=letter} in reading order, starting at about {start}% and finishing at about {end}% of its pass.",
+        "Scroll the {timeline|self=text|*=section} up through the viewport: the first {split|word=word|*=letter} lights at {start}% of its pass and the last at {end}%, just before it's centred, in reading order.",
+        "Open it in Safari and Firefox: the same sweep runs (from the scroll fallback), with no letters stuck dim.",
         "Scroll back up: it un-fills in reverse.",
         "{rise|true=Load the page with the text below the fold, then scroll to it: it fades up {riseDistance}px over {riseDuration}ms, once. Reload with it already on screen: it doesn't jump.|*=}",
         "Turn on reduced motion: the text is fully visible and doesn't move.",
@@ -691,7 +693,7 @@ export const registry: RegistryEntry[] = [
         type: "text",
         name: "text",
         label: "Text",
-        default: "Analysts expect that through 2027, 60% of AI projects without AI-ready data will be abandoned",
+        default: "Gartner predicts that through 2026, 60% of AI projects that are not supported by AI-ready data will be abandoned",
       },
       {
         type: "select",
@@ -706,6 +708,16 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "dimOpacity", label: "Dim opacity", default: 0.2, min: 0, max: 0.8, step: 0.05 },
       { type: "number", name: "start", label: "Reveal start", default: 20, min: 0, max: 90, step: 1, unit: "%" },
       { type: "number", name: "end", label: "Reveal end", default: 45, min: 5, max: 100, step: 1, unit: "%" },
+      {
+        type: "select",
+        name: "timeline",
+        label: "Measured on",
+        default: "section",
+        options: [
+          { label: "Section", value: "section" },
+          { label: "Text", value: "self" },
+        ],
+      },
       { type: "boolean", name: "rise", label: "Rise on enter", default: true },
       { type: "number", name: "riseDistance", label: "Rise distance", default: 48, min: 0, max: 120, step: 2, unit: "px" },
       { type: "number", name: "riseDuration", label: "Rise duration", default: 1400, min: 200, max: 2400, step: 50, unit: "ms" },
@@ -713,9 +725,9 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "This is a base component: it only handles the text and its motion. Font, size, colour, alignment and width come from `className` on the component (it renders a single `as` element, `h2` by default). The section, background and logo above it are not part of it.",
       "`text` must be a plain string because it is split into one span per character (or per word with `split=\"word\"`). Screen readers get the full text once from a visually hidden copy; the split spans are `aria-hidden`.",
-      "The original's timeline is on the whole section (259px top / 251px bottom padding) rather than the heading. Since this one is measured on the text itself, 20% → 45% lands in about the same place for a 2–3 line heading. Tune `start` / `end` if the text is much taller.",
+      "By default the scroll progress is measured on the closest `<section>`, as in the original (whose section has 259px top / 251px bottom padding, 102px / 98px below 1280px): the component names a view timeline on it. Pass `timeline=\"self\"` if the text isn't inside a section or the section is very tall.",
       "Gotcha: no ancestor between the text and the page scroller may have `overflow: hidden`/`auto`/`scroll`. Any of those makes that ancestor the scroll container, the view timeline attaches to it, and since it never scrolls the text stays frozen. Use `overflow: clip` (Tailwind `overflow-clip`) on the section to clip decorations instead.",
-      "Original typography: F37 Judge (licensed) at 60px / 66px, weight 100, -0.6px tracking, black, centred in a 1060px column (30px below 1280px). The demo uses Inter Tight weight 300 with -0.02em tracking as the closest Google Font.",
+      "Original typography: F37 Judge (licensed) at 60px / 66px, weight 100, -0.6px tracking, centred in a 1060px column (30px / 33px, -0.3px below 1280px), white over a light aurora background, with a 30px-tall attribution logo (20px below 1280px) 60px above it. The demo uses Inter Tight weight 300 as the closest Google Font.",
     ],
   },
   {

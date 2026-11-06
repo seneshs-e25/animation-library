@@ -599,21 +599,33 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
     <div className="h-[640px] overflow-y-auto overscroll-contain bg-white">
       <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
       <div className="h-[320px]" />
-      <section className="relative overflow-clip bg-[radial-gradient(60%_80%_at_25%_20%,#A9C4F0_0%,transparent_70%),linear-gradient(180deg,#E6EEFB_0%,#FFFFFF_100%)] px-[30px] py-[120px] xl:py-[200px]">
-        <div className="flex flex-col items-center gap-10">
+      {/* The NetApp AI Gartner stats section: its background image, logo and padding (Contentstack URLs). */}
+      <section className="relative overflow-clip px-5 pt-[102px] pb-[98px] xl:pt-[259px] xl:pb-[251px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltfe61c08543248add/6a85d095971ef95cbe534b26/netapp-ai-temp-bg.png?width=1600&format=pjpg&disable=upscale"
+          alt=""
+          className="pointer-events-none absolute top-[-12%] left-1/2 h-[130%] w-[130%] -translate-x-1/2 object-cover xl:top-0 xl:left-0 xl:h-full xl:w-full xl:translate-x-0"
+        />
+        <div className="relative flex flex-col items-center gap-10 xl:gap-[60px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/demo-logos/quanta.svg" alt="Quanta" className="h-8 w-auto" />
+          <img
+            src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltaa0a1bef768d6fd8/6a8b8d3f971ef91028536742/gartner.svg"
+            alt="Gartner"
+            className="h-5 w-auto xl:h-[30px]"
+          />
           <ScrollTextReveal
-            key={`${values.rise}`}
+            key={`${values.rise}-${values.timeline}`}
             text={values.text as string}
             split={values.split as "char" | "word"}
             dimOpacity={values.dimOpacity as number}
             start={values.start as number}
             end={values.end as number}
+            timeline={values.timeline as "section" | "self"}
             rise={values.rise as boolean}
             riseDistance={values.riseDistance as number}
             riseDuration={values.riseDuration as number}
-            className={`${interTight.className} w-full max-w-[1060px] text-center text-[40px] leading-[1.1] tracking-[-0.02em] text-black text-balance xl:text-[60px]`}
+            className={`${interTight.className} w-full max-w-[1060px] text-center text-[30px] leading-[1.1] font-light tracking-[-0.01em] text-white xl:text-[60px] xl:tracking-[-0.01em]`}
           />
         </div>
       </section>
