@@ -163,6 +163,7 @@ export const registry: RegistryEntry[] = [
     category: "interactions",
     group: "button-hovers",
     source: "https://ironcladapp.com/",
+    recreated: "WordPress",
     componentName: "CornerBloomButton",
     files: [
       {
@@ -360,6 +361,7 @@ export const registry: RegistryEntry[] = [
     category: "interactions",
     group: "button-hovers",
     source: "https://seemplicity.ai/",
+    recreated: "WordPress",
     componentName: "CircleRevealButton",
     files: [
       {
@@ -495,6 +497,7 @@ export const registry: RegistryEntry[] = [
     category: "interactions",
     group: "image-hovers",
     source: "https://seemplicity.ai/",
+    recreated: "WordPress",
     componentName: "ZoomImageCard",
     defaultTheme: "light",
     files: [
@@ -652,6 +655,37 @@ export const registry: RegistryEntry[] = [
     usageProps: ['as="h2"', "text={stat.text}"],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A large statement that reads like it's being written as you scroll: the text starts dimmed and fills in {split|word=word|*=letter} by {split|word=word|*=letter}, in reading order, as it passes through the viewport. It should feel tied to the reader's own scrolling, never on a timer.",
+      trigger:
+        "Scroll position. The fill is driven by the text element's own view timeline (CSS `view-timeline`), so it moves forward as you scroll down and backward as you scroll up.{rise|true= The first time the block enters the viewport it also fades up into place once.|*=}",
+      states: [
+        "Every {split|word=word|*=character} starts at `opacity: {dimOpacity}` and ends at `opacity: 1`.",
+        "The fill runs between `cover {start}%` and `cover {end}%` of the element's view timeline (0% = its top meets the bottom of the viewport, 100% = its bottom leaves the top). Each {split|word=word|*=character} gets its own equal slice of that range in reading order, so the brightness sweeps through the text.",
+        "{rise|true=Rise on enter: from `opacity: 0; translateY({riseDistance}px)` to `opacity: 1; translateY(0)`, once.|*=}",
+      ],
+      timing: [
+        "Fill: `linear`, mapped to scroll (no duration).",
+        "{rise|true=Rise: {riseDuration}ms, `cubic-bezier(0.25, 0.46, 0.45, 0.94)`, once on first entry.|*=No rise.}",
+      ],
+      interruption:
+        "The fill has no state of its own: it always matches the scroll position, so scrolling back un-fills it and stopping freezes it mid-sweep.{rise|true= The rise plays once and never replays.|*=}",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, there's no rise and no dimming: the text is simply shown at full opacity.",
+      rules: [
+        "Use a CSS scroll-driven animation (`animation-timeline: view()` / `view-timeline`) for the fill, not a scroll listener. Browsers without support (Firefox today) show the text at full opacity.",
+        "Split the text into one `aria-hidden` span per {split|word=word|*=character} and give screen readers the full sentence once in a visually hidden copy.",
+        "The text must render visible in the server HTML; only hide it for the rise after hydration, and only if it starts below the fold, so nothing flashes and nothing depends on JavaScript.",
+        "No ancestor between the text and the page scroller may have `overflow: hidden`, `auto` or `scroll` (the timeline would attach to it and freeze); use `overflow: clip` to clip decorations.",
+      ],
+      checks: [
+        "Scroll the text up through the viewport: it fills in {split|word=word|*=letter} by {split|word=word|*=letter} in reading order, starting at about {start}% and finishing at about {end}% of its pass.",
+        "Scroll back up: it un-fills in reverse.",
+        "{rise|true=Load the page with the text below the fold, then scroll to it: it fades up {riseDistance}px over {riseDuration}ms, once. Reload with it already on screen: it doesn't jump.|*=}",
+        "Turn on reduced motion: the text is fully visible and doesn't move.",
+      ],
+    },
     controls: [
       {
         type: "text",
@@ -679,11 +713,8 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "This is a base component: it only handles the text and its motion. Font, size, colour, alignment and width come from `className` on the component (it renders a single `as` element, `h2` by default). The section, background and logo above it are not part of it.",
       "`text` must be a plain string because it is split into one span per character (or per word with `split=\"word\"`). Screen readers get the full text once from a visually hidden copy; the split spans are `aria-hidden`.",
-      "Motion matches the original: the element defines a CSS `view-timeline`, and every character animates `opacity: 0.2 → 1` (linear) on it over its own slice of `animation-range: cover 20% … cover 45%`, so the fill sweeps through the text in reading order as you scroll and reverses when you scroll back. `start` and `end` set that range as % of the element's cover range (0 = its top meets the bottom of the viewport, 100 = its bottom leaves the top).",
       "The original's timeline is on the whole section (259px top / 251px bottom padding) rather than the heading. Since this one is measured on the text itself, 20% → 45% lands in about the same place for a 2–3 line heading. Tune `start` / `end` if the text is much taller.",
       "Gotcha: no ancestor between the text and the page scroller may have `overflow: hidden`/`auto`/`scroll`. Any of those makes that ancestor the scroll container, the view timeline attaches to it, and since it never scrolls the text stays frozen. Use `overflow: clip` (Tailwind `overflow-clip`) on the section to clip decorations instead.",
-      "Rise: the first time the block enters the viewport it fades up 48px over 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94). The server HTML always shows the text; after hydration an IntersectionObserver hides it only if it starts below the fold, then reveals it on entry. A block already on screen at load stays put, so nothing flashes and the text never depends on JavaScript.",
-      "Scroll-driven CSS animations run off the main thread with no scroll listeners. Browsers without `animation-timeline` support (Firefox today) show the text at full opacity, with the rise still working. Reduced motion: no rise and no dimming, the text is simply shown.",
       "Original typography: F37 Judge (licensed) at 60px / 66px, weight 100, -0.6px tracking, black, centred in a 1060px column (30px below 1280px). The demo uses Inter Tight weight 300 with -0.02em tracking as the closest Google Font.",
     ],
   },
@@ -774,6 +805,7 @@ export const registry: RegistryEntry[] = [
     category: "animations",
     group: "carousels",
     source: "https://ironcladapp.com/",
+    recreated: "WordPress",
     componentName: "ExpandingCards",
     files: [
       {
@@ -786,6 +818,41 @@ export const registry: RegistryEntry[] = [
     ],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A row of slim, faded cards where the one you point at grows to fill the row and its content rises into view, so a set of testimonials can be browsed by sweeping across them. It should feel smooth and deliberate, never twitchy as the pointer moves.",
+      trigger:
+        "Pointer hover on a card (devices that really hover), or keyboard focus on it. One card is always open; leaving the row keeps the last one open.",
+      states: [
+        "Closed card: `flex: 0 0 {collapsedWidth}px` at `opacity: {inactiveOpacity}`; its content is hidden.",
+        "Open card: adds `flex-grow: 1` (fills the rest of the row) at `opacity: 1`.",
+        "Open card's content: from `opacity: 0; translateY(50px)` to `opacity: 1; translateY(0)`. It keeps a fixed 420px min width, so the text never reflows while the card grows; the card clips it.",
+      ],
+      timing: [
+        "Card width and opacity: {duration}ms, `cubic-bezier(0.4, 0, 1, 1)`, together.",
+        "Content fade and rise: {contentDuration}ms, `ease-in-out`.",
+      ],
+      interruption:
+        "After a hover opens a card, further hovers are ignored for 800ms, so sweeping the pointer across the row doesn't make cards flicker open and shut. When the lock ends, the card under the pointer (if different) opens. Keyboard focus opens a card immediately, ignoring the lock. Transitions retarget from their current values.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, cards switch instantly: no width, fade or rise transitions.",
+      responsive:
+        "Expands from 1200px wide. Below that the cards become a horizontal scroll-snap row of full, open cards {mobileHeight}px tall (vs {height}px on desktop); no hover expansion.",
+      rules: [
+        "Animate the width with `flex-grow` on flex items so one transition handles every card, not by setting pixel widths in JS.",
+        "Only the active index is state; widths and fades are CSS transitions.",
+        "If a card's media is a video, play it only while that card is open.",
+      ],
+      checks: [
+        "Hover a closed card: it grows to fill the row over {duration}ms while the open one shrinks to {collapsedWidth}px and fades to {inactiveOpacity}.",
+        "The new card's content fades in and rises 50px over {contentDuration}ms, without the text reflowing.",
+        "Sweep the pointer quickly across the whole row: at most one change per 800ms, no flicker.",
+        "Leave the row: the last card stays open.",
+        "Tab through the cards: each opens as it gets focus.",
+        "Below 1200px: a swipeable row of full cards.",
+        "Turn on reduced motion: cards switch instantly.",
+      ],
+    },
     controls: [
       { type: "number", name: "height", label: "Height", default: 621, min: 400, max: 720, step: 1, unit: "px" },
       { type: "number", name: "mobileHeight", label: "Mobile height", default: 480, min: 320, max: 720, step: 10, unit: "px" },
@@ -800,13 +867,10 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "`items` is an array of `{ media, content, label }`. `media` fills the card behind everything (an image with `object-cover`, a video or a gradient; the component sizes it to the card). `content` is the testimonial block - logo, quote, CTA - and sits at the bottom left. `label` names the card for screen readers.",
       "The section heading and the CTA below the row are not part of this component - render them separately in the section.",
-      "Motion matches the original: closed cards are `flex: 0 0 80px` at 20% opacity; the open card gets `flex-grow: 1` at full opacity over 400ms cubic-bezier(0.4, 0, 1, 1). Its content fades in and rises 50px over 0.8s ease-in-out. Keep these unless asked.",
-      "Hover behaviour matches the original: a hover opens the card, then ignores hovers for 800ms so sweeping across the row doesn't flicker; afterwards the card under the pointer opens. Leaving the row keeps the last card open. Keyboard focus opens a card immediately.",
       "Content keeps a 420px min width so the quote never reflows while the card grows. Write quotes short enough to fit: the original uses a 30px / 1.2 quote with a 50px-high logo above it, inside 60px 120px 60px 60px padding, over a `linear-gradient(246deg, transparent 38.82%, #000 89.91%)` overlay.",
       "Expands from 1200px wide (`minWidth`), as in the original. Below that the cards become a horizontal scroll-snap row of full cards, `mobileHeight` tall (480px, vs 621px `height` on desktop) so a narrow card isn't a towering strip (the original uses a Swiper carousel there).",
       "It is a Client Component (\"use client\") because of the hover state. Only the active index is state; widths and fades are CSS transitions.",
       "If a card's media is a video, play it only while the card is open (the original pauses the others).",
-      "Reduced motion: cards switch instantly, without the width or fade transitions.",
     ],
   },
   {
@@ -909,6 +973,7 @@ export const registry: RegistryEntry[] = [
     category: "animations",
     group: "carousels",
     source: "https://seemplicity.ai/why/",
+    recreated: "WordPress",
     componentName: "AwardsCarousel",
     files: [
       {
@@ -923,6 +988,39 @@ export const registry: RegistryEntry[] = [
     ],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A row of award cards that two pill arrows beside the heading move one card at a time, with the next card peeking past the edge to show there's more. It should feel smooth and unhurried.",
+      trigger:
+        "From 992px: the previous/next arrows, or Left/Right keys while focus is inside, or tabbing to an off-screen card link (the row moves to it). Below 992px: a horizontal swipe or drag past 50px, or the dots.",
+      states: [
+        "Track: a flex row of {cardWidth}px cards with {gap}px gaps, moved by `translate3d(-index × ({cardWidth} + {gap})px, 0, 0)`. The next card peeks past the content edge and the section clips it.",
+        "From 992px it shows as many whole cards as fit and stops when the last card is in view; the arrow at that end drops to 35% opacity and is disabled.",
+        "Dots (below 992px): 10px pills; the active one widens to 30px at full opacity, the others are at 20%.",
+        "Arrows: no hover state in the original; this version adds a faint grey fill on hover and a 0.97 press scale (200ms ease-out).",
+      ],
+      timing: [
+        "Row: {duration}ms, CSS `ease` (Swiper's default).",
+        "Dot width and opacity: 300ms `ease-in-out`.",
+      ],
+      interruption:
+        "Clicking an arrow mid-slide retargets the row from its current position. While dragging, the row follows the finger 1:1 (a quarter of that past the first or last card) with its transition off; on release it moves one card if the drag passed 50px, otherwise it springs back.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the row jumps to the new position without sliding. All controls still work.",
+      responsive:
+        "Arrows from 992px; below 992px the arrows hide and dots plus swipe take over. Cards keep their {cardWidth}px width (capped at the row width), so tablets show two or more with the next peeking and phones show one with the next peeking. Use a 992px breakpoint, not a Tailwind default.",
+      rules: [
+        "Move the row with `transform: translate3d`, never `left` or scroll position.",
+        "Don't add a carousel library (the original uses Swiper; this matches its speed and easing without it).",
+        "Make off-screen cards unreachable by Tab only if they're out of view; tabbing to one moves the row to it.",
+      ],
+      checks: [
+        "Click next: the row moves one card over {duration}ms with `ease`, and the next card still peeks at the edge.",
+        "Keep clicking: it stops when the last card is fully in view and that arrow dims to 35% and disables.",
+        "At 375px: no arrows, dots under the row; a 60px swipe moves one card, a 30px swipe springs back.",
+        "Turn on reduced motion: the row jumps.",
+      ],
+    },
     controls: [
       { type: "number", name: "cardWidth", label: "Card width", default: 280, min: 200, max: 400, step: 4, unit: "px" },
       { type: "number", name: "gap", label: "Gap", default: 40, min: 0, max: 80, step: 2, unit: "px" },
@@ -936,12 +1034,10 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "`items` is an array of `{ image, title, label?, href? }`. `image` is the award badge (an <img> or SVG); it is fitted into a 220×100 box centred in the glowing card. `title` is the award name under the card. `href` makes the whole card a link. `label` names the slide for screen readers when `title` isn't plain text.",
       "`heading` and `description` render the section header with the two arrows to its right, as in the original. Leave both out to render just the row (the arrows then sit above it on the right).",
-      "Motion matches the original (Swiper): the track moves one card with `translate3d` over 600ms `ease`. From 992px it shows as many whole 280px cards as fit with 40px gaps (4 in a 1280px column), the next card peeks past the edge and is clipped by the component root (`overflow-x: clip`), so put it in a full-width section. It stops when the last card is in view, and the arrow at that end drops to 35% opacity and disables.",
       "Below 992px the arrows hide. Cards keep their 280px width (capped at the row width), so tablets show two or more with the next peeking and phones show one with the next peeking past the edge; swipe (50px threshold, rubber-bands at the ends) plus 10px pill dots (active one 30px wide, others 20% opacity, width over 300ms ease-in-out) move between them. Keep `min-[992px]:` rather than a Tailwind default breakpoint.",
       "Card glow: two blurred SVG shapes from the original, inlined as a data-URI background: `#E3308C` at 50% from the top right and `#A309BB` at 30% along the bottom left, on whatever background the section has (white in the original). Change them with `glowTop` / `glowBottom`.",
       "The original arrows are 120×70 pills with a 1px rgba(160,160,160,.3) border, 45px radius and a 31×23 arrow (#0B0623), 15px apart. They have no hover state in the original; this version adds a faint grey fill on hover and a 0.97 press scale.",
       "Typography from the original: heading 66px / 1, weight 300, -1.72px tracking (36px / 1.2, weight 400 below 992px), max 860px wide; description 18px / 1.6; award names 28px / 1.2 (22px below 992px), -0.56px tracking, 21px above. All #410051. The original uses Cabinet Grotesk (free from Fontshare, not on Google Fonts) for the heading and names and Mona Sans (Google Font) for the description; the component inherits the site's font. The demo uses Hanken Grotesk as the closest Google Font.",
-      "Interaction: Left/Right keys move the row while focus is inside; tabbing to a card link that is out of view moves the row to it. Below 992px swipe works with any pointer; on wide screens touch and pen can swipe, the mouse uses the arrows.",
       "It is a Client Component (\"use client\"). State is the index, the drag offset and the measured row width (ResizeObserver). The track position is a CSS transition. Reduced motion: the row jumps without a transition.",
       "It renders whatever you pass as `image`. If the site has its own Image component (e.g. components/common/Image), use it and keep a 100px height.",
     ],
@@ -954,6 +1050,7 @@ export const registry: RegistryEntry[] = [
     category: "animations",
     group: "pin-scrollers",
     source: "https://seemplicity.ai/",
+    recreated: "WordPress",
     componentName: "StackingCards",
     files: [
       {
@@ -964,6 +1061,38 @@ export const registry: RegistryEntry[] = [
     usageChildren: "{cards.map((card) => (\n    <YourCardContent key={card.id} {...card} />\n  ))}",
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A stack of cards that pile up as you scroll: each card sticks under the header, and as the next one slides over it, the covered card slides up, shrinks, blurs{fade|true= and fades away|*=}, so it recedes behind the new one. It should feel smooth and physical, with a slight lag behind the scroll.",
+      trigger:
+        "Scroll position, from 992px wide. Every card is `position: sticky` at `top: {stickyTop}px`, so later cards scroll up over earlier ones.",
+      states: [
+        "A covered card's progress runs 0 → 1 between the moment it sticks and the moment the next card sticks (one card height + {gap}px of scroll), eased with smoothstep `t²(3 − 2t)`.",
+        "At progress 1 the covered card is at `translateY(-{offsetY}px) scale({scale})`, `filter: blur({blur}px)`{fade|true= and `opacity: 0`|*=}. At 0 it's untouched.",
+        "The last card never changes.",
+      ],
+      timing: [
+        "No fixed duration: progress follows scroll. Each frame, the displayed value moves 0.2 of the way toward the scroll-based target (frame-rate independent, as at 60fps), and a 0.2s linear CSS transition on transform, opacity and filter smooths it further.",
+      ],
+      interruption:
+        "Progress always follows the scroll position, so scrolling back up reverses the effect smoothly; there's nothing to cancel.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, cards still stick and stack (scrolling is user-driven), but covered cards don't slide, scale, blur or fade, and there's no smoothing transition.",
+      responsive:
+        "Stacking runs from 992px wide. Below that the cards are a plain list with the same {gap}px gap.",
+      rules: [
+        "Stick with `position: sticky`; only `transform`, `opacity` and `filter` change, so there's no layout work.",
+        "Read scroll in a passive listener and write styles straight to the DOM in one requestAnimationFrame loop that stops once every card has settled; React shouldn't re-render on scroll.",
+        "Don't put it inside an ancestor with `overflow: hidden`; that breaks sticky.",
+      ],
+      checks: [
+        "Scroll down: each card sticks {stickyTop}px from the top, and as the next one covers it, it slides up {offsetY}px, shrinks to {scale}, blurs to {blur}px{fade|true= and fades out|*=}.",
+        "The effect lags the scroll slightly and settles smoothly when you stop.",
+        "Scroll back up: covered cards come back to full size and sharpness.",
+        "Below 992px: a plain list, nothing sticks.",
+        "Turn on reduced motion: cards stack without sliding, scaling, blurring or fading.",
+      ],
+    },
     controls: [
       { type: "number", name: "stickyTop", label: "Sticky top", default: 160, min: 0, max: 240, step: 4, unit: "px" },
       { type: "number", name: "gap", label: "Gap", default: 30, min: 0, max: 120, step: 2, unit: "px" },
@@ -978,11 +1107,9 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "Each child becomes one card. The component draws the card box (background, radius, min height); put the card's content inside as children.",
       "`stickyTop` should be the site header's height + 80px (the original uses 80px header + 80 = 160). Pass the real value if the header height differs.",
-      "Motion values match the original exactly: covered cards ease to translateY(-60px), scale(0.96), blur(10px), opacity 0 with smoothstep easing over one card height + gap of scroll, smoothed by a 0.2 per-frame lerp and a 0.2s linear transition. Keep them unless asked.",
       "Stacking runs from 992px wide (`minWidth`). Below that the original switches to a swipe carousel, which is a separate component; here the cards fall back to a plain list with the same gap. Pass `minWidth={0}` to stack on phones too.",
       "It is a Client Component (\"use client\"): it needs a scroll listener. The listener is passive and writes styles in one requestAnimationFrame loop that stops when cards settle, so React never re-renders on scroll.",
       "Don't put the component inside an ancestor with `overflow: hidden` - that breaks position: sticky. An `overflow: auto` scroll container works.",
-      "Reduced motion: cards still stack (scrolling is user-driven) but don't slide, scale, blur or fade.",
     ],
   },
   {
@@ -1101,6 +1228,39 @@ export const registry: RegistryEntry[] = [
     ],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A list of rows (heading, copy, art) that pins under the header as you scroll; each new row slides up over the previous one and folds it into a strip showing just its heading and the top of its art. It should feel like a tidy pile building up, locked to the scrollbar.",
+      trigger:
+        "Scroll position. The list is `position: sticky` at `top: {stickyTop}px`; it only stacks when `{stickyTop} + 2 × slot` fits in the viewport height.",
+      states: [
+        "Rows are measured in normal flow, then each is absolutely placed at its pile slot with a `translateY` that starts it exactly where it sat in flow. Scrolling shrinks those offsets at 1/{speed} of the scroll distance, so rows rise into the pile.",
+        "Slots: {padding} + {peek} + {padding} px apart from 1024px. Below 1024px: 10 + heading line + 20 + peek + 10, with 10px row padding (peek 79px on phones, 170px from 768px). A taller heading adds its extra lines to the slot.",
+        "Folding: as the next row comes within `0.75 × row height − slot` px, the covered row's description collapses (`grid-template-rows: 1fr → 0fr`, opacity 1 → 0) and its art is cropped from the bottom with `clip-path: inset(0 0 N px 0 round {radius}px)` down to the peek height, keeping a constant gap above the incoming row.",
+        "Rows are opaque ({background}), so each covers the last; folded descriptions are `inert`.",
+      ],
+      timing: [
+        "No duration: everything is locked to the scrollbar{smoothing|0=|*=, eased over {smoothing}s}. Folding is linear in scroll distance.",
+      ],
+      interruption:
+        "Everything follows the scroll position, so scrolling back unfolds the rows in reverse; there's nothing to cancel.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, it's a plain list with every description open and nothing pinned.",
+      responsive:
+        "From 1024px: 367px text column, 80px gap, art fills the rest. Below 1024px the text sits above the art. If `{stickyTop} + 2 × slot` doesn't fit the viewport height, it falls back to the plain list.",
+      rules: [
+        "Pin with `position: sticky` and move rows with `transform`; fold with `grid-template-rows`, `opacity` and `clip-path`, not by animating heights directly.",
+        "Write styles straight to the DOM once per frame from a passive scroll listener; React shouldn't re-render on scroll. Re-measure on resize and after web fonts load.",
+        "Don't put it inside an ancestor with `overflow: hidden`; that breaks sticky. Use `overflow: clip` if the section needs clipping.",
+      ],
+      checks: [
+        "Scroll down: the list pins {stickyTop}px from the top and each row rises at 1/{speed} of the scroll speed into its slot.",
+        "As a row covers the previous one, the previous description folds away and its art crops to a {peek}px strip with its heading still visible.",
+        "Scroll back up: rows unfold in reverse, with no jumps.",
+        "Make the window very short: it becomes a plain list.",
+        "Turn on reduced motion: a plain list with every description open.",
+      ],
+    },
     controls: [
       { type: "number", name: "stickyTop", label: "Sticky top", default: 100, min: 0, max: 200, step: 4, unit: "px" },
       { type: "number", name: "peek", label: "Folded art", default: 200, min: 80, max: 320, step: 4, unit: "px" },
@@ -1117,7 +1277,6 @@ export const registry: RegistryEntry[] = [
       "Layout from 1024px (`minWidth`): 367px text column, 80px gap, art fills the rest with a 20px radius, rows have 30px padding and a 1px `#F4F1ED` hairline on top, description 40px under the heading. Below 1024px the text sits above the art (20px gap), rows have 10px padding, art radius is 10px, description 16px under the heading.",
       "Motion is a dependency-free port of the original GSAP ScrollTrigger code, measured against the live site. Rows are measured in normal flow; then the list goes `position: sticky` at `stickyTop` (100px, the site header) and each row is absolutely placed at its pile slot with a `translateY` that starts it exactly where it sat in flow. Scrolling shrinks those offsets at 1/1.5 of the scroll distance (`speed`), locked to the scrollbar (the original's `scrub: 1` has no effect since there's no tween, so `smoothing` defaults to 0).",
       "Slots: 260px apart from 1024px (`padding` 30 + `peek` 200 + `padding` 30). Below 1024px: 10 + heading line + 20 + peek + 10, i.e. 150px on phones (peek 79px, `mobilePeek`) and about 240px from 768px (peek 170px, `tabletPeek`). A heading taller than that adds its extra lines to the slot.",
-      "Folding: as the next row comes within `0.75 × row height − slot` px, the covered row's description goes `grid-template-rows: 1fr → 0fr` and opacity 1 → 0, and its art is cropped from the bottom with `clip-path: inset(0 0 Npx 0 round 20px)` to `peek + distance` (minus the still-open description on small screens, where it sits above the art), keeping a constant gap above the incoming row. Folded descriptions are `inert`. Rows are opaque (`background`) so each covers the last.",
       "Stacking turns on when `stickyTop + 2 × slot` fits in the viewport height (as in the original); otherwise, and with prefers-reduced-motion, it's a plain list with every description open. It re-measures on resize and after web fonts load. Writes go straight to the DOM once per frame; React doesn't re-render on scroll.",
       "Gotcha: `position: sticky` breaks if an ancestor has `overflow: hidden`; use `overflow: clip` on the section if you need clipping. It works inside any scroll container (it finds the nearest one), not just the window.",
       "Original typography: F37 Judge (licensed). Row headings 36px / 1.1 weight 100 (28px below 1024px), copy 20px / 32px #333 with 0.2px tracking (16px / 1.6 below), intro heading 70px / 1.1, eyebrow 16px uppercase 2.4px tracking #0054D7. The demo uses Inter Tight (Google Font) at weight 300 for headings and 400 for copy.",
@@ -1131,6 +1290,7 @@ export const registry: RegistryEntry[] = [
     category: "animations",
     group: "tabs",
     source: "https://seemplicity.ai/",
+    recreated: "WordPress",
     componentName: "ProgressTabs",
     files: [
       {
@@ -1143,6 +1303,40 @@ export const registry: RegistryEntry[] = [
     ],
     themeToggle: false,
     fullBleed: true,
+    motion: {
+      intent:
+        "A set of tabs over a media panel that steps through itself: the active tab fills with a gradient and a lighter fill sweeps across it as its time runs out, then the panel slides to the next tab. It should feel like a calm guided tour the reader can take over at any time.",
+      trigger:
+        "{autoplay|true=Autoplay: each tab holds for {interval}ms while the component is at least 25% on screen and the browser tab is visible; it waits while keyboard focus is inside{pauseOnHover|true= or the pointer is over it|*=}. |*=}Clicking a tab, or arrow keys / Home / End on the tab list, switch tabs{autoplay|true= and restart the timer from zero (autoplay keeps going)|*=}.",
+      states: [
+        "Active tab: `linear-gradient(90deg, {accentFrom}, {accentTo})` background with white label; inactive tabs are plain with the label colour.",
+        "{autoplay|true={progress|true=Progress fill on the active tab: `linear-gradient(90deg, transparent, {accentTo})` at 50% opacity, `scaleX(0 → 1)` from the left.|*=No visible progress fill; a hidden timer runs instead.}|*=}",
+        "Panels: one flex track with a 10px gap, moved by whole panels with `translateX`.{autoplay|true= After the last tab it slides back to the first.|*=}",
+      ],
+      timing: [
+        "{autoplay|true={progress|true=Fill: {interval}ms, `linear`. It completes exactly as the tab changes.|*=Timer: {interval}ms.}|*=}",
+        "Panel slide: {duration}ms, CSS `ease`.",
+        "Active tab background and label colour: 300ms `ease-out`.",
+      ],
+      interruption:
+        "Clicking a tab mid-slide retargets the panel from where it is.{autoplay|true= Pausing (focus, off-screen, hidden tab{pauseOnHover|true=, hover|*=}{pauseButton|true=, or the pause button|*=}) freezes the timer where it is and resumes it from there; the fill is the timer, so it can't drift.|*=}",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, there's no autoplay and no progress fill, and panels switch instantly. Tabs still work.",
+      responsive:
+        "Media box height steps 300px, 400px (768px+), 500px (992px+) and {mediaHeight}px (1200px+). Below 640px the tab row becomes a horizontal scroll that keeps the active tab centred.",
+      rules: [
+        "Make the fill's CSS animation the timer: advance on its `animationend`, so pausing the animation (`animation-play-state`) pauses autoplay exactly.",
+        "Use the WAI-ARIA tabs pattern (tablist / tab / tabpanel, roving tabindex) and make inactive panels `inert`.",
+        "{autoplay|true={pauseButton|true=Keep the pause / play button at the end of the tab bar while autoplay is on (WCAG 2.2.2).|*=}|*=}",
+      ],
+      checks: [
+        "{autoplay|true=Wait: the active tab's fill sweeps across over {interval}ms, then the panel slides to the next tab over {duration}ms. After the last tab it slides back to the first.|*=Nothing moves until you pick a tab.}",
+        "Click a different tab mid-fill: the panel slides there{autoplay|true= and its fill starts from zero|*=}.",
+        "{autoplay|true=Scroll the component mostly off screen, or switch browser tabs: the fill stops and resumes where it was.|*=}",
+        "Use the arrow keys on the tab list: focus and the panel move together.",
+        "Turn on reduced motion: no autoplay or fill, panels switch instantly.",
+      ],
+    },
     controls: [
       { type: "boolean", name: "autoplay", label: "Autoplay", default: true },
       { type: "number", name: "interval", label: "Interval", default: 4500, min: 1500, max: 10000, step: 100, unit: "ms" },

@@ -71,6 +71,14 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
           <p className="mt-3 text-lg text-muted-foreground">
             <Description text={entry.description} source={entry.source} />
           </p>
+          {entry.recreated && (
+            <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-xs font-medium text-foreground">
+                Recreated
+              </span>
+              Rebuilt by studying the live site. It runs on {entry.recreated}, so there was no component source code to port.
+            </p>
+          )}
         </div>
         <nav className="flex shrink-0 gap-2" aria-label="Component navigation">
           <NavArrow href={prev && `/components/${prev.slug}`} label={prev?.title} dir="prev" />

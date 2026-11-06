@@ -103,6 +103,12 @@ export type RegistryEntry = {
   group: string;
   /** The live site the effect was taken from, linked on the component page and in the brief. */
   source?: string;
+  /**
+   * Set when the effect was recreated by studying the live site rather than
+   * ported from its source code, e.g. because the site runs on a CMS like
+   * WordPress. Names that platform; shown on the component page and in the brief.
+   */
+  recreated?: string;
   /** Exported component name, used in the usage snippet and prompt. */
   componentName: string;
   files: RegistryFile[];
