@@ -1,0 +1,101 @@
+/**
+ * Registry types.
+ *
+ * Every animated component in the library is described by a `RegistryEntry`.
+ * The entry is pure data (serializable) so it can be used on the server
+ * (sidebar, static params, reading source files) and on the client
+ * (customize panel, prompt generation).
+ */
+
+export type CategoryId = "interactions" | "animations" | "shaders";
+
+export type Control = (
+  | {
+      type: "color";
+      name: string;
+      label: string;
+      default: string;
+    }
+  | {
+      type: "number";
+      name: string;
+      label: string;
+      default: number;
+      min: number;
+      max: number;
+      step: number;
+      unit?: string;
+    }
+  | {
+      type: "select";
+      name: string;
+      label: string;
+      default: string;
+      options: { label: string; value: string }[];
+    }
+  | {
+      type: "boolean";
+      name: string;
+      label: string;
+      default: boolean;
+    }
+  | {
+      type: "text";
+      name: string;
+      label: string;
+      default: string;
+    }
+) & {
+  /** Include in the usage snippet even when left at its default value. */
+  always?: boolean;
+};
+
+export type ControlValues = Record<string, string | number | boolean>;
+
+export type RegistryFile = {
+  /** File name the developer should create, e.g. `fill-sweep-button.tsx`. */
+  name: string;
+  /** Path to the source file, relative to the project root. */
+  path: string;
+};
+
+export type RegistryEntry = {
+  slug: string;
+  title: string;
+  description: string;
+  category: CategoryId;
+  /** Group id inside the category, e.g. `button-hovers`. */
+  group: string;
+  /** Exported component name, used in the usage snippet and prompt. */
+  componentName: string;
+  files: RegistryFile[];
+  /** Props exposed in the Customize panel. */
+  controls: Control[];
+  /** Fixed props always shown first in the usage snippet, e.g. `logos={logos}`. */
+  usageProps?: string[];
+  /** Children / text rendered inside the component in the usage snippet. */
+  usageChildren?: string;
+  /** Extra notes appended to the copied prompt (dependencies, gotchas). */
+  promptNotes?: string[];
+  dependencies?: string[];
+  /**
+   * Show the light/dark background toggle in the preview. Defaults to true;
+   * set false for dark-only components so the preview stays on dark.
+   */
+  themeToggle?: boolean;
+  /** Stage the preview starts on. Defaults to dark. */
+  defaultTheme?: "light" | "dark";
+  /** Let the preview fill the stage edge to edge (sections, not buttons). */
+  fullBleed?: boolean;
+};
+
+export type Group = {
+  id: string;
+  title: string;
+};
+
+export type Category = {
+  id: CategoryId;
+  title: string;
+  groups: Group[];
+};

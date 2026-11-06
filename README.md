@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Animation Library
 
-## Getting Started
+Production-ready motion for enterprise marketing websites, split into three pillars:
 
-First, run the development server:
+- **Interactions**: button hovers, links, icons
+- **Animations**: scroll triggers, carousels, pin scrollers
+- **Shaders**: GPU-driven heroes and backgrounds
+
+Each component has a live preview, a Customize panel for its props, its source code, and a **Copy prompt** button. The copied prompt contains the full source and the usage with the chosen prop values, ready to paste into a coding agent.
+
+## Develop
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Adding a component
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create the component in `src/registry/<category>/<group>/<name>.tsx`. It must be self-contained: the file is shown verbatim in the Code tab and the prompt.
+2. Add an entry to `registry` in `src/registry/index.ts` (slug, title, description, category, group, files, controls).
+3. Register its live preview in `src/registry/previews.tsx`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The sidebar, detail page, Code tab and prompt are generated from the registry entry.
 
-## Learn More
+## Motion rules
 
-To learn more about Next.js, take a look at the following resources:
+Components follow the Emil Kowalski animation skills in `.claude/skills` (`animate`, `review-animations`, …):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Animate `transform` / `opacity` (and `clip-path`) only
+- Strong ease-out `cubic-bezier(0.23, 1, 0.32, 1)` for entering motion, never `ease-in`
+- Hover effects gated to real pointers (Tailwind v4 `hover:` does this)
+- `prefers-reduced-motion` handled in every component

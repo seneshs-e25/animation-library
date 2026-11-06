@@ -1,69 +1,79 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { categories, registry } from "@/registry";
+
+const pillars: Record<string, string> = {
+  interactions: "Micro-interactions on small UI: button hovers, links, icons.",
+  animations: "Section-level motion: scroll triggers, carousels, pin scrollers.",
+  shaders: "GPU-driven visuals for heroes and backgrounds.",
+};
+
+const steps = [
+  "Pick a component from the sidebar and check it in Preview.",
+  "Open Customize to tune its props to your brand.",
+  "Copy prompt and paste it into your coding agent. It contains the full source and the usage with your values.",
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="mx-auto w-full max-w-4xl px-6 pt-10 pb-16 md:px-10 md:pt-14">
+      <h1 className="text-4xl font-medium tracking-tight md:text-5xl">Animation Library</h1>
+      <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
+        Production-ready motion for enterprise marketing websites. Every component is built on
+        transform and opacity, respects reduced motion, and ships as a copyable prompt.
+      </p>
+
+      <div className="mt-10 grid gap-3 md:grid-cols-3">
+        {categories.map((category) => {
+          const first = registry.find((e) => e.category === category.id);
+          const count = registry.filter((e) => e.category === category.id).length;
+          const body = (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="font-medium">{category.title}</h2>
+                <span className="text-xs text-muted-foreground">
+                  {count ? `${count} component${count > 1 ? "s" : ""}` : "Soon"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{pillars[category.id]}</p>
+            </>
+          );
+          return first ? (
+            <Link
+              key={category.id}
+              href={`/components/${first.slug}`}
+              className="rounded-2xl border bg-card p-5 transition-colors duration-150 ease-[ease] hover:bg-white/[0.04]"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              {body}
+            </Link>
+          ) : (
+            <div key={category.id} className="rounded-2xl border p-5 opacity-60">
+              {body}
+            </div>
+          );
+        })}
+      </div>
+
+      <h2 className="mt-14 text-xl font-medium tracking-tight">How to use</h2>
+      <ol className="mt-4 space-y-3">
+        {steps.map((step, i) => (
+          <li key={i} className="flex gap-3 text-muted-foreground">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white/[0.06] text-xs text-foreground">
+              {i + 1}
+            </span>
+            {step}
+          </li>
+        ))}
+      </ol>
+
+      {registry[0] && (
+        <Link
+          href={`/components/${registry[0].slug}`}
+          className="mt-10 inline-flex items-center gap-2 text-sm font-medium"
+        >
+          Browse components <ArrowRight className="size-4" />
+        </Link>
+      )}
+    </main>
   );
 }
