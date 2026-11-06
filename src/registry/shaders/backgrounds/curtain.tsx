@@ -5,14 +5,14 @@ import { useEffect, useRef, type CSSProperties } from "react";
 /**
  * Curtain — animated WebGL2 layered-wave background.
  *
- * Reproduces the NetApp AI "BG" frame: a deep-blue vertical gradient with a
- * curtain of stacked, gently undulating layers composited over it in
- * overlay blend, fading out towards the bottom edge. One fullscreen pass
+ * A deep-blue vertical gradient with a curtain of stacked, gently
+ * undulating layers composited over it in overlay blend, fading out
+ * towards the bottom edge. One fullscreen pass
  * into a <canvas> that fills its parent. All visual controls are exposed
  * as props and can be changed live without recreating the WebGL context.
  *
  * The layer geometry is a quartic scalar field fitted to the lit edges of
- * the original stock footage (every integer level of the field is one
+ * reference stock footage (every integer level of the field is one
  * layer edge), and the per-layer shading was measured from the same frame,
  * so the default look matches the design rather than approximating it.
  *

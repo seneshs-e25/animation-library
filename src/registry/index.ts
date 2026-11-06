@@ -1367,10 +1367,9 @@ export const registry: RegistryEntry[] = [
     slug: "aurora",
     title: "Aurora",
     description:
-      "Soft, flowing light seen through vertical fluted glass, a WebGL shader background used on NetApp website",
+      "Soft, flowing light seen through vertical fluted glass, a WebGL shader background",
     category: "shaders",
     group: "backgrounds",
-    source: "https://netapp.ai/",
     componentName: "Aurora",
     files: [
       {
@@ -1427,10 +1426,9 @@ export const registry: RegistryEntry[] = [
     slug: "curtain",
     title: "Curtain",
     description:
-      "A deep-blue gradient with a curtain of slowly drifting, undulating layers that fades out toward the bottom, a WebGL shader background used on NetApp website",
+      "A deep-blue gradient with a curtain of slowly drifting, undulating layers that fades out toward the bottom, a WebGL shader background",
     category: "shaders",
     group: "backgrounds",
-    source: "https://netapp.ai/",
     componentName: "Curtain",
     files: [
       {
@@ -1488,7 +1486,7 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "It's a named export: `import { Curtain } from \"@/components/animations/curtain\"`.",
       "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
-      "Raw WebGL2, a single full-screen pass. The layer shapes come from a fitted field and per-layer shading measured from the original footage. For the fallback background, use a dark colour such as the top colour or black.",
+      "Raw WebGL2, a single full-screen pass. The layer shapes come from a fitted field and per-layer shading measured from reference footage. For the fallback background, use a dark colour such as the top colour or black.",
     ],
   },
 ];
