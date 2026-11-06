@@ -59,6 +59,41 @@ export type RegistryFile = {
   path: string;
 };
 
+/**
+ * The animation contract the copied prompt leads with. Any string can use
+ * `{controlName}` tokens; they're replaced with the developer's current
+ * Customize values, so the spec always matches what they tuned.
+ */
+export type MotionSpec = {
+  /** What the motion does and how it should feel, in 1-2 sentences. */
+  intent: string;
+  /** What starts it: hover, focus, scroll position, click, autoplay... */
+  trigger: string;
+  /** What changes from rest to active: property, from -> to, origin. */
+  states: string[];
+  /** Durations, easing curves, delays, stagger. */
+  timing: string[];
+  /** What happens if the trigger reverses or repeats mid-animation. */
+  interruption: string;
+  /** What changes under prefers-reduced-motion, and what stays. */
+  reducedMotion: string;
+  /** Breakpoints where the motion changes or switches off. */
+  responsive?: string;
+  /** How to build it so it stays smooth (properties, layers, gotchas). */
+  rules?: string[];
+  /** How to confirm the result moves correctly. */
+  checks: string[];
+  /**
+   * "reference" (default): the code is one way to meet the spec, and the
+   * agent can rebuild the motion on the site's own element.
+   * "required": the code is the motion (e.g. a WebGL shader), so the agent
+   * uses it as written and only tunes props.
+   */
+  implementation?: "reference" | "required";
+  /** Replaces the default "How to apply" bullets. */
+  apply?: string[];
+};
+
 export type RegistryEntry = {
   slug: string;
   title: string;
@@ -75,7 +110,15 @@ export type RegistryEntry = {
   usageProps?: string[];
   /** Children / text rendered inside the component in the usage snippet. */
   usageChildren?: string;
-  /** Extra notes appended to the copied prompt (dependencies, gotchas). */
+  /**
+   * The animation spec the copied prompt leads with. Entries without one
+   * still use the older install-style prompt.
+   */
+  motion?: MotionSpec;
+  /**
+   * Notes about the reference component (props, markup, setup gotchas).
+   * Motion details belong in `motion`.
+   */
   promptNotes?: string[];
   dependencies?: string[];
   /**

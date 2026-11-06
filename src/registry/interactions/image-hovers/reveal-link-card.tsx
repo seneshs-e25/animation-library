@@ -115,7 +115,7 @@ export function RevealLinkCard({
           aria-hidden
           viewBox="0 0 7 10"
           fill="none"
-          className="ml-1 inline-block h-[10px] w-[7px] align-[0.05em] transition-transform duration-300 group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none"
+          className="ml-1 inline-block h-[10px] w-[7px] align-[0.05em] transition-transform duration-300 group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-focus-visible:translate-x-0"
         >
           <path d="M1 1l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

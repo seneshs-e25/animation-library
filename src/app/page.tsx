@@ -10,8 +10,38 @@ const pillars: Record<string, string> = {
 
 const steps = [
   "Pick a component from the sidebar and check it in Preview.",
-  "Open Customize to tune its props to your brand.",
-  "Copy prompt and paste it into your coding agent. It contains the full source and the usage with your values.",
+  "Open Customize to tune it. The prompt uses your values, and any colour you change is treated as required.",
+  "Copy prompt, paste it into your coding agent and say where it goes, e.g. \u201capply this to our hero CTA buttons\u201d.",
+  "The agent adds the motion to your existing component, and only uses the reference code if nothing fits.",
+  "Go through the checks at the end of the prompt to confirm it moves right.",
+];
+
+/** The sections of a copied prompt, in order. */
+const promptSections = [
+  {
+    title: "Motion spec",
+    body: "The requirement: trigger, what changes, timing and easing, interruption and reduced motion, with your Customize values.",
+  },
+  {
+    title: "Colours",
+    body: "Colours you changed are used exactly. Untouched defaults are matched to your site\u2019s palette.",
+  },
+  {
+    title: "Implementation rules",
+    body: "Which properties to animate so it stays smooth, and the traps to avoid.",
+  },
+  {
+    title: "How to apply",
+    body: "Your existing button, card or section first, and the reference component only when there\u2019s nothing suitable. Shader backgrounds go behind the section you name.",
+  },
+  {
+    title: "Reference implementation",
+    body: "Working code that meets the spec, for the agent to copy or adapt. For shaders the code is the motion, so it\u2019s used as written and only tuned through props.",
+  },
+  {
+    title: "Check it",
+    body: "Hover, interrupt halfway, keyboard focus, reduced motion and touch.",
+  },
 ];
 
 export default function Home() {
@@ -19,8 +49,9 @@ export default function Home() {
     <main className="mx-auto w-full max-w-4xl px-6 pt-10 pb-16 md:px-10 md:pt-14">
       <h1 className="text-4xl font-medium tracking-tight md:text-5xl">Animation Library</h1>
       <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-        Production-ready motion for enterprise marketing websites. Every component is built on
-        transform and opacity, respects reduced motion, and ships as a copyable prompt.
+        Production-ready motion for enterprise marketing websites. Every component respects
+        reduced motion and ships as an animation brief: a prompt that tells your coding agent
+        exactly how it should move, so it can add the motion to the components you already have.
       </p>
 
       <div className="mt-10 grid gap-3 md:grid-cols-3">
@@ -65,6 +96,23 @@ export default function Home() {
           </li>
         ))}
       </ol>
+
+      <h2 className="mt-14 text-xl font-medium tracking-tight">What&apos;s in a prompt</h2>
+      <p className="mt-2 text-muted-foreground">
+        The motion is the requirement. Your site keeps its own markup, fonts and spacing, and the code
+        is there as a reference.
+      </p>
+      <dl className="mt-5 divide-y rounded-2xl border">
+        {promptSections.map((section) => (
+          <div key={section.title} className="grid gap-1 px-5 py-4 md:grid-cols-[200px_1fr] md:gap-6">
+            <dt className="font-medium">{section.title}</dt>
+            <dd className="text-sm text-muted-foreground md:text-base">{section.body}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Button hovers, image hovers and shaders use this format today. The other components are moving to it.
+      </p>
 
       {registry[0] && (
         <Link

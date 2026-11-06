@@ -32,6 +32,52 @@ export const categories: Category[] = [
   },
 ];
 
+/** Trigger wording shared by the button hovers. */
+const hoverTrigger = (state: string) =>
+  `Pointer hover, only on devices that really hover (\`@media (hover: hover)\`; Tailwind v4's \`hover:\` already does this). Keyboard focus (\`:focus-visible\`) shows the same ${state}. On touch there is no hover state; a tap just follows the link.`;
+
+/** Interruption wording for hovers built on CSS transitions. */
+const transitionInterruption = (what: string) =>
+  `Use CSS transitions, not keyframe animations. If the pointer leaves mid-way, ${what} reverses from wherever it is, using the same duration and curve. It never jumps to the start or the end.`;
+
+/** Checks every button hover shares, after its own hover check. */
+const hoverChecks = (state: string) => [
+  `Tab to the button: it shows the same ${state}, plus a visible focus outline.`,
+  "Turn on reduced motion: the state changes instantly.",
+  `On a touch device: tapping doesn't leave the button stuck in the ${state}.`,
+];
+
+/** Shared spec wording for the WebGL shader backgrounds. */
+const shader = {
+  trigger:
+    "None: it starts when the section mounts and loops continuously while the canvas is on screen (or within 100px of it). Off screen the loop idles on its last frame, and scrolling back resumes from where it stopped. It's purely decorative and doesn't react to the pointer.",
+  timing: [
+    "A continuous loop with no start or end. Speed multiplier: {speed} (1 is the original pace{speed|0=; 0 freezes it on one frame|*=}).",
+    "Each frame advances time by at most 0.1s, so coming back to a background tab doesn't jump the animation forward.",
+    "{paused|true=`paused` is on: it renders one still frame and the loop stays idle.|*=}",
+  ],
+  interruption:
+    "Nothing interrupts it. Prop changes apply live, without restarting the animation or the WebGL context. If the browser drops the WebGL context, it's rebuilt when the browser restores it.",
+  reducedMotion:
+    "Under `prefers-reduced-motion: reduce`, it holds a still frame instead of animating, and follows the setting live if it changes.",
+  apply: [
+    "Add the component file below as written, then render it as the background of the section I name (the hero if I don't name one). Keep that section's content, layout and text as they are.",
+    "The section gets `position: relative`, `overflow: hidden` and `isolation: isolate`. The component goes in as its first child with `className=\"absolute inset-0 -z-10\"`, so it fills the section and sits behind the content.",
+    "Give the section a solid background colour as well, as a fallback: without WebGL2 the canvas renders nothing.",
+  ],
+  rules: [
+    "It's a Client Component (`\"use client\"`). It renders fine from a Server Component page in the Next.js App Router.",
+    "Use at most a few per page, and one per section: each instance is a WebGL context, and browsers cap them (about 16).",
+    "Don't add your own requestAnimationFrame loop, resize handler or IntersectionObserver around it; it already handles all three.",
+  ],
+  checks: [
+    "Scroll it out of view and back: it resumes smoothly, and the browser's Performance panel shows no GPU work while it's off screen.",
+    "Resize the window: it fills the section with no stretching, seams or blank edges.",
+    "Turn on reduced motion: it shows a still frame.",
+    "Block WebGL (or use a browser without WebGL2): the section still shows its fallback background, with no errors that break the page.",
+  ],
+};
+
 /**
  * All components, in sidebar order. Add new entries here, then register the
  * preview in `previews.tsx`.
@@ -52,6 +98,33 @@ export const registry: RegistryEntry[] = [
     ],
     usageChildren: "Get started",
     themeToggle: false,
+    motion: {
+      intent:
+        "A hover state for a call-to-action button. A solid fill sweeps across the button from the {direction} edge while the label colour flips so it stays readable. It should feel quick and confident: fast at the start, settling softly at the end, never bouncy.",
+      trigger: hoverTrigger("filled state"),
+      states: [
+        "Fill: a solid layer behind the label that covers the whole button. At rest it is {direction|left=`scaleX(0)` with `transform-origin: left`|bottom=`scaleY(0)` with `transform-origin: bottom`}. When active it is at scale 1.",
+        "Label: its colour changes from the rest colour to the filled colour, at the same time and on the same curve as the fill.",
+        "Nothing else moves. The button's size, border, padding and label position stay the same.",
+      ],
+      timing: [
+        "Duration: {duration}ms for both the fill and the label colour, in and out.",
+        "Easing: `cubic-bezier(0.23, 1, 0.32, 1)` (a strong ease-out) for both.",
+        "No delay and no stagger: the fill and the label start together.",
+      ],
+      interruption: transitionInterruption("the fill"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove both transitions so the filled state appears instantly on hover and focus. Keep the state change itself.",
+      rules: [
+        "Animate the fill with `transform: scale` on its own absolutely positioned layer behind the label. Don't animate width, left, background-position or a gradient: those repaint every frame.",
+        "The button needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the fill on a negative z-index, so the fill is clipped to the button's rounded shape and stays behind the label.",
+      ],
+      checks: [
+        "Hover: the fill sweeps in from the {direction} edge over {duration}ms, and the label stays readable the whole way.",
+        "Move the pointer off halfway: the fill goes back from where it was, with no snap.",
+        ...hoverChecks("filled state"),
+      ],
+    },
     controls: [
       {
         type: "select",
@@ -97,6 +170,35 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageChildren: "Request Demo",
+    motion: {
+      intent:
+        "A hover state for a pill call-to-action. An ellipse in a second colour grows out of a point just past the bottom-right corner until it floods the whole pill, like ink spreading from the corner. It should feel smooth and even: eased in and out, never bouncy.",
+      trigger: hoverTrigger("flooded state"),
+      states: [
+        "Bloom: an ellipse (`border-radius: 50%`) behind the label, sized to the button plus 100px on each axis (`width/height: calc(100% + 100px)`) and positioned 50px outside the bottom-right corner (`right: -50px; bottom: -50px`). At full size it covers all four corners of the pill. At rest it is `scale(0)` with `transform-origin: bottom right`; when active it is `scale(1)`.",
+        "Label and arrow: they keep their colour and don't move. The label colour has to read on both the resting colour and the bloom colour.",
+        "Nothing else changes. The pill's size, padding and resting background stay the same.",
+      ],
+      timing: [
+        "Duration: {duration}ms, in and out.",
+        "Easing: `ease-in-out` (`cubic-bezier(0.42, 0, 0.58, 1)`).",
+        "No delay.",
+      ],
+      interruption: transitionInterruption("the bloom"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove the transition so the flooded state appears instantly on hover and focus. Keep the state change itself.",
+      rules: [
+        "Animate the bloom with `transform: scale` on its own absolutely positioned layer. Don't animate its width, height or border-radius: those trigger layout and paint every frame.",
+        "The pill needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the bloom on a negative z-index. Also add `mask-image: radial-gradient(white, black)` on the pill: without it Safari doesn't clip a transforming child to the rounded corners.",
+        "Give the bloom `pointer-events: none` so it never interferes with the hover.",
+      ],
+      checks: [
+        "Hover: the ellipse grows from just past the bottom-right corner over {duration}ms. At full size it covers the whole pill, including the rounded left end.",
+        "Move the pointer off halfway: the bloom shrinks back from where it was, with no snap.",
+        "In Safari: the pill's rounded corners stay clipped while the bloom grows.",
+        ...hoverChecks("flooded state"),
+      ],
+    },
     controls: [
       { type: "color", name: "color", label: "Button color", default: "#308970" },
       { type: "color", name: "bloomColor", label: "Bloom color", default: "#1C212B" },
@@ -115,7 +217,7 @@ export const registry: RegistryEntry[] = [
       { type: "text", name: "href", label: "Link", default: "/request-demo", always: true },
     ],
     promptNotes: [
-      "It renders an <a>; pass `href` and any other anchor props.",
+      "It renders an <a>; pass `href` and any other anchor props. The arrow is optional (`arrow={false}`).",
       "The pill never grows wider than its container (`max-w-full`); a long label wraps and stays centred beside the arrow.",
       "The original uses the Moderat typeface; the component inherits the site's font.",
     ],
@@ -136,6 +238,31 @@ export const registry: RegistryEntry[] = [
     ],
     usageChildren: "Explore Sophos Fusion",
     themeToggle: false,
+    motion: {
+      intent:
+        "A hover state for an outlined (ghost) pill button. The transparent pill fills solid and the label switches to the brand colour. It's a quick, linear colour change: fast enough to feel like instant feedback, soft enough not to flash.",
+      trigger: hoverTrigger("filled state"),
+      states: [
+        "Background: transparent → the fill colour.",
+        "Label: the outline colour → the hover text colour (the brand colour).",
+        "The border keeps its colour and width. Nothing moves or changes size.",
+      ],
+      timing: [
+        "Duration: {duration}ms for both the background and the label colour, in and out.",
+        "Easing: `linear` for both.",
+        "No delay: both change together.",
+      ],
+      interruption: transitionInterruption("the colour"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove the transition so the colours swap instantly. Keep the state change itself.",
+      rules: [
+        "Transition only `background-color` and `color`, not `all`, so the focus outline, border and layout never animate.",
+      ],
+      checks: [
+        "Hover: the pill fills and the label turns the brand colour within {duration}ms, with no flash or flicker.",
+        ...hoverChecks("filled state"),
+      ],
+    },
     controls: [
       { type: "color", name: "color", label: "Outline & text", default: "#FFFFFF" },
       { type: "color", name: "fillColor", label: "Fill color", default: "#FFFFFF" },
@@ -173,6 +300,33 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageChildren: "Learn about our model",
+    motion: {
+      intent:
+        "A hover and press state for a solid pill button. The background snaps from its resting colour to a bright accent on hover, and to a lighter tint while pressed. The original has no transition at all: the instant swap is what makes it feel crisp.",
+      trigger:
+        "Pointer hover, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this), and keyboard focus (`:focus-visible`) show the hover colour. Pressing (`:active`) shows the pressed colour on every device, including touch.",
+      states: [
+        "Background: resting colour → hover colour on hover and focus → pressed colour while pressed.",
+        "The label colour, size, padding and position never change.",
+      ],
+      timing: [
+        "Background colour: {duration}ms, `linear`.{duration|0= That's an instant swap, which matches the original. Don't add a transition.|*=}",
+        "No delay.",
+      ],
+      interruption:
+        "{duration|0=With an instant swap there's nothing to interrupt.|*=Use a CSS transition on `background-color`, so leaving mid-change reverses from the current colour.}",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, there's no transition: the colours swap instantly.",
+      rules: [
+        "Only `background-color` changes. Don't add scale, shadow or lift effects on hover or press.",
+      ],
+      checks: [
+        "Hover: the background turns the hover colour {duration|0=instantly|*=over {duration}ms}.",
+        "Press and hold: the background turns the pressed colour; releasing returns it to the hover colour.",
+        "Tab to the button: it shows the hover colour, plus a visible focus outline.",
+        "On a touch device: tapping shows the pressed colour briefly and doesn't leave the hover colour stuck.",
+      ],
+    },
     controls: [
       { type: "color", name: "color", label: "Button color", default: "#1C453B" },
       { type: "color", name: "hoverColor", label: "Hover color", default: "#FF6300" },
@@ -192,7 +346,6 @@ export const registry: RegistryEntry[] = [
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
-      "The swap is intentionally instant (duration 0), matching the original. Keep it unless asked otherwise.",
       "The original uses Montserrat at weight 600 (Google Font); the component inherits the site's font.",
     ],
   },
@@ -212,6 +365,34 @@ export const registry: RegistryEntry[] = [
     ],
     usageChildren: "Explore More",
     themeToggle: false,
+    motion: {
+      intent:
+        "A hover state for a pill call-to-action. A diagonal gradient opens out of the centre of the pill as an expanding circle until it covers the whole button. It should feel smooth and even, with a gentle ease, never bouncy.",
+      trigger: hoverTrigger("revealed state"),
+      states: [
+        "Gradient layer: covers the button behind the label, filled with `linear-gradient(315deg, <from> 0%, <to> 100%)`. At rest it is clipped to `clip-path: circle(0% at 50% 50%)`; when active it is `circle(100% at 50% 50%)`. A percentage radius is measured against the box's diagonal, so 100% reaches every corner whatever the button's width.",
+        "Label: it keeps its colour and doesn't move.",
+        "Nothing else changes. The pill's size, padding and resting background stay the same.",
+      ],
+      timing: [
+        "Duration: {duration}ms, in and out.",
+        "Easing: `cubic-bezier(0.4, 0, 0.2, 1)`.",
+        "No delay.",
+      ],
+      interruption: transitionInterruption("the circle"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove the transition so the gradient appears instantly on hover and focus. Keep the state change itself.",
+      rules: [
+        "Animate `clip-path: circle()` on the gradient layer. Don't scale a circle element instead: on a wide pill it either leaves the ends uncovered or needs an oversized element.",
+        "The pill needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the gradient layer on a negative z-index and `pointer-events: none`.",
+      ],
+      checks: [
+        "Hover: the circle opens from the exact centre over {duration}ms and covers both rounded ends.",
+        "Try a long label (a wide pill): the circle still covers the whole button at full size.",
+        "Move the pointer off halfway: the circle closes from where it was, with no snap.",
+        ...hoverChecks("revealed state"),
+      ],
+    },
     controls: [
       { type: "color", name: "color", label: "Button color", default: "#E3308C" },
       { type: "color", name: "gradientFrom", label: "Gradient from", default: "#410051" },
@@ -231,7 +412,7 @@ export const registry: RegistryEntry[] = [
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
-      "The pill never grows wider than its container (`max-w-full`), and a long label wraps onto a second centred line instead of overflowing. The reveal animates `clip-path: circle()` from 0% to 100% at the center; a percentage radius is relative to the box diagonal, so it covers any button width. Keep the easing cubic-bezier(0.4, 0, 0.2, 1).",
+      "The pill never grows wider than its container (`max-w-full`), and a long label wraps onto a second centred line instead of overflowing.",
       "Designed for dark backgrounds (the original sits on #0B0623).",
       "The original uses Mona Sans at weight 700 (Google Font); the component inherits the site's font.",
     ],
@@ -252,6 +433,34 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageChildren: "Read our blog",
+    motion: {
+      intent:
+        "A hover state for an outlined pill button. A solid, pill-shaped fill sweeps in from the left and keeps its rounded leading edge. The label colour changes more slowly, so it flips around the moment the fill passes the middle.",
+      trigger: hoverTrigger("filled state"),
+      states: [
+        "Fill: a solid layer that covers the button including its 1px border (`inset: -1px`), with fully rounded corners. At rest it is `clip-path: inset(0 100% 0 0 round 9999px)` (hidden to the left); when active it is `clip-path: inset(0 0 0 0 round 9999px)`.",
+        "Label: the outline colour → the hover text colour, on its own slower timing (below).",
+        "The border, size and padding stay the same. Nothing moves.",
+      ],
+      timing: [
+        "Fill: {duration}ms, `ease-in-out` (`cubic-bezier(0.42, 0, 0.58, 1)`).",
+        "Label colour: {duration*7/3}ms (7/3 of the fill), `cubic-bezier(0.86, 0, 0.07, 1)` (ease-in-out quint). This curve holds the old colour, flips sharply in the middle and then settles, so the label changes as the fill passes under it.",
+        "Both start together, with no delay.",
+      ],
+      interruption: transitionInterruption("the fill (and the label colour)"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove both transitions so the filled state appears instantly on hover and focus. Keep the state change itself.",
+      rules: [
+        "Reveal the fill with `clip-path: inset(... round 9999px)`. Don't use `scaleX`, which squashes the rounded end into an oval, and don't animate `width`, which triggers layout every frame.",
+        "The button needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the fill on a negative z-index.",
+      ],
+      checks: [
+        "Hover: the fill sweeps in from the left over {duration}ms, with a rounded leading edge the whole way.",
+        "The label flips around the halfway point of the sweep and has fully settled by {duration*7/3}ms.",
+        "Move the pointer off halfway: the fill goes back from where it was, with no snap.",
+        ...hoverChecks("filled state"),
+      ],
+    },
     controls: [
       { type: "color", name: "color", label: "Outline & text", default: "#6B00DF" },
       { type: "color", name: "fillColor", label: "Fill color", default: "#6B00DF" },
@@ -270,8 +479,6 @@ export const registry: RegistryEntry[] = [
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
-      "The fill is revealed with `clip-path: inset(0 100% 0 0 round 9999px)` → `inset(0 0 0 0 round 9999px)` so its leading edge stays rounded; don't swap it for scaleX, which squashes the rounded end.",
-      "The label color transition is intentionally slower (7/3 × duration) on cubic-bezier(0.86, 0, 0.07, 1), so it flips as the fill passes the middle. Keep both curves.",
       "The original uses the licensed Lota Grotesque at weight 400; the closest Google Font is Hanken Grotesk. The component inherits the site's font.",
     ],
   },
@@ -291,6 +498,39 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageProps: ['src="/images/report-cover.webp"', 'eyebrow="Whitepapers & research"', 'title="2026 Risk Exposure Report"'],
+    motion: {
+      intent:
+        "A hover state for a linked card with an image (a resource, blog post or case study). Hovering anywhere on the card slowly zooms the image inside its rounded frame: the picture grows, the frame stays put. It should feel calm and gentle, an invitation to click rather than a jump.",
+      trigger:
+        "Pointer hover anywhere on the card, not just the image, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same zoom. On touch there is no zoom; a tap just follows the link.",
+      states: [
+        "Image: `scale(1)` at rest → `scale({scale})` when active, from the centre (the default `transform-origin`).",
+        "Frame: the image's container keeps its size and its rounded corners, and clips the growing image.",
+        "Nothing else moves. The eyebrow, title and card layout stay the same.",
+      ],
+      timing: [
+        "Duration: {duration}ms, in and out.",
+        "Easing: CSS `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`).",
+        "No delay.",
+      ],
+      interruption: transitionInterruption("the zoom"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the image doesn't zoom at all: it stays at `scale(1)` on hover and focus. Don't swap the zoom for an instant jump.",
+      rules: [
+        "The whole card is one link, and the hover is on the card, so the zoom starts wherever the pointer enters the card.",
+        "Animate the image with `transform: scale`. Don't animate its width, height or `background-size`.",
+        "The frame needs `overflow: hidden` plus `isolation: isolate`; without the isolation, Safari loses the rounded corners while the image is transformed.",
+        "If the site has its own Image component, put the transition on the element that renders the image and keep it filling the frame with `object-fit: cover`.",
+      ],
+      checks: [
+        "Hover the title text, not the image: the image still zooms to {scale}× over {duration}ms.",
+        "The frame's rounded corners stay rounded while the image grows, including in Safari.",
+        "Move the pointer off halfway: the image shrinks back from where it was, with no snap.",
+        "Tab to the card: the image zooms and the card shows a visible focus ring.",
+        "Turn on reduced motion: the image doesn't zoom.",
+        "On a touch device: tapping doesn't leave the image stuck zoomed.",
+      ],
+    },
     controls: [
       { type: "number", name: "scale", label: "Zoom scale", default: 1.1, min: 1, max: 1.3, step: 0.01 },
       { type: "number", name: "duration", label: "Duration", default: 300, min: 100, max: 1000, step: 10, unit: "ms" },
@@ -313,9 +553,8 @@ export const registry: RegistryEntry[] = [
     ],
     promptNotes: [
       "The whole card is one <a>: hovering anywhere on it (or keyboard focus) zooms the image. Pass `href` and any other anchor props.",
-      "Matches the original: image scales 1 → 1.1 over 300ms with CSS `ease` (change it with `easing`, any CSS timing function), inside a 2:1 frame with 20px corners. Only `transform` animates; the frame clips with overflow-hidden + isolate so the corners stay rounded in Safari.",
+      "The easing is a prop too (`easing`, any CSS timing function); it defaults to the original's `ease`.",
       "`eyebrow` and `title` are optional; omit both to use it as a bare zoom image. The eyebrow renders as a lowercase `/label` in the site's mono font (the original uses Space Mono); the title inherits the site font (the original uses Cabinet Grotesk).",
-      "Hover is gated to devices that can hover (Tailwind's `hover:` variant), so touch devices don't get a stuck zoom. With prefers-reduced-motion the image doesn't zoom.",
       "It renders a plain <img>. If the site has its own Image component (e.g. components/common/Image), swap it in with fill/object-cover and keep the transition classes on it.",
       "No client JavaScript, so it works in a Server Component.",
     ],
@@ -336,6 +575,42 @@ export const registry: RegistryEntry[] = [
       },
     ],
     usageProps: ['src="/images/catalog-tile.png"'],
+    motion: {
+      intent:
+        "A hover state for a tall image tile that links somewhere. At rest the tile shows only its image and title. On hover a \"{linkLabel}\" link fades up from the bottom over a rising gradient{lift|true=, and the whole card lifts slightly|*=}. Three layers move on two timings, so it feels layered and soft rather than a single snap.",
+      trigger:
+        "Pointer hover anywhere on the card, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same revealed state. On devices without hover (`@media (hover: none)`, i.e. touch), the label and gradient are always shown, so the link is never hidden.",
+      states: [
+        "Link label: `opacity: 0; transform: translateY(5px)` at rest → `opacity: 1; translateY(0)` when active. It sits 22px from the bottom and 20px from the left.",
+        "Chevron after the label: `translateX(0)` → `translateX(4px)`, a small nudge to the right.",
+        "Gradient: a layer 60% of the card's height, pinned to the bottom, in the card colour: solid for its bottom 20%, fading to transparent at the top (`linear-gradient(0deg, <card colour>, <card colour> 20%, transparent)`). `opacity: 0.5; translateY(30px)` at rest → `opacity: 1; translateY(0)` when active. It keeps the label readable over the image.",
+        "{lift|true=Card: `translateY(0)`, no shadow → `translateY(-2px)` with `box-shadow: 0 18px 20px rgba(97, 97, 97, 0.4)`.|*=Card: it doesn't lift or get a shadow; only the gradient and the label move.}",
+        "The image and the title stay still.",
+      ],
+      timing: [
+        "Label and chevron: 300ms, CSS `ease`.",
+        "Gradient: 600ms, CSS `ease`. It's twice as slow as the label, so the label arrives first and the gradient settles in behind it.",
+        "{lift|true=Card lift and shadow: 300ms, CSS `ease`.|*=No card lift.}",
+        "Everything starts together, with no delay or stagger.",
+      ],
+      interruption: transitionInterruption("each layer"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, nothing moves: no rise, no nudge{lift|true=, no lift|*=}. The label and gradient keep their opacity fade, so the link still appears on hover.",
+      rules: [
+        "The whole card is one link, and the hover is on the card, so every layer reacts wherever the pointer enters it.",
+        "Animate only `opacity` and `transform` on the label, chevron and gradient. Don't animate `height`, `bottom` or the gradient stops.",
+        "The card needs `overflow: hidden` so the gradient's 30px resting offset is clipped, and a stacking context (`isolation: isolate`) with the image on a negative z-index.",
+        "Give the gradient `pointer-events: none`.",
+        "Don't hide the label on touch: show the label and gradient at full opacity under `@media (hover: none)`.",
+      ],
+      checks: [
+        "Hover: the label fades up 5px and the chevron nudges right over 300ms, while the gradient rises and finishes later, at 600ms.",
+        "Move the pointer off halfway: every layer goes back from where it was, with no snap.",
+        "Tab to the card: the same reveal happens, plus a visible focus ring.",
+        "Turn on reduced motion: the label and gradient fade in, but nothing moves.",
+        "On a touch device: the label and gradient are visible without tapping.",
+      ],
+    },
     controls: [
       { type: "text", name: "title", label: "Title", default: "Halcyon Cloud", always: true },
       { type: "text", name: "linkLabel", label: "Link label", default: "Learn More" },
@@ -346,10 +621,8 @@ export const registry: RegistryEntry[] = [
     ],
     promptNotes: [
       "The whole card is one <a>; pass `href` and any other anchor props. Keyboard focus triggers the same reveal as hover.",
-      "Motion matches the original (measured at 992px+): the label goes from opacity 0 / translateY(5px) to 1 / 0 over 300ms `ease`, and its chevron nudges 4px right. A gradient in the card color (solid for the bottom 20%, 60% of the card tall) rises from opacity .5 / translateY(30px) over 600ms, and the card lifts 2px with a `0 18px 20px rgba(97,97,97,.4)` shadow over 300ms. Keep these unless asked.",
       "The card is fluid: `width` (default 220) is a maximum, so it shrinks in a narrower column, and the height follows `aspectRatio` (default \"220 / 280\", the original; e.g. \"220 / 411\" for the tall variant). Pass `width=\"fill\"` to fill a grid cell. Corners are 14px. The image fills the card with object-cover, so export tile art at that ratio with any background baked in, or transparent to let `color` show through.",
-      "On devices without hover (touch), the label and gradient are always shown so the link isn't hidden. With prefers-reduced-motion, nothing moves; the label still fades in.",
-      "Only opacity and transform animate. No client JavaScript, so it works in a Server Component.",
+      "No client JavaScript, so it works in a Server Component.",
       "It renders a plain <img>. If the site has its own Image component (e.g. components/common/Image), swap it in with fill/object-cover and keep the `absolute inset-0 -z-10` classes.",
       "The original uses Inter; the component inherits the site's font.",
     ],
@@ -792,6 +1065,29 @@ export const registry: RegistryEntry[] = [
     themeToggle: false,
     fullBleed: true,
     usageProps: ['className="absolute inset-0 -z-10"'],
+    motion: {
+      implementation: "required",
+      intent:
+        "A full-bleed animated background for a hero or feature section: soft, flowing light seen through vertical fluted glass. Bands of colour slowly warp and drift behind {stripeCount} vertical stripes that refract them, with a faint colour fringe. It should feel ambient and slow, something you notice rather than something that pulls focus from the content.",
+      trigger: shader.trigger,
+      states: [
+        "Colour: a gradient ramp from the light colour through the mid colour to the dark colour, wrapped around the centre so the colour radiates out from the middle of the section.",
+        "Motion: the colour field warps with a liquid distortion that evolves over time (warp {warpAmplitude}, warp frequency {warpFrequency}). This is the only thing that moves.",
+        "Glass: {stripeCount} vertical stripes, each refracting the colour beneath it (dispersion {stripeDispersion}), plus a chromatic aberration of {chromaticAberration} that grows towards the edges. The stripes stay still; the colour moves under them.",
+      ],
+      timing: shader.timing,
+      interruption: shader.interruption,
+      reducedMotion: shader.reducedMotion,
+      responsive:
+        "It fills its section at any size and re-renders on resize. Rendering resolution is capped at {maxPixelRatio}× device pixels; the effect is soft, so lower it for very large sections.",
+      rules: [...shader.rules, "Keep the defaults (`AURORA_DEFAULTS`) for anything I haven't set."],
+      checks: [
+        "It animates continuously behind the section's content: slow, smooth warping colour under {stripeCount} vertical stripes, with no flicker.",
+        "The section's text and buttons sit above it and stay readable.",
+        ...shader.checks,
+      ],
+      apply: shader.apply,
+    },
     controls: [
       { type: "color", name: "colorLight", label: "Light", default: "#96ABD7" },
       { type: "color", name: "colorMid", label: "Mid", default: "#5973C2" },
@@ -806,12 +1102,9 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "paused", label: "Paused", default: false },
     ],
     promptNotes: [
-      "It's a named export like the other components: `import { Aurora } from \"@/components/animations/aurora\"`. It doesn't use `cn`, so ignore the note about it.",
-      "It renders a bare `<canvas>` that fills its parent. Put it as the first child of a `relative overflow-hidden` section with `className=\"absolute inset-0 -z-10\"` (add `isolate` to the section so content sits above it).",
-      "No dependencies: raw WebGL2 with five passes (gradient → polar wrap → time-based liquify → chromatic aberration → vertical blinds). The gradient and polar passes are cached until colors or size change. Prop changes update live without recreating the WebGL context.",
-      "Keep the defaults (`AURORA_DEFAULTS`) unless asked. Lower `maxPixelRatio` for very large sections, since the effect is soft.",
-      "It renders every animation frame while on screen; off screen (IntersectionObserver), with `paused`, or with prefers-reduced-motion the loop idles on the last frame. A lost WebGL context is rebuilt when the browser restores it. The canvas is aria-hidden. Without WebGL2 it renders nothing, so give the section a background color as a fallback.",
-      "It is a Client Component (\"use client\"). Don't mount many on one page - each is a WebGL context and browsers cap them (~16).",
+      "It's a named export: `import { Aurora } from \"@/components/animations/aurora\"`.",
+      "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
+      "Raw WebGL2 with five passes (gradient → polar wrap → time-based liquify → chromatic aberration → vertical blinds). The gradient and polar passes are cached until the colours or size change.",
     ],
   },
   {
@@ -831,6 +1124,34 @@ export const registry: RegistryEntry[] = [
     themeToggle: false,
     fullBleed: true,
     usageProps: ['className="absolute inset-0 -z-10"'],
+    motion: {
+      implementation: "required",
+      intent:
+        "A full-bleed animated background for a dark hero or section: a deep-blue gradient with a curtain of stacked, softly lit layers that drift slowly and undulate, fading out towards the bottom so the content below sits on solid colour. It should feel calm and premium, slow enough to read as texture.",
+      trigger: shader.trigger,
+      states: [
+        "Backdrop: a vertical gradient from the top colour to the bottom colour. It starts at {gradientStart} of the section's height and reaches the bottom colour at {gradientEnd} (values above 1 are past the bottom edge).",
+        "Layers: a curtain of stacked layer edges, lit from the light layer colour near the top to the dark layer colour near the bottom, overlay-blended on the backdrop at {intensity} opacity.",
+        "Motion: the layers drift at {flow} layers per second{flow|0= (so they don't drift)|*=}; a negative value reverses the direction. A wave of {wave} layer widths travels along them{wave|0= (0 means rigid layers)|*=}. This is the only thing that moves.",
+        "Fade: the layers fade out between {fadeStart} and {fadeEnd} of the section's height, leaving only the gradient at the bottom.",
+      ],
+      timing: shader.timing,
+      interruption: shader.interruption,
+      reducedMotion: shader.reducedMotion,
+      responsive:
+        "It fills its section at any size and re-renders on resize. Rendering resolution is capped at {maxPixelRatio}× device pixels; lower it for very large sections.",
+      rules: [
+        ...shader.rules,
+        "Use light text on top: the background runs from deep blue to black.",
+        "Keep the defaults (`CURTAIN_DEFAULTS`) for anything I haven't set.",
+      ],
+      checks: [
+        "It animates continuously behind the section's content: layers drifting slowly and undulating, fading out towards the bottom, with no flicker or banding.",
+        "The section's text and buttons sit above it and stay readable.",
+        ...shader.checks,
+      ],
+      apply: shader.apply,
+    },
     controls: [
       { type: "color", name: "colorTop", label: "Top", default: "#002F79" },
       { type: "color", name: "colorBottom", label: "Bottom", default: "#000000" },
@@ -848,12 +1169,9 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "paused", label: "Paused", default: false },
     ],
     promptNotes: [
-      "It's a named export like the other components: `import { Curtain } from \"@/components/animations/curtain\"`. It doesn't use `cn`, so ignore the note about it.",
-      "It renders a bare `<canvas>` (aria-hidden) that fills its parent. Put it as the first child of a `relative overflow-hidden` section with `className=\"absolute inset-0 -z-10\"` (add `isolate` to the section so content sits above it). Use light text on top: the background is dark blue to black.",
-      "No dependencies: raw WebGL2, a single full-screen pass. The layer shapes come from a fitted field and per-layer shading measured from the original footage, then overlay-blended over a top-to-bottom gradient and faded out toward the bottom. Keep the defaults (`CURTAIN_DEFAULTS`) unless asked.",
-      "Prop changes update live without recreating the WebGL context. Reduced motion holds a still frame, as does `paused` or `speed={0}`.",
-      "It renders every animation frame while on screen and idles off screen (IntersectionObserver). A lost WebGL context is rebuilt when the browser restores it. Without WebGL2 it renders nothing, so give the section a dark background (e.g. #002F79 or black) as a fallback.",
-      "It is a Client Component (\"use client\"). Don't mount many on one page - each is a WebGL context and browsers cap them (~16).",
+      "It's a named export: `import { Curtain } from \"@/components/animations/curtain\"`.",
+      "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
+      "Raw WebGL2, a single full-screen pass. The layer shapes come from a fitted field and per-layer shading measured from the original footage. For the fallback background, use a dark colour such as the top colour or black.",
     ],
   },
 ];
