@@ -162,6 +162,7 @@ export const registry: RegistryEntry[] = [
       "An ellipse blooms out of the bottom-right corner and floods the pill, used on Ironclad website",
     category: "interactions",
     group: "button-hovers",
+    source: "https://ironcladapp.com/",
     componentName: "CornerBloomButton",
     files: [
       {
@@ -229,6 +230,7 @@ export const registry: RegistryEntry[] = [
       "An outlined ghost pill snaps to a solid fill with brand-colored text, used on Sophos website",
     category: "interactions",
     group: "button-hovers",
+    source: "https://www.sophos.com/en-us",
     componentName: "GhostFillButton",
     files: [
       {
@@ -292,6 +294,7 @@ export const registry: RegistryEntry[] = [
       "A deep green pill snaps to bright orange on hover, with a lighter press state, used on Ziing website",
     category: "interactions",
     group: "button-hovers",
+    source: "https://www.ziing.com/",
     componentName: "ColorSnapButton",
     files: [
       {
@@ -356,6 +359,7 @@ export const registry: RegistryEntry[] = [
       "A plum-to-pink gradient opens out of the center of the pill as an expanding circle, used on Seemplicity website",
     category: "interactions",
     group: "button-hovers",
+    source: "https://seemplicity.ai/",
     componentName: "CircleRevealButton",
     files: [
       {
@@ -424,6 +428,7 @@ export const registry: RegistryEntry[] = [
       "An outlined pill fills from the left with a rounded sweep while the label flips to white, used on eight25 website",
     category: "interactions",
     group: "button-hovers",
+    source: "https://www.eight25media.com/",
     componentName: "OutlineSweepButton",
     defaultTheme: "light",
     files: [
@@ -489,6 +494,7 @@ export const registry: RegistryEntry[] = [
       "Hovering the card scales its image inside a fixed rounded frame, used on Seemplicity website",
     category: "interactions",
     group: "image-hovers",
+    source: "https://seemplicity.ai/",
     componentName: "ZoomImageCard",
     defaultTheme: "light",
     files: [
@@ -566,6 +572,7 @@ export const registry: RegistryEntry[] = [
       "Hovering the image tile lifts it and fades up a Learn More link over a rising gradient, used on Qlik website",
     category: "interactions",
     group: "image-hovers",
+    source: "https://www.qlik.com/us",
     componentName: "RevealLinkCard",
     defaultTheme: "light",
     files: [
@@ -634,6 +641,7 @@ export const registry: RegistryEntry[] = [
       "A dimmed statement fills in letter by letter as it scrolls through the viewport, after fading up into place, used on NetApp AI website",
     category: "animations",
     group: "scroll-triggers",
+    source: "https://netapp.ai/",
     componentName: "ScrollTextReveal",
     files: [
       {
@@ -686,6 +694,7 @@ export const registry: RegistryEntry[] = [
       "An endless strip of customer logos scrolls sideways at a steady pace and pauses on hover, used on Ironclad website",
     category: "animations",
     group: "carousels",
+    source: "https://ironcladapp.com/",
     componentName: "LogoMarquee",
     files: [
       {
@@ -748,6 +757,7 @@ export const registry: RegistryEntry[] = [
       "A row of slim, faded testimonial cards where the hovered one grows to fill the row and slides its quote in, used on Ironclad website",
     category: "animations",
     group: "carousels",
+    source: "https://ironcladapp.com/",
     componentName: "ExpandingCards",
     files: [
       {
@@ -790,6 +800,7 @@ export const registry: RegistryEntry[] = [
       "One testimonial card in focus while its neighbours peek in blurred and faded, moved by arrows, swipes or a row of logo tabs, used on Sophos website",
     category: "animations",
     group: "carousels",
+    source: "https://www.sophos.com/en-us",
     componentName: "SpotlightSlider",
     files: [
       {
@@ -838,6 +849,7 @@ export const registry: RegistryEntry[] = [
       "A row of award badges on soft pink and purple glows that two pill arrows beside the heading move one card at a time, used on Seemplicity website",
     category: "animations",
     group: "carousels",
+    source: "https://seemplicity.ai/why/",
     componentName: "AwardsCarousel",
     files: [
       {
@@ -882,6 +894,7 @@ export const registry: RegistryEntry[] = [
       "Cards stick as you scroll, and each one slides up, shrinks, blurs and fades as the next card covers it, used on Seemplicity website",
     category: "animations",
     group: "pin-scrollers",
+    source: "https://seemplicity.ai/",
     componentName: "StackingCards",
     files: [
       {
@@ -920,6 +933,7 @@ export const registry: RegistryEntry[] = [
       "A media column pins in place while text blocks scroll past, crossfading to the visual for the block in focus, used on Sophos website",
     category: "animations",
     group: "pin-scrollers",
+    source: "https://www.sophos.com/en-us",
     componentName: "FocusScroll",
     files: [
       {
@@ -969,6 +983,7 @@ export const registry: RegistryEntry[] = [
       "Rows of heading, copy and art pin as you scroll, and each new row slides up over the last, folding it into a strip, used on NetApp AI website",
     category: "animations",
     group: "pin-scrollers",
+    source: "https://netapp.ai/technology/ai-performance-scale/",
     componentName: "CollapsingStack",
     files: [
       {
@@ -1010,6 +1025,7 @@ export const registry: RegistryEntry[] = [
       "Autoplaying tabs where a fill sweeps across the active tab as its time runs out, then the media panel slides to the next one, used on Seemplicity website",
     category: "animations",
     group: "tabs",
+    source: "https://seemplicity.ai/",
     componentName: "ProgressTabs",
     files: [
       {
@@ -1055,6 +1071,7 @@ export const registry: RegistryEntry[] = [
       "Soft, flowing light seen through vertical fluted glass, a WebGL shader background used on NetApp website",
     category: "shaders",
     group: "backgrounds",
+    source: "https://netapp.ai/",
     componentName: "Aurora",
     files: [
       {
@@ -1114,6 +1131,7 @@ export const registry: RegistryEntry[] = [
       "A deep-blue gradient with a curtain of slowly drifting, undulating layers that fades out toward the bottom, a WebGL shader background used on NetApp website",
     category: "shaders",
     group: "backgrounds",
+    source: "https://netapp.ai/",
     componentName: "Curtain",
     files: [
       {

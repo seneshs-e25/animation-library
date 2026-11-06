@@ -101,6 +101,8 @@ export type RegistryEntry = {
   category: CategoryId;
   /** Group id inside the category, e.g. `button-hovers`. */
   group: string;
+  /** The live site the effect was taken from, linked on the component page and in the brief. */
+  source?: string;
   /** Exported component name, used in the usage snippet and prompt. */
   componentName: string;
   files: RegistryFile[];

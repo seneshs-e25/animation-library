@@ -17,6 +17,31 @@ import { cn } from "@/lib/utils";
 
 type Source = { name: string; code: string; html: string };
 
+/**
+ * Renders the description with the site name in "used on <Site> website"
+ * linked to the source, e.g. "used on [Ironclad] website".
+ */
+function Description({ text, source }: { text: string; source?: string }) {
+  const match = source ? text.match(/^(.*used on )(.+?)( website)$/) : null;
+  if (!match) return text;
+  const [, before, site, after] = match;
+  return (
+    <>
+      {before}
+      <a
+        href={source}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+      >
+        {site}
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+      {after}
+    </>
+  );
+}
+
 export function ComponentDetail({ slug, sources }: { slug: string; sources: Source[] }) {
   const entry = getEntry(slug)!;
   const { prev, next } = getNeighbors(slug);
@@ -43,7 +68,9 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
       <div className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-4xl font-medium tracking-tight md:text-5xl">{entry.title}</h1>
-          <p className="mt-3 text-lg text-muted-foreground">{entry.description}</p>
+          <p className="mt-3 text-lg text-muted-foreground">
+            <Description text={entry.description} source={entry.source} />
+          </p>
         </div>
         <nav className="flex shrink-0 gap-2" aria-label="Component navigation">
           <NavArrow href={prev && `/components/${prev.slug}`} label={prev?.title} dir="prev" />

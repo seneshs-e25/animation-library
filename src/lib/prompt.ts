@@ -192,7 +192,7 @@ React + Tailwind CSS v4. It's a working example of the spec; adapt it to the sit
   return `# ${entry.title}: animation brief
 
 Add the "${entry.title}" animation to this site. ${f(m.intent)}
-
+${entry.source ? `\nSeen live on ${entry.source}. Open it to compare the motion if anything in the spec is unclear.\n` : ""}
 ${intro}
 
 ## Motion spec
@@ -240,7 +240,7 @@ function buildInstallPrompt(entry: RegistryEntry, sources: Source[], values: Con
   return `Add the "${entry.title}" animation to this project.
 
 ${entry.description}.
-
+${entry.source ? `\nSeen live on ${entry.source}.\n` : ""}
 Stack: React + Tailwind CSS v4 (Next.js App Router). If the project uses a different setup, adapt the component while keeping the same motion.
 ${deps}
 Create the following file${sources.length > 1 ? "s" : ""} in an \`animations\` folder inside the project's components directory (e.g. \`src/components/animations/\` if the project uses \`src/\`):
