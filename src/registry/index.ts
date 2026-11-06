@@ -163,7 +163,6 @@ export const registry: RegistryEntry[] = [
     category: "interactions",
     group: "button-hovers",
     source: "https://ironcladapp.com/",
-    recreated: "WordPress",
     componentName: "CornerBloomButton",
     files: [
       {
@@ -361,7 +360,6 @@ export const registry: RegistryEntry[] = [
     category: "interactions",
     group: "button-hovers",
     source: "https://seemplicity.ai/",
-    recreated: "WordPress",
     componentName: "CircleRevealButton",
     files: [
       {
@@ -497,7 +495,6 @@ export const registry: RegistryEntry[] = [
     category: "interactions",
     group: "image-hovers",
     source: "https://seemplicity.ai/",
-    recreated: "WordPress",
     componentName: "ZoomImageCard",
     defaultTheme: "light",
     files: [
