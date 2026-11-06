@@ -167,7 +167,9 @@ function buildMotionPrompt(entry: RegistryEntry, sources: Source[], values: Cont
         ]
       : [
           "Match the motion spec exactly: the same properties, values, durations and easing curves. Don't change them unless I ask.",
-          "Use CSS transitions or plain JS. Don't add an animation library.",
+          entry.dependencies?.length
+            ? `Use ${entry.dependencies.join(" and ")} as the reference implementation does. Don't swap it for a different animation library or rebuild it in plain CSS.`
+            : "Use CSS transitions or plain JS. Don't add an animation library.",
         ]),
     ...(m.rules ?? []).map(f),
   ];

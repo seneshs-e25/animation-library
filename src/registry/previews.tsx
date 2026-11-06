@@ -237,46 +237,27 @@ function AnalystScreen({ step }: { step: (typeof analystSteps)[number] }) {
 }
 
 /** Fictional rows for the collapsing stack demo. */
-const stackRows = [
+/** The three rows from NetApp AI's "Independent and massive scale" section, with its live art (Contentstack URLs). */
+const netappRows = [
   {
-    title: "More compute and throughput",
-    body: "As nodes join the cluster, each one brings more CPU, memory and network to the workload.",
-    lit: [3, 9, 14, 22, 27, 31, 38, 44],
+    title: "More CPU and throughput",
+    body: "As nodes are added to an AFX cluster, more CPU, RAM, and network resources are introduced into the workload.",
+    image: "blt5bf7fde929bd9e96/6ab8b5dfc01db3a5695527c7/More_CPU_and_throughput.webp",
+    alt: "Linear performance increases with NetApp AFX node additions",
   },
   {
     title: "More storage capacity and disk performance",
-    body: "If the requirement is capacity, add shelves on their own and leave compute as it is.",
-    lit: [1, 6, 12, 17, 25, 30, 36, 41, 47],
+    body: "Conversely, if the requirement is capacity, only shelves would need to be added to the mix.",
+    image: "blt35480dfc053fadbf/6ab8b63ac01db33cbe5527cb/Increased_storage_and_disk_speed.webp",
+    alt: "Two servers added to a row of five, with rising Storage and Speed gauges showing scalable capacity and performance.",
   },
   {
-    title: "Instant volume moves",
-    body: "Move a volume between nodes without copying data, so rebalancing a busy cluster takes seconds instead of a maintenance window.",
-    lit: [2, 8, 15, 19, 24, 33, 39, 46],
+    title: "Zero Copy Volume Move (ZCVM)",
+    body: "AFX relies on the Zero Copy Volume Move (ZCVM) technology to relocate volumes using metadata updates instead of copying the data.",
+    image: "blt9580c53715fe37cb/6ab8b86bc418c36c78f9f9a4/Zero_Copy_Volume_Move_(ZCVM).webp",
+    alt: "Linear performance increases with NetApp AFX node additions",
   },
 ];
-
-/** Light, NetApp-style abstract art: a soft gradient with a tile grid. */
-function StackArt({ lit, index }: { lit: number[]; index: number }) {
-  return (
-    <div
-      className="relative overflow-hidden"
-      style={{
-        background: `linear-gradient(${160 + index * 25}deg, #E3ECFA 0%, #C9D9F4 55%, #B4C9EE 100%)`,
-      }}
-    >
-      <div className="absolute inset-x-[8%] top-[18%] grid grid-cols-12 gap-2 [mask-image:linear-gradient(90deg,transparent,#000_25%,#000_75%,transparent)]">
-        {Array.from({ length: 48 }, (_, i) => (
-          <div
-            key={i}
-            className="aspect-square rounded-[4px]"
-            style={{ background: lit.includes(i) ? "#FFFFFF" : `rgba(70, 120, 220, ${0.25 + ((i * 7) % 5) * 0.08})` }}
-          />
-        ))}
-      </div>
-      <div className="absolute right-[8%] bottom-[12%] h-2 w-[40%] rounded-full bg-[#3E6BD8]/70" />
-    </div>
-  );
-}
 
 /** Fictional testimonials for the expanding cards demo. */
 const stories = [
@@ -503,36 +484,49 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   ),
   "collapsing-stack": ({ values }) => (
     // Sticky needs a scroll container, so the preview scrolls inside itself. It's
-    // tall enough for the pile to pin (sticky top + two 260px slots), as on a laptop.
+    // tall enough for the pile to pin (sticky top + two 260px bands), as on a laptop.
     <div className={`${interTight.className} h-[820px] overflow-y-auto overscroll-contain bg-white px-[30px]`}>
       <p className="pt-12 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
-      <div className="flex flex-col gap-3 pt-16 pb-[60px] lg:gap-5 lg:pb-[100px]">
-        <p className="text-xs tracking-[0.15em] text-[#0054D7] uppercase lg:text-base">Independent scale of capacity and compute</p>
-        <h2 className="text-[42px] leading-[1.1] font-light tracking-[-0.01em] text-black lg:text-[70px]">
+      <div className="flex flex-col gap-5 pt-16 pb-10 min-[992px]:gap-[30px] min-[992px]:pb-[100px]">
+        <p className="text-xs tracking-[0.15em] text-[#0054D7] uppercase min-[992px]:text-base">
+          Independent scale of capacity and compute nodes
+        </p>
+        <h2 className="text-[42px] leading-[1.1] font-light tracking-[-0.01em] text-black min-[992px]:text-[70px]">
           Independent and massive scale
         </h2>
-        <p className="max-w-[720px] text-base leading-[1.6] text-[#333] lg:text-xl">
-          Add nodes for more compute and throughput, or add shelves for more capacity and disk performance.
+        <p className="max-w-[720px] text-lg leading-[1.6] text-[#333]">
+          You can add storage nodes to get more CPU and throughput or add shelves to get more storage capacity and disk
+          performance.
         </p>
       </div>
       <CollapsingStack
-        key={`${values.stickyTop}-${values.peek}-${values.padding}-${values.speed}`}
+        key={`${values.stickyTop}-${values.peek}-${values.padding}-${values.speed}-${values.scrub}`}
         stickyTop={values.stickyTop as number}
         peek={values.peek as number}
         padding={values.padding as number}
         speed={values.speed as number}
-        smoothing={values.smoothing as number}
+        scrub={values.scrub as number}
         radius={values.radius as number}
         background={values.background as string}
         borderColor={values.borderColor as string}
-        items={stackRows.map((row, i) => ({
-          title: <h3 className="text-[28px] leading-[1.1] font-light text-black lg:text-[36px]">{row.title}</h3>,
+        items={netappRows.map((row) => ({
+          title: (
+            <h3 className="text-[28px] leading-[1.1] font-light tracking-[-0.01em] text-black min-[992px]:text-[36px] min-[992px]:tracking-normal">
+              {row.title}
+            </h3>
+          ),
           description: (
-            <p className="text-base leading-[1.6] tracking-[0.02em] text-[#333] lg:text-xl lg:leading-[1.6] lg:tracking-[0.01em]">
+            <p className="text-base leading-[1.6] tracking-[0.02em] text-[#333] min-[992px]:text-xl min-[992px]:tracking-[0.01em]">
               {row.body}
             </p>
           ),
-          media: <StackArt lit={row.lit} index={i} />,
+          media: (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/${row.image}?width=1666&format=pjpg&disable=upscale`}
+              alt={row.alt}
+            />
+          ),
         }))}
       />
       <div className="h-[600px]" />

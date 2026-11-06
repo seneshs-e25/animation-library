@@ -1,354 +1,478 @@
 "use client";
 
 import * as React from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { cn } from "@/lib/utils";
 
 export type CollapsingStackItem = {
-  /** Row heading. Stays visible when the row is folded into the pile. */
+  /** Row heading. Stays whole (one line or three) on a covered row. */
   title: React.ReactNode;
   /** Copy under the heading. Folds away when the next row covers this one. */
   description?: React.ReactNode;
-  /** Visual (image, video, illustration). Fills the art box. */
-  media: React.ReactNode;
+  /** Optional link or button under the copy; folds away with it. */
+  action?: React.ReactNode;
+  /** Visual (image or video). Fills the art window, top-aligned. */
+  media?: React.ReactNode;
 };
 
 type CollapsingStackProps = Omit<React.ComponentProps<"div">, "children"> & {
   items: CollapsingStackItem[];
   /** Distance from the top of the scroll area where the pile pins, in px (the site header). */
   stickyTop?: number;
-  /** Height of art left showing on a folded row from `minWidth` up, in px. */
+  /** Height of art a covered row keeps showing from 992px wide, in px (79 / 170 below). */
   peek?: number;
-  /** Same, from 768px to `minWidth`. */
-  tabletPeek?: number;
-  /** Same, below 768px. */
-  mobilePeek?: number;
-  /** Padding above and below each row from `minWidth` up, in px. */
+  /** Space above and below each row from 992px wide, in px (10 below). */
   padding?: number;
-  /** Same, below `minWidth`. */
-  mobilePadding?: number;
-  /** Space between the text column and the art from `minWidth` up, in px. */
-  gap?: number;
-  /** Width of the text column from `minWidth` up, in px. */
-  textWidth?: number;
-  /** Art box aspect ratio (width / height). */
-  aspectRatio?: number;
-  /** Art corner radius from `minWidth` up, in px. Halved below it. */
-  radius?: number;
-  /** Scroll distance per pixel of stacking. 1.5 = rows move at 2/3 of the scroll speed. */
+  /** Scroll distance per pixel of card travel. 1.5 = rows move at 2/3 of the scroll speed. */
   speed?: number;
-  /** Seconds the rows take to catch up with the scroll. 0 (the original) = locked to the scrollbar. */
-  smoothing?: number;
+  /** GSAP ScrollTrigger `scrub`: seconds the deal takes to catch up with the scroll. */
+  scrub?: number;
+  /** Art corner radius from 992px wide, in px (10 below). */
+  radius?: number;
   /** Row background. Rows are opaque so each one covers the one below. */
   background?: string;
   /** Colour of the hairline above each row. */
   borderColor?: string;
-  /** Viewport width (px) from which text and art sit side by side. */
-  minWidth?: number;
 };
 
+/** Layout effect on the client, plain effect on the server, no warning. */
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+
 /**
- * Collapsing stack: a list of rows (heading + copy, and art) pins as you
- * scroll, and each row slides up over the previous one. The covered row
- * folds its copy away and crops its art to a short strip, so the section
- * ends as a pile of headings with the last row open. Used on the NetApp AI
- * website.
+ * Collapsing stack: rows (heading + copy, and art) are dealt into a pile as
+ * you scroll. Each row travels up, lands at its slot under the header and
+ * stays while the next row rises over it, folding its copy away and closing
+ * its art to a strip, so the section ends as a pile of headings with the
+ * last row open. Ported from the NetApp AI site's `CardStack` (a GSAP
+ * ScrollTrigger scrub) and its `vertical-cards` section.
  *
- * How it works (a port of the original's GSAP ScrollTrigger setup):
- * - Rows are measured in normal flow. Each gets a slot in the pile:
- *   `padding + peek + padding` apart (260px) when text sits beside the art,
- *   or `padding + heading line + 20 + peek + padding` (150px) when the text
- *   sits above it on small screens, plus any extra heading lines.
- * - In stack mode the list is `position: sticky` and rows are absolutely
- *   placed at their slot, pushed down by `translateY` so they start exactly
- *   where they sat in flow. Scrolling shrinks those offsets at 1/`speed` of
- *   the scroll distance, so rows slide up into the pile.
- * - As row i+1 closes in on row i (distance `r`), row i's copy folds
- *   (`grid-template-rows: 1fr → 0fr`, opacity 1 → 0) over 75% of the row
- *   height minus its slot, and its art is cropped from the bottom with
- *   `clip-path` to `peek + r` (less the open copy when it sits above the
- *   art), keeping a constant gap above the incoming row.
- * - Everything is written straight to the DOM once per animation frame;
- *   React doesn't re-render while scrolling.
+ * How it works:
+ * - The list is one `position: sticky` box, the assembled pile's height,
+ *   inside a wrapper as tall as the rows laid end to end, plus the extra
+ *   scroll `speed` asks for, so switching the stack on never changes the
+ *   page's length.
+ * - Every row's open height, art height and heading height are MEASURED on
+ *   each ScrollTrigger refresh (one deliberate reflow, never per frame).
+ *   Each row sits absolute at its slot (the bands above it, summed) and is
+ *   dealt by a `y` transform: its remaining travel from where plain flow
+ *   would put it, walked to zero by the trigger's progress.
+ * - A covered row's copy folds (`grid-template-rows` + opacity) from the
+ *   moment the next row overlaps a quarter of it to the moment that row
+ *   lands; its art closes with a `clip-path` inset off its bottom edge,
+ *   radius riding inside the clip, one pixel per pixel the next row
+ *   advances. The image itself never moves or resizes.
+ * - Values are rounded to whole pixels and only written when they change.
  *
- * Stacking turns on when `stickyTop` plus two slots fits in the scroll
- * area's height (as in the original); otherwise it's a plain list. Works in
- * any scroll container. Reduced motion: plain list, all copy open.
+ * Reduced motion, or a viewport too short to watch the deal
+ * (`stickyTop + 2 bands`): every row open, in plain flow. Works inside any
+ * scroll container (ScrollTrigger is pointed at the nearest one).
  */
 export function CollapsingStack({
   items,
   stickyTop = 100,
   peek = 200,
-  tabletPeek = 170,
-  mobilePeek = 79,
   padding = 30,
-  mobilePadding = 10,
-  gap = 80,
-  textWidth = 367,
-  aspectRatio = 833 / 533,
-  radius = 20,
   speed = 1.5,
-  smoothing = 0,
+  scrub = 1,
+  radius = 20,
   background = "#FFFFFF",
   borderColor = "#F4F1ED",
-  minWidth = 1024,
   className,
   style,
   ...props
 }: CollapsingStackProps) {
-  const rootRef = React.useRef<HTMLDivElement>(null);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const listRef = React.useRef<HTMLUListElement>(null);
   const id = React.useId().replace(/[^a-zA-Z0-9-]/g, "");
-
-  // Smoothing doesn't change the layout, so it's read live instead of re-measuring.
-  const smoothingRef = React.useRef(smoothing);
-  React.useEffect(() => {
-    smoothingRef.current = smoothing;
-  }, [smoothing]);
   const count = items.length;
+  const last = count - 1;
 
-  React.useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const rows = Array.from(root.querySelectorAll<HTMLElement>("[data-row]"));
-    const heads = rows.map((r) => r.querySelector<HTMLElement>("[data-heading]"));
-    const descs = rows.map((r) => r.querySelector<HTMLElement>("[data-desc]"));
-    const arts = rows.map((r) => r.querySelector<HTMLElement>("[data-art]"));
-    const last = rows.length - 1;
-    if (last < 1) return;
+  // Runs before paint, so the first thing on screen is already the deck.
+  useIsomorphicLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const list = listRef.current;
+    if (!wrap || !list) return;
+    const cards = Array.from(list.querySelectorAll<HTMLElement>("[data-vc-row]"));
+    // One card is a pile of one: nothing to travel, nothing to cover it.
+    if (cards.length < 2) return;
 
-    const scroller = getScrollParent(root);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    gsap.registerPlugin(ScrollTrigger);
+    // A phone hiding its address bar resizes the viewport mid-scroll; don't re-measure for it.
+    ScrollTrigger.config({ ignoreMobileResize: true });
 
-    let on = false;
-    let stacked = false; // text above art (small screens)
-    let peekPx = peek;
-    let artRadius = radius;
-    let w = 0; // total distance rows travel, px
-    let runway = 0; // scroll distance that drives it, px
-    let flowTop: number[] = [];
-    let slot: number[] = [];
-    let fold: number[] = [];
-    let artH: number[] = [];
-    let descH: number[] = [];
-    let current = 0;
-    let target = 0;
-    let lastT = NaN;
-    let raf = 0;
-    let prevTime = 0;
+    const lastIndex = cards.length - 1;
+    const heads = cards.map((c) => c.querySelector<HTMLElement>("[data-vc-heading]"));
+    const descs = cards.map((c) => c.querySelector<HTMLElement>("[data-vc-desc]"));
+    const arts = cards.map((c) => c.querySelector<HTMLElement>("[data-vc-art]"));
+    const scroller = scrollParent(wrap);
 
-    const reset = () => {
-      delete root.dataset.stack;
-      root.style.removeProperty("--cs-h");
-      root.style.removeProperty("--cs-pile");
-      rows.forEach((r) => {
-        r.style.removeProperty("--cs-slot");
-        r.style.removeProperty("--cs-live");
-        r.style.transform = "";
+    /** Every card open: what both fallbacks show, and what `measure` reads. */
+    const openAll = () => {
+      cards.forEach((c) => {
+        c.setAttribute("data-vc-open", "");
+        c.setAttribute("data-vc-copy", "");
       });
-      descs.forEach((d) => {
+      descs.forEach((d) => d?.removeAttribute("inert"));
+    };
+
+    /** The server's composition: the end of the deal, last card open. */
+    const restoreSettled = () => {
+      cards.forEach((c, i) => {
+        if (i === lastIndex) {
+          c.setAttribute("data-vc-open", "");
+          c.setAttribute("data-vc-copy", "");
+        } else {
+          c.removeAttribute("data-vc-open");
+          c.removeAttribute("data-vc-copy");
+        }
+      });
+      descs.forEach((d, i) => {
         if (!d) return;
-        d.style.gridTemplateRows = "";
-        d.style.opacity = "";
-        d.inert = false;
-      });
-      arts.forEach((a) => a && (a.style.clipPath = ""));
-    };
-
-    const viewTop = () => (scroller === window ? 0 : (scroller as HTMLElement).getBoundingClientRect().top);
-    const viewHeight = () => (scroller === window ? window.innerHeight : (scroller as HTMLElement).clientHeight);
-
-    const measure = () => {
-      reset();
-      on = false;
-      lastT = NaN;
-      if (reduce.matches) return;
-
-      const vw = window.innerWidth;
-      stacked = vw < minWidth;
-      peekPx = vw >= minWidth ? peek : vw >= 768 ? tabletPeek : mobilePeek;
-      artRadius = stacked ? radius / 2 : radius;
-      const pad = stacked ? mobilePadding : padding;
-
-      const rowH = rows.map((r) => r.getBoundingClientRect().height);
-      artH = arts.map((a) => a?.getBoundingClientRect().height ?? 0);
-      descH = descs.map((d) => (d?.firstElementChild as HTMLElement | null)?.scrollHeight ?? 0);
-      const headH = heads.map((h) => h?.scrollHeight ?? 0);
-      // One line of heading: the part of the heading that's always visible.
-      const lineH = heads.map((h) => lineHeight(h?.firstElementChild ?? h));
-      const rowGap = stacked ? parseFloat(getComputedStyle(rows[0]).rowGap) || 0 : 0;
-
-      // Slot spacing: what stays visible of a folded row.
-      const pitch = stacked ? pad * 2 + lineH[0] + rowGap + peekPx : pad * 2 + peekPx;
-      const step = headH.map((h, i) => pitch + Math.max(0, h - (stacked ? lineH[i] : peekPx)));
-
-      slot = [];
-      flowTop = [];
-      let a = 0;
-      let b = 0;
-      for (let i = 0; i <= last; i++) {
-        slot[i] = a;
-        flowTop[i] = b;
-        a += step[i];
-        b += rowH[i];
-      }
-      w = Math.max(0, flowTop[last] - slot[last]);
-      fold = rowH.map((h, i) => Math.max(1, 0.75 * h - step[i]));
-      // Each row is at least tall enough to hide the rows under it.
-      const live = rowH.map((h, i) => {
-        let m = h;
-        for (let e = 0; e < i; e++) m = Math.max(m, rowH[e] - (slot[i] - slot[e]));
-        return m;
-      });
-
-      if (w <= 0 || stickyTop + 2 * Math.max(...step) > viewHeight()) return;
-
-      runway = w * Math.max(1, speed);
-      rows.forEach((r, i) => {
-        r.style.setProperty("--cs-slot", `${slot[i]}px`);
-        r.style.setProperty("--cs-live", `${live[i]}px`);
-      });
-      root.style.setProperty("--cs-pile", `${slot[last] + live[last]}px`);
-      root.style.setProperty("--cs-h", `${flowTop[last] + rowH[last] + runway - w}px`);
-      root.dataset.stack = "";
-      on = true;
-      current = target = progress();
-      render(current);
-    };
-
-    const progress = () => {
-      const top = root.getBoundingClientRect().top - viewTop();
-      return Math.min(1, Math.max(0, (stickyTop - top) / runway));
-    };
-
-    const render = (p: number) => {
-      const t = Math.round(p * w);
-      if (t === lastT) return;
-      lastT = t;
-      const off = rows.map((_, i) => Math.max(0, Math.round(flowTop[i] - slot[i] - t)));
-      rows.forEach((r, i) => {
-        r.style.transform = off[i] ? `translate3d(0,${off[i]}px,0)` : "";
-        const dist = i < last ? off[i + 1] - off[i] : Infinity;
-        const folded = Math.min(1, Math.max(0, 1 - dist / fold[i]));
-        const d = descs[i];
-        if (d) {
-          d.style.gridTemplateRows = `${1 - folded}fr`;
-          d.style.opacity = `${1 - folded}`;
-          d.inert = folded >= 1;
-        }
-        const art = arts[i];
-        if (art) {
-          // Open copy above the art pushes it down, so less of it can show.
-          const above = stacked ? descH[i] * (1 - folded) : 0;
-          const visible = Math.max(peekPx, Math.min(artH[i], peekPx + dist - above));
-          const crop = Math.round(artH[i] - visible);
-          art.style.clipPath = crop > 0 ? `inset(0 0 ${crop}px 0 round ${artRadius}px)` : "";
-        }
+        if (i === lastIndex) d.removeAttribute("inert");
+        else d.setAttribute("inert", "");
       });
     };
 
-    const tick = (now: number) => {
-      const dt = prevTime ? (now - prevTime) / 1000 : 1 / 60;
-      prevTime = now;
-      const tau = smoothingRef.current / 4;
-      current = tau > 0 ? current + (target - current) * (1 - Math.exp(-dt / tau)) : target;
-      if (Math.abs(target - current) * w < 0.5) current = target;
-      render(current);
-      raf = current === target ? 0 : requestAnimationFrame(tick);
+    /** Every inline value this component writes, taken back off. */
+    const clearAll = () => {
+      wrap.style.removeProperty("--vc-flow-h");
+      wrap.style.removeProperty("--vc-pile-h");
+      cards.forEach((c) => {
+        c.style.removeProperty("--vc-card-h-live");
+        c.style.removeProperty("--vc-slot");
+        gsap.set(c, { clearProps: "transform" });
+      });
+      descs.forEach((d) => d && gsap.set(d, { clearProps: "gridTemplateRows,opacity" }));
+      arts.forEach((a) => a && gsap.set(a, { clearProps: "clipPath" }));
     };
 
-    const onScroll = () => {
-      if (!on) return;
-      target = progress();
-      if (!raf) {
-        prevTime = 0;
-        raf = requestAnimationFrame(tick);
-      }
-    };
+    const mm = gsap.matchMedia();
 
-    let lastWidth = -1;
-    let lastHeight = -1;
-    const onResize = () => {
-      // Our own height writes don't change the layout; only width and viewport height do.
-      const width = root.clientWidth;
-      const height = viewHeight();
-      if (width === lastWidth && height === lastHeight) return;
-      lastWidth = width;
-      lastHeight = height;
-      measure();
-    };
-
-    onResize();
-    const ro = new ResizeObserver(onResize);
-    ro.observe(root);
-    window.addEventListener("resize", onResize);
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    reduce.addEventListener("change", measure);
-    // Web fonts change heading heights after first paint.
-    document.fonts?.ready.then(() => {
-      lastWidth = -1;
-      onResize();
+    // Reduced motion: every card open (not the settled pile, which would leave
+    // the earlier cards' copy folded away with no way to reach it).
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      openAll();
+      return () => restoreSettled();
     });
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      // Measured on refresh; never read from a scrub frame.
+      let pitch = 0;
+      let pin = 0;
+      let artClosed = Number.NaN;
+      let artRadius = 0;
+      let copyClosed = 0;
+      let descBelow = false;
+      let maxDealt = 0;
+      let runway = 0;
+      let fits = true;
+      let bands: number[] = [];
+      let slots: number[] = [];
+      let flowTop: number[] = [];
+      let foldSpans: number[] = [];
+      let artOpens: number[] = [];
+      let descHeights: number[] = [];
+
+      // What each write last wrote, so a frame that lands on the same numbers writes nothing.
+      let lastDealt = Number.NaN;
+      let lastOpen = -1;
+      const lastTravel = cards.map(() => Number.NaN);
+      const lastDescFold = cards.map(() => Number.NaN);
+      const lastArtCut = cards.map(() => Number.NaN);
+      const invalidate = () => {
+        lastDealt = Number.NaN;
+        lastOpen = -1;
+        lastTravel.fill(Number.NaN);
+        lastDescFold.fill(Number.NaN);
+        lastArtCut.fill(Number.NaN);
+      };
+
+      const measure = () => {
+        const wrapStyles = getComputedStyle(wrap);
+        const cardStyles = getComputedStyle(cards[0]);
+        pitch = parseFloat(wrapStyles.getPropertyValue("--vc-pitch"));
+        const pace = parseFloat(wrapStyles.getPropertyValue("--vc-speed")) || 1;
+        artClosed = parseFloat(cardStyles.getPropertyValue("--vc-art-closed"));
+        copyClosed = parseFloat(cardStyles.getPropertyValue("--vc-copy-closed")) || 0;
+        // 1 while the copy stands above the art (the column layout), 0 beside it.
+        descBelow = parseFloat(cardStyles.getPropertyValue("--vc-desc-below")) === 1;
+
+        // THE ONE DELIBERATE REFLOW: every card back in flow and open, so each
+        // row's own natural open geometry is read. Nothing paints in between.
+        const wasOpen = cards.map((c) => [c.hasAttribute("data-vc-open"), c.hasAttribute("data-vc-copy")]);
+        wrap.removeAttribute("data-vc-stack");
+        clearAll();
+        openAll();
+
+        // A stacked card carries the row gap as its own padding-bottom.
+        const gap = parseFloat(getComputedStyle(list).rowGap) || 0;
+        const heights = cards.map((c) => c.getBoundingClientRect().height + gap);
+        artOpens = arts.map((a) => a?.getBoundingClientRect().height ?? 0);
+        // How much taller each heading is than the one-line allowance the pitch is drawn around.
+        const headExcess = heads.map((h) => (h ? Math.max(0, h.scrollHeight - copyClosed) : 0));
+        descHeights = descs.map((d) => d?.firstElementChild?.scrollHeight ?? 0);
+
+        cards.forEach((c, i) => {
+          if (!wasOpen[i][0]) c.removeAttribute("data-vc-open");
+          if (!wasOpen[i][1]) c.removeAttribute("data-vc-copy");
+        });
+        // Back to the pile before the pin and radius are read (they only resolve while it's on).
+        wrap.dataset.vcStack = "on";
+
+        const artEl = arts.find(Boolean) ?? null;
+        artRadius = artEl ? parseFloat(getComputedStyle(artEl).borderTopLeftRadius) || 0 : 0;
+
+        // Each card's band: the pitch, plus any extra heading lines where the
+        // title sits over the art (beside it, it costs nothing until it's
+        // taller than the art's closed band).
+        const bandSlack = descBelow ? 0 : Math.max(0, artClosed - copyClosed);
+        bands = cards.map((_, i) => pitch + Math.max(0, (headExcess[i] ?? 0) - bandSlack));
+
+        // Where each card comes to rest: the bands above it, summed.
+        slots = [];
+        let stacked = 0;
+        for (let i = 0; i <= lastIndex; i += 1) {
+          slots[i] = stacked;
+          stacked += bands[i];
+        }
+        cards.forEach((c, i) => c.style.setProperty("--vc-slot", `${slots[i]}px`));
+
+        // Where flow would put each card, so how far it travels to its slot.
+        flowTop = [];
+        heights.reduce((sum, h, i) => {
+          flowTop[i] = sum;
+          return sum + h;
+        }, 0);
+        maxDealt = Math.max(0, flowTop[lastIndex] - slots[lastIndex]);
+        // The fold starts when the next card has overlapped a quarter of this one.
+        foldSpans = heights.map((h, i) => Math.max(1, 0.75 * h - bands[i]));
+
+        // A card is the lid on every card above it, so it reserves at least as
+        // far down as the tallest of them reaches.
+        const reserved = heights.map((h, i) => {
+          let need = h;
+          for (let above = 0; above < i; above += 1) {
+            need = Math.max(need, heights[above] - (slots[i] - slots[above]));
+          }
+          return need;
+        });
+        cards.forEach((c, i) => c.style.setProperty("--vc-card-h-live", `${reserved[i]}px`));
+
+        const flowH = Math.max(0, flowTop[lastIndex] + heights[lastIndex] - gap);
+        const pileH = slots[lastIndex] + reserved[lastIndex];
+        wrap.style.setProperty("--vc-flow-h", `${flowH}px`);
+        wrap.style.setProperty("--vc-pile-h", `${pileH}px`);
+
+        // `speed` px of scroll per px of travel; the wrapper grows by the difference.
+        runway = maxDealt * Math.max(1, pace);
+        wrap.style.setProperty("--vc-runway", `${runway - maxDealt}px`);
+
+        // Can the deal be watched at all? The pin plus the two bands in play.
+        pin = parseFloat(getComputedStyle(list).top) || 0;
+        const available = scroller ? scroller.clientHeight : (window.visualViewport?.height ?? window.innerHeight);
+        fits = pin + 2 * Math.max(...bands) <= available && maxDealt > 0;
+        if (fits) {
+          wrap.dataset.vcStack = "on";
+        } else {
+          delete wrap.dataset.vcStack;
+          clearAll();
+          openAll();
+        }
+      };
+
+      /** A card's travel. A docked card loses its transform (an identity transform would still layer it and shimmer its text). */
+      const deal = (card: HTMLElement, i: number, travel: number) => {
+        if (travel === lastTravel[i]) return;
+        lastTravel[i] = travel;
+        if (travel) gsap.set(card, { y: travel });
+        else gsap.set(card, { clearProps: "transform" });
+      };
+
+      /** The copy, folded away bottom-to-top, faded in step, inert once gone. The heading is never touched. */
+      const foldCopy = (i: number, fold: number, standing: number) => {
+        if (fold === lastDescFold[i]) return;
+        lastDescFold[i] = fold;
+        const desc = descs[i];
+        if (!desc) return;
+        gsap.set(desc, { gridTemplateRows: `${standing}fr`, opacity: standing });
+        if (fold >= 1) desc.setAttribute("inert", "");
+        else desc.removeAttribute("inert");
+      };
+
+      /** The art window, clipped shut by the incoming card (less the copy still standing above it on the column layout). */
+      const squeezeArt = (i: number, cover: number, standing: number) => {
+        const art = arts[i];
+        const artOpen = artOpens[i];
+        if (!art || !artOpen || !Number.isFinite(artClosed)) return;
+        const above = descBelow ? descHeights[i] * standing : 0;
+        const artH = Math.max(artClosed, Math.min(artOpen, artClosed + cover - above));
+        const cut = Math.round(artOpen - artH);
+        if (cut === lastArtCut[i]) return;
+        lastArtCut[i] = cut;
+        if (cut) gsap.set(art, { clipPath: `inset(0px 0px ${cut}px 0px round ${artRadius}px)` });
+        else gsap.set(art, { clearProps: "clipPath" });
+      };
+
+      /** One scrub frame: the trigger's progress applied to the deck. */
+      const apply = (progress: number) => {
+        if (!fits || maxDealt <= 0) return;
+        const dealt = Math.round(progress * maxDealt);
+        if (dealt === lastDealt) return;
+        lastDealt = dealt;
+
+        let open = 0;
+        const travels = cards.map((_, i) => {
+          const travel = Math.max(0, Math.round(flowTop[i] - slots[i] - dealt));
+          if (travel === 0) open = i;
+          return travel;
+        });
+        cards.forEach((card, i) => {
+          const travel = travels[i];
+          deal(card, i, travel);
+          // How much closer the next card is than plain flow puts it. The last card is never covered.
+          const cover = i < lastIndex ? travels[i + 1] - travel : Infinity;
+          const fold = Math.min(1, Math.max(0, 1 - cover / foldSpans[i]));
+          const standing = 1 - fold;
+          foldCopy(i, fold, standing);
+          squeezeArt(i, cover, standing);
+        });
+        if (open !== lastOpen) {
+          lastOpen = open;
+          cards.forEach((c, i) => {
+            if (i >= open) c.setAttribute("data-vc-open", "");
+            else c.removeAttribute("data-vc-open");
+          });
+        }
+      };
+
+      const trigger = ScrollTrigger.create({
+        trigger: wrap,
+        scroller: scroller ?? undefined,
+        // The deal begins the moment the list pins and spends exactly the runway.
+        start: () => `top top+=${pin}`,
+        end: () => `+=${Math.max(1, runway)}`,
+        // A soft scrub: progress eases toward the scroll, still fully reversible.
+        scrub,
+        onRefreshInit: measure,
+        onRefresh: (self) => {
+          invalidate();
+          apply(self.progress);
+        },
+        onUpdate: (self) => apply(self.progress),
+      });
+
+      // Pinch zoom and mobile chrome change the visual viewport without a
+      // resize event; re-measure once it settles (debounced).
+      const vv = window.visualViewport;
+      let viewportTimer = 0;
+      const onViewport = () => {
+        window.clearTimeout(viewportTimer);
+        viewportTimer = window.setTimeout(() => ScrollTrigger.refresh(), 200);
+      };
+      vv?.addEventListener("resize", onViewport);
+      // Web fonts change heading heights: re-measure when they arrive.
+      document.fonts?.ready.then(() => ScrollTrigger.refresh());
+
+      return () => {
+        window.clearTimeout(viewportTimer);
+        vv?.removeEventListener("resize", onViewport);
+        trigger.kill();
+        wrap.style.removeProperty("--vc-runway");
+        clearAll();
+        restoreSettled();
+        delete wrap.dataset.vcStack;
+      };
+    });
+
     return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      window.removeEventListener("resize", onResize);
-      scroller.removeEventListener("scroll", onScroll);
-      reduce.removeEventListener("change", measure);
-      reset();
+      mm.revert();
+      clearAll();
+      restoreSettled();
+      delete wrap.dataset.vcStack;
     };
-  }, [count, stickyTop, peek, tabletPeek, mobilePeek, padding, mobilePadding, gap, textWidth, aspectRatio, radius, speed, minWidth]);
+  }, [count, stickyTop, peek, padding, speed, scrub]);
 
   const s = `[data-collapsing-stack="${id}"]`;
+  const lgPitch = padding * 2 + peek;
 
   return (
     <div
-      ref={rootRef}
-      className={cn("relative w-full min-w-0", className)}
+      ref={wrapRef}
+      className={cn("w-full", className)}
+      data-collapsing-stack={id}
       style={
         {
-          "--cs-top": `${stickyTop}px`,
-          "--cs-pad": `${mobilePadding}px`,
-          "--cs-pad-lg": `${padding}px`,
-          "--cs-gap": `${gap}px`,
-          "--cs-text-w": `${textWidth}px`,
-          "--cs-ratio": aspectRatio,
-          "--cs-radius": `${radius}px`,
-          "--cs-bg": background,
-          "--cs-border": borderColor,
+          "--vc-count": count,
+          "--vc-top": `${stickyTop}px`,
+          "--vc-pad": `${padding}px`,
+          "--vc-peek": `${peek}px`,
+          "--vc-pitch-lg": `${lgPitch}px`,
+          "--vc-radius": `${radius}px`,
+          "--vc-bg": background,
+          "--vc-border": borderColor,
+          "--vc-speed": speed,
           ...style,
         } as React.CSSProperties
       }
-      data-collapsing-stack={id}
       {...props}
     >
+      {/*
+        Layout and states from the original's vertical-cards section. The pile
+        metrics are its frames: a 150px band and 376px card on phones, 240px
+        from 768px, `padding + peek + padding` (260px) and 593px from 992px.
+      */}
       <style>{`
-${s} [data-row]{display:flex;flex-direction:column;gap:20px;padding:calc(var(--cs-pad) - 1px) 0 var(--cs-pad);border-top:1px solid var(--cs-border);background:var(--cs-bg)}
-${s} [data-desc-inner]{padding-top:16px}
-${s} [data-art]{position:relative;overflow:hidden;border-radius:calc(var(--cs-radius) / 2);aspect-ratio:var(--cs-ratio)}
-@media (min-width:${minWidth}px){
-${s} [data-row]{flex-direction:row;align-items:flex-start;gap:var(--cs-gap);padding:calc(var(--cs-pad-lg) - 1px) 0 var(--cs-pad-lg)}
-${s} [data-text]{width:var(--cs-text-w);flex-shrink:0}
-${s} [data-desc-inner]{padding-top:40px}
-${s} [data-art]{flex:1;min-width:0;border-radius:var(--cs-radius)}
-}
-${s}[data-stack]{height:var(--cs-h)}
-${s}[data-stack] [data-list]{position:sticky;top:var(--cs-top);height:var(--cs-pile)}
-${s}[data-stack] [data-row]{position:absolute;inset-inline:0;top:var(--cs-slot);min-height:var(--cs-live)}`}</style>
-
-      <ul data-list className="relative">
+${s}{--vc-pitch:150px;--vc-card-h:376px}
+@media (min-width:768px){${s}{--vc-pitch:240px}}
+@media (min-width:992px){${s}{--vc-pitch:var(--vc-pitch-lg);--vc-card-h:593px}}
+${s}[data-vc-stack]{height:calc(var(--vc-flow-h,calc(var(--vc-count) * var(--vc-card-h))) + var(--vc-runway,0px))}
+${s}>ul{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+${s}[data-vc-stack]>ul{position:sticky;top:var(--vc-top);gap:0;height:var(--vc-pile-h,calc((var(--vc-count) - 1) * var(--vc-pitch) + var(--vc-card-h)))}
+${s} [data-vc-row]{--vc-copy-closed:31px;--vc-art-closed:79px;--vc-art-h:var(--vc-art-closed);--vc-desc-below:1;display:flex;flex-direction:column;gap:20px;border-top:1px solid var(--vc-border);background:var(--vc-bg);padding-top:9px}
+${s} [data-vc-row][data-vc-open]{--vc-art-h:auto}
+${s}[data-vc-stack] [data-vc-row]{position:absolute;left:0;right:0;top:var(--vc-slot,calc(var(--vc-index) * var(--vc-pitch)));min-height:var(--vc-card-h-live,var(--vc-card-h));padding-bottom:10px}
+${s} [data-vc-copycol]{flex-shrink:0}
+${s} [data-vc-desc]{display:grid;grid-template-rows:0fr;opacity:0}
+${s} [data-vc-row][data-vc-copy] [data-vc-desc]{grid-template-rows:1fr;opacity:1}
+${s} [data-vc-desc]>div{min-height:0;overflow:hidden}
+${s} [data-vc-desc]>div>div{display:flex;flex-direction:column;align-items:flex-start;gap:20px;padding-top:15.85px}
+${s} [data-vc-art]{position:relative;aspect-ratio:330/211;height:var(--vc-art-h);overflow:hidden;border-radius:10px}
+${s}[data-vc-stack] [data-vc-art]{height:auto}
+${s} [data-vc-art]>*{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+@media (min-width:768px){${s} [data-vc-row]{--vc-art-closed:170px}}
+@media (min-width:992px){
+${s}>ul{gap:30px}
+${s} [data-vc-row]{--vc-copy-closed:40px;--vc-art-closed:var(--vc-peek);--vc-desc-below:0;flex-direction:row;align-items:flex-start;gap:80px;padding-top:calc(var(--vc-pad) - 1px)}
+${s}[data-vc-stack] [data-vc-row]{padding-bottom:var(--vc-pad)}
+${s} [data-vc-copycol]{width:367px}
+${s} [data-vc-desc]>div>div{gap:40px;padding-top:40px}
+${s} [data-vc-art]{aspect-ratio:833/533;min-width:0;flex:1;border-radius:var(--vc-radius)}
+}`}</style>
+      <ul ref={listRef}>
         {items.map((item, i) => (
-          <li key={i} data-row>
-            <div data-text>
-              <div data-heading>{item.title}</div>
-              {item.description && (
-                <div data-desc className="grid grid-rows-[1fr]">
-                  <div className="min-h-0 overflow-hidden">
-                    <div data-desc-inner>{item.description}</div>
+          <li
+            key={i}
+            data-vc-row
+            style={{ "--vc-index": i } as React.CSSProperties}
+            // The settled state: the end of the deal, with the last card open.
+            {...(i === last ? { "data-vc-open": "", "data-vc-copy": "" } : {})}
+          >
+            <div data-vc-copycol>
+              <div data-vc-heading>{item.title}</div>
+              {(item.description || item.action) && (
+                <div data-vc-desc inert={i !== last}>
+                  <div>
+                    <div>
+                      {item.description}
+                      {item.action}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-            <div data-art>
-              <div className="absolute inset-0 *:size-full *:object-cover">{item.media}</div>
+            <div data-vc-art className={cn(!item.media && "bg-black")}>
+              {item.media}
             </div>
           </li>
         ))}
@@ -357,19 +481,10 @@ ${s}[data-stack] [data-row]{position:absolute;inset-inline:0;top:var(--cs-slot);
   );
 }
 
-/** Computed line height of an element, in px. */
-function lineHeight(el: Element | null): number {
-  if (!el) return 0;
-  const cs = getComputedStyle(el);
-  const lh = parseFloat(cs.lineHeight);
-  return Number.isFinite(lh) ? lh : parseFloat(cs.fontSize) * 1.2;
-}
-
-/** Nearest ancestor that scrolls vertically, or the window. */
-function getScrollParent(el: HTMLElement): HTMLElement | Window {
-  for (let p = el.parentElement; p; p = p.parentElement) {
-    const oy = getComputedStyle(p).overflowY;
-    if (oy === "auto" || oy === "scroll") return p;
+/** Nearest ancestor that scrolls vertically, or null for the window. */
+function scrollParent(el: HTMLElement): HTMLElement | null {
+  for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+    if (/(auto|scroll|overlay)/.test(getComputedStyle(p).overflowY)) return p;
   }
-  return window;
+  return null;
 }
