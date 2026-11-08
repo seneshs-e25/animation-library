@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import type { ControlValues } from "./types";
 import { FillSweepButton } from "./interactions/button-hovers/fill-sweep-button";
 import { CornerBloomButton } from "./interactions/button-hovers/corner-bloom-button";
@@ -10,6 +10,8 @@ import { CircleRevealButton } from "./interactions/button-hovers/circle-reveal-b
 import { OutlineSweepButton } from "./interactions/button-hovers/outline-sweep-button";
 import { ZoomImageCard } from "./interactions/image-hovers/zoom-image-card";
 import { RevealLinkCard } from "./interactions/image-hovers/reveal-link-card";
+import { RisingCopyCard } from "./interactions/image-hovers/rising-copy-card";
+import { BentoGrid, type BentoTile } from "./interactions/image-hovers/bento-grid";
 import { LogoMarquee } from "./animations/carousels/logo-marquee";
 import { StackingCards } from "./animations/pin-scrollers/stacking-cards";
 import { FocusScroll } from "./animations/pin-scrollers/focus-scroll";
@@ -18,26 +20,65 @@ import { ExpandingCards } from "./animations/carousels/expanding-cards";
 import { SpotlightSlider, SpotlightSlide } from "./animations/carousels/spotlight-slider";
 import { AwardsCarousel } from "./animations/carousels/awards-carousel";
 import { ScrollTextReveal } from "./animations/scroll-triggers/scroll-text-reveal";
+import { CountUp } from "./animations/scroll-triggers/count-up";
+import { ScrollColorBackground } from "./animations/scroll-triggers/scroll-color-background";
+import { FaqAccordion } from "./animations/accordions/faq-accordion";
 import { ProgressTabs } from "./animations/tabs/progress-tabs";
 import { Hanken_Grotesk, Inter_Tight, Lexend_Exa, Mona_Sans, Space_Mono } from "next/font/google";
 import { Aurora } from "./shaders/backgrounds/aurora";
 import { Curtain } from "./shaders/backgrounds/curtain";
 
-/** Skeleton stand-in for real card content: a media block and text lines. */
-function PlaceholderCard({ index }: { index: number }) {
-  const bar = "rounded-full bg-white/[0.08]";
+/** The four "problem" cards from the Seemplicity homepage, with its live images and copy. */
+const seemplicityUpload = (path: string) => `https://seemplicity.ai/wp-content/uploads/${path}`;
+const seemplicityProblems = [
+  {
+    image: "2026/04/action_matters_image1.webp",
+    title: "AI Infiltration",
+    lead: "Machine-speed attacks with AI exploits",
+    body: "Human-led defenses can\u2019t keep up with 10x threat volume.",
+  },
+  {
+    image: "2026/04/action_matters_image2.webp",
+    title: "Fragmented Noise",
+    lead: "Siloed tools and unprioritized alerts",
+    body: "Critical risks stay buried under mountains of disconnected data.",
+  },
+  {
+    image: "2026/04/action_matters_image3.webp",
+    title: "Unclear Ownership",
+    lead: "Unowned assets and misrouted ticketing",
+    body: "Tickets get misrouted, work stalls, and remediation cycles drag on.",
+  },
+  {
+    image: "2026/04/action_matters_image4_2x.webp",
+    title: "Manual Reporting",
+    lead: "Progress tracked via spreadsheets and emails",
+    body: "Compliance falls behind the paces of modern, evolving threats.",
+  },
+];
+
+/** One Seemplicity problem card: image on the left, icon, title and copy on the right. */
+function SeemplicityCard({ image, title, lead, body }: (typeof seemplicityProblems)[number]) {
   return (
-    <div className="grid h-full min-h-[inherit] grid-cols-1 md:grid-cols-[1.1fr_1fr]">
-      <div className="m-3 rounded-[14px] bg-white/[0.04] ring-1 ring-white/[0.06] ring-inset" />
-      <div className="flex flex-col justify-center gap-3 p-8 md:p-12">
-        <span className="mb-2 font-mono text-xs text-white/40">0{index + 1}</span>
-        <div className={`${bar} h-5 w-2/3 bg-white/[0.12]`} />
-        <div className={`${bar} h-3 w-full`} />
-        <div className={`${bar} h-3 w-full`} />
-        <div className={`${bar} h-3 w-1/2`} />
-        <div className="h-5" />
-        <div className={`${bar} h-3 w-full`} />
-        <div className={`${bar} h-3 w-full`} />
+    <div className={`${monaSans.className} grid h-full min-h-[inherit] grid-cols-1 text-white md:grid-cols-[53.5%_1fr]`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={seemplicityUpload(image)}
+        alt=""
+        className="h-40 w-full object-cover md:h-full"
+      />
+      <div className="flex flex-col justify-between gap-6 p-6 md:gap-10 md:p-[60px_60px_60px_15px]">
+        <div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={seemplicityUpload("2026/02/ibm-toolchain-1.svg")} alt="" className="mb-5 size-8" />
+          <h3 className={`${hankenGrotesk.className} text-[28px] leading-none font-light tracking-[-0.02em] md:text-[36px]`}>
+            {title}
+          </h3>
+        </div>
+        <div className="max-w-[380px]">
+          <p className="mb-2.5 text-[20px] leading-[1.2] font-bold md:text-[22px]">{lead}</p>
+          <p className="text-base leading-[1.4] text-white/50">{body}</p>
+        </div>
       </div>
     </div>
   );
@@ -98,15 +139,15 @@ const lexendExa = Lexend_Exa({ weight: ["300", "400"], subsets: ["latin"] });
 const hankenGrotesk = Hanken_Grotesk({ weight: ["300", "400"], subsets: ["latin"] });
 const monaSans = Mona_Sans({ subsets: ["latin"] });
 
-/** Fictional awards for the awards carousel demo. */
+/** The seven award badges from Seemplicity's /why page (WordPress uploads). */
 const awards = [
-  { badge: "breakthrough", name: "Secure Frontier Breakthrough Award" },
-  { badge: "summit", name: "Summit Innovator Award" },
-  { badge: "rising", name: "TLX Rising Startups" },
-  { badge: "infosec", name: "2× Global Cyber Defense Awards" },
-  { badge: "analyst", name: "Northlight Hot Vendor" },
-  { badge: "globe", name: "Silver Stella Award Winner" },
-  { badge: "innovator", name: "Clearwave Digital Innovator" },
+  { badge: "2026/02/image-906.svg", name: "CyberSecurity Breakthrough Award" },
+  { badge: "2026/02/image-883.svg", name: "SINET16 Award" },
+  { badge: "2026/04/CRN-Stellar-Startups-Award.png", name: "CRN Stellar Startups" },
+  { badge: "2026/04/Cyber-Defense-Global-Infosec-Awards-Logo-2025.1.png", name: "2\u00d7 Global Infosec Awards" },
+  { badge: "2026/04/Gartner-Cool-Vendor-2023.png", name: "Gartner Cool Vendor" },
+  { badge: "2026/04/Globee-logo.png", name: "Silver Globee Award Winner" },
+  { badge: "2026/04/IntellyX-Award.png", name: "Intellyx Digital Innovator" },
 ];
 
 /** Contentstack asset URL, resized and converted on the fly. */
@@ -155,86 +196,33 @@ const sophosStories = [
   },
 ];
 
-/** Fictional analyst steps for the progress tabs demo. */
+/** The four agent tabs from the Seemplicity homepage, with its live images and copy. */
 const analystSteps = [
   {
     label: "/context",
-    nav: "Overview",
-    title: "Know what matters to the business.",
-    body: "Weigh every finding against the asset it touches, so production risks rise to the top and test-server noise sinks.",
-    heading: "Business context",
-    tokens: ["prod-api-03", "tier-1", "customer data"],
+    image: "2026/04/AI-agents-team-provide-Image-1-1.webp",
+    title: "Determine if it matters to the business.",
+    body: "Apply organizational context to every finding. Automatically weigh asset value against threat criticality to separate production emergencies from low-impact test server noise.",
   },
   {
     label: "/strategy",
-    nav: "Details",
-    title: "Pick the fix that clears the most risk.",
-    body: "Group related findings into one plan of action, ranked by how much exposure each change removes.",
-    heading: "Fix strategy",
-    tokens: ["14 findings", "3 owners", "1 change"],
+    image: "2026/04/AI-agents-team-provide-Image-2.webp",
+    title: "Turn the backlog into a plan of action.",
+    body: "Transform a mountain of issues into a roadmap of projects. Synthesize thousands of findings into root-cause groups, like turning 50 alerts into one single patch.",
   },
   {
     label: "/validation",
-    nav: "Raw Findings",
-    title: "Confirm it is real before anyone acts.",
-    body: "Check reachability and existing controls so teams only spend time on exposures that can actually be exploited.",
-    heading: "Validation",
-    tokens: ["reachable", "no WAF rule", "exploit public"],
+    image: "2026/04/AI-agents-team-provide-Image-3.webp",
+    title: "Verify that the risk is actually reachable.",
+    body: "Stop false alarms at the door by verifying exploitability and reachability within your specific execution environment to ensure focus on real threats.",
   },
   {
     label: "/remediation",
-    nav: "Remediation",
-    title: "Hand owners a clear, ready-to-run fix.",
-    body: "Each ticket arrives with the exact versions, steps and context the owning team needs to close it in one pass.",
-    heading: "Remediation",
-    tokens: ["10.4.2261.59", "18.2.2261.57", "10.4.2261.56"],
+    image: "2026/04/AI-agents-team-provide-Image-4.webp",
+    title: "Get the fix across the finish line.",
+    body: "Bridge the security-engineering gap with org-aware routing and tailored, step-by-step guidance formatted perfectly for your development tools.",
   },
 ];
-
-const analystNav = ["Overview", "Remediation", "Details", "Raw Findings", "Resources", "Ticket"];
-
-/** Skeleton product window: a sidebar and a summary panel, per step. */
-function AnalystScreen({ step }: { step: (typeof analystSteps)[number] }) {
-  return (
-    <div className="flex size-full items-end justify-center px-[6%] pt-[5%]">
-      <div className="grid h-full w-full max-w-[1100px] grid-cols-[minmax(120px,24%)_1fr] overflow-hidden rounded-t-[12px] bg-white shadow-[0_30px_80px_-20px_rgba(20,0,40,0.5)]">
-        <div className="flex flex-col gap-1 bg-[#F4F4F5] py-8 pl-4 sm:pl-6">
-          {analystNav.map((item) => (
-            <span
-              key={item}
-              className={`rounded-l-lg px-3 py-2 text-[13px] whitespace-nowrap sm:text-[15px] ${
-                item === step.nav ? "bg-white font-semibold text-[#A309BB]" : "text-neutral-400"
-              }`}
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-        <div className="flex flex-col gap-4 p-6 sm:p-10">
-          <p className="text-xl text-[#141414] sm:text-[28px]">{step.heading}</p>
-          <p className="text-sm font-semibold text-[#141414]">Summary</p>
-          <p className="flex items-center gap-2 text-sm text-[#E3308C]">
-            <span aria-hidden>✦</span> Generated by the analyst
-          </p>
-          <div className="flex flex-col gap-2">
-            <div className="h-2.5 w-full rounded-full bg-neutral-200" />
-            <div className="h-2.5 w-11/12 rounded-full bg-neutral-200" />
-            <div className="h-2.5 w-4/5 rounded-full bg-neutral-200" />
-          </div>
-          <p className={`${spaceMono.className} flex flex-wrap gap-x-3 text-[13px] text-[#A309BB]`}>
-            {step.tokens.map((t) => (
-              <span key={t}>{t}</span>
-            ))}
-          </p>
-          <div className="flex flex-col gap-2">
-            <div className="h-2.5 w-full rounded-full bg-neutral-200" />
-            <div className="h-2.5 w-2/3 rounded-full bg-neutral-200" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /** Fictional rows for the collapsing stack demo. */
 /** The three rows from NetApp AI's "Independent and massive scale" section, with its live art (Contentstack URLs). */
@@ -259,62 +247,63 @@ const netappRows = [
   },
 ];
 
-/** Fictional testimonials for the expanding cards demo. */
+/**
+ * The five customer stories from the Ironclad homepage, with its live photos,
+ * logos and quotes (WordPress uploads, at the 1024px size the site serves).
+ */
+const ironcladUpload = (path: string) => `https://ironcladapp.com/wp-content/uploads/${path}`;
 const stories = [
   {
-    logo: "Orbit",
-    lead: "We rolled it out to legal, sales and procurement in a week. ",
-    bold: "Nobody needed training",
-    tail: ", they just started using it.",
-    colors: ["#5b2ee0", "#2a1170"],
+    company: "Heineken",
+    image: "2026/09/homepage_heineken_customerstory_1024x588_2x-1024x588.webp",
+    alt: "Two women smiling and holding glasses of beer in a colorful bar with neon green lights.",
+    logo: "2026/09/customerstories_heineken_logo_336x132_2x-1.webp",
+    logoWidth: 190,
+    lead: "When contract data is structured and searchable, you can make better decisions. You can answer questions in minutes rather than days. You can identify risks and you have more opportunities for the business.",
+    bold: "",
+    tail: "",
   },
   {
-    logo: "Tidal",
-    lead: "Contract turnaround went from weeks to ",
-    bold: "two days",
-    tail: ". Our deal desk finally keeps up with the pipeline.",
-    colors: ["#0e8f86", "#06393d"],
+    company: "Benjamin Moore",
+    image: "2025/10/BM-Thumb-1024x588.jpg",
+    alt: "Anik Sood, Benjamin Moore",
+    logo: "2025/10/BM-logo.svg",
+    logoWidth: 190,
+    lead: "Ironclad takes what was a highly manual, inefficient process and ",
+    bold: "makes it easy and enjoyable to collaborate on contracts",
+    tail: " across our departments.",
   },
   {
-    logo: "Halcyon",
-    lead: "Every agreement now lives in one place, so ",
-    bold: "finding a clause takes seconds",
-    tail: ", not an afternoon.",
-    colors: ["#d9622b", "#4a1a0b"],
+    company: "Calm",
+    image: "2025/09/HOMEPAGE-VIDEO-CALM@2x-1024x588.webp",
+    alt: "Man looking off to the side, softly smiling.",
+    logo: "2025/09/calm.svg",
+    logoWidth: 106,
+    lead: "The content team has been blown away by the speed with which we\u2019re able to get contracts done using Ironclad. It\u2019s been ",
+    bold: "a game changer",
+    tail: " for us.",
   },
   {
-    logo: "Vertex",
-    lead: "The approvals flow mirrors how we actually work. ",
-    bold: "It removed a whole layer of email",
-    tail: " from our week.",
-    colors: ["#2f6fdf", "#0b1f4d"],
+    company: "L\u2019Or\u00e9al",
+    image: "2025/09/HOMEPAGE-VIDEO-LOREAL@2x-1024x588.webp",
+    alt: "Man standing in front of plants, smiling.",
+    logo: "2025/06/LOreal_logo-1-1.svg",
+    logoWidth: 172,
+    lead: "Ironclad went from a tool for lawyers to a ",
+    bold: "full-on collaboration platform",
+    tail: " for everyone in the contracting process, from Sourcing to Finance to IT.",
   },
   {
-    logo: "Lumen",
-    lead: "Our whole team has found the interface ",
-    bold: "really easy to pick up",
-    tail: ". Anyone can find what they need without asking.",
-    colors: ["#8e3fd6", "#1e0b3a"],
+    company: "Gong",
+    image: "2025/09/HOMEPAGE-VIDEO-GONG@2x-1024x588.webp",
+    alt: "Purple square with a smile on it.",
+    logo: "2025/09/gong.png",
+    logoWidth: 177,
+    lead: "Our whole team has found the interface to be ",
+    bold: "really user friendly",
+    tail: " with Ironclad. I feel like I could add anyone to the system, non-lawyer or lawyer, and they could figure out how to use it and how to find things.",
   },
 ];
-
-/** Abstract stand-in for a customer photo or video still. */
-function StoryArt({ colors, index }: { colors: string[]; index: number }) {
-  return (
-    <div
-      className="relative overflow-hidden"
-      style={{ background: `radial-gradient(120% 90% at 75% 40%, ${colors[0]} 0%, ${colors[1]} 70%)` }}
-    >
-      <div
-        className="absolute top-[18%] right-[12%] aspect-square w-[38%] rounded-[22%] shadow-[inset_0_-20px_60px_rgba(0,0,0,0.35),inset_0_10px_30px_rgba(255,255,255,0.25)]"
-        style={{ background: colors[0], rotate: `${-12 + index * 9}deg` }}
-      />
-      <div className="absolute top-[14%] right-[6%] size-3 rounded-full bg-white/70" />
-      <div className="absolute top-[30%] right-[22%] size-5 rounded-full border-[3px] border-white/70" />
-      <div className="absolute right-[9%] bottom-[30%] size-2.5 rounded-full bg-white/60" />
-    </div>
-  );
-}
 
 /**
  * The award badges from the Sophos homepage's logo carousel (Contentstack
@@ -336,6 +325,83 @@ const sophosBadges = [
   alt: alt as string,
   href: "#",
 }));
+
+/** A single count-up number, with a Replay button since the count runs once. */
+function CountUpDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className={`${interTight.className} flex flex-col items-center gap-8`}>
+      <CountUp
+        key={`${run}-${values.value}-${values.duration}-${values.easing}-${values.threshold}`}
+        value={Number(values.value)}
+        prefix={(values.prefix as string) || undefined}
+        suffix={(values.suffix as string) || undefined}
+        duration={values.duration as number}
+        easing={values.easing as "linear" | "ease-out"}
+        threshold={values.threshold as number}
+        className="text-[72px] leading-[0.9] font-extralight tracking-[-0.01em] text-[#221F23] md:text-[120px] group-data-[theme=dark]/stage:text-white"
+      />
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="rounded-full border border-black/15 px-4 py-1.5 text-sm text-neutral-700 hover:bg-black/5 group-data-[theme=dark]/stage:border-white/20 group-data-[theme=dark]/stage:text-white/80 group-data-[theme=dark]/stage:hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/** The three questions from NetApp Novus' FAQ, verbatim. */
+const novusFaqs = [
+  {
+    question: "How does NetApp Novus scale without fragmenting my data?",
+    answer:
+      "A decoupled metadata layer tracks where everything lives. When a client reads or writes data, they get the data map from the metadata server and then directly access the data layer; the data layer, powered by proven NetApp ONTAP\u00ae software on NetApp AFF A90 systems, moves the bytes. The architecture scales performance with each additional storage system. Add a cluster, add its throughput, no remounts and no fragmentation. Every GPU still sees one unified namespace.",
+  },
+  {
+    question: "How does NetApp Novus improve my return on GPU investment?",
+    answer:
+      "NetApp Novus keeps utilization high by removing the storage bottleneck that leaves GPUs waiting, so more of your compute runs at full capacity and more of it converts to revenue. Higher utilization on the same hardware means a better return without buying another rack.",
+  },
+  {
+    question: "Do my GPU teams need a proprietary client to use NetApp Novus?",
+    answer:
+      "No. NetApp Novus works with standard, in-kernel NFSv4.2 / pNFS Flex Files clients, nconnect, and GPUDirect Storage. There\u2019s nothing custom to install across a fleet of thousands of GPU servers, which keeps operations simple and onboarding fast.",
+  },
+];
+
+/** The five "Related information" tiles from NetApp AI's data security page, with their live art. */
+const netappAsset = (path: string, width: number) =>
+  `https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/${path}?width=${width}&disable=upscale`;
+const netappBento: BentoTile[] = [
+  {
+    image: netappAsset("bltca398fcc96df35f2/6ab8b9aef65ed8590f4b2c1d/Container_(27).webp", 844),
+    title: "NetApp AFX Data infrastructure for enterprise AI",
+    ctaLabel: "Explore AFX",
+    href: "#afx",
+  },
+  {
+    image: netappAsset("bltf54cf2c9d05e39e0/6abbafd1280cccd935663763/top-space-with-servers-v2.png", 800),
+    title: "Accelerate AI outcomes with high\u2011performance, ultrascalable, disaggregated storage",
+    ctaLabel: "Get the AFX datasheet",
+    href: "#datasheet",
+    tone: "dark",
+  },
+  {
+    image: netappAsset("blt29c1f399eeb6a809/6ab8baf2c7fe679fde9c5fce/Container-2_(1).webp", 804),
+    title: "NVIDIA certified storage",
+    ctaLabel: "Learn more",
+    href: "#nvidia",
+  },
+  {
+    image: netappAsset("blt7e2db9e107d054bc/6ab8bb5278bcde7a1ecdf1ec/Container-3_(2).webp", 804),
+    title: "The NetApp Platform is built for the Agentic Enterprise",
+    ctaLabel: "Read the blog",
+    href: "#blog",
+  },
+  { image: netappAsset("blt4054a2aeb4e17959/6abb6b94280ccc3193663503/image_1121.webp", 1620) },
+];
 
 /**
  * Live previews, keyed by registry slug. Each preview receives the current
@@ -416,20 +482,21 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   "zoom-image-card": ({ values }) => (
     <ZoomImageCard
       className={
-        // The default title color is dark ink for light sites; flip it to
-        // white on the dark stage unless the user picked their own color.
-        values.titleColor === "#0B0623"
-          ? "w-full max-w-[560px] group-data-[theme=dark]/stage:[&_h3]:text-white"
-          : "w-full max-w-[560px]"
+        // The default caption is black for light sites; flip it to white on
+        // the dark stage unless the user picked their own color.
+        values.titleColor === "#000000"
+          ? `${interTight.className} w-full max-w-[301px] group-data-[theme=dark]/stage:[&>span]:text-white`
+          : `${interTight.className} w-full max-w-[301px]`
       }
-      src="/demo-images/report-cover.svg"
-      eyebrow="Whitepapers & research"
-      title="2026 Risk Exposure Report"
+      src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltfbd08f588b3d02bd/6ab8e7e2442dc1839bab5a52/Frame_2029273449.webp?width=640&format=pjpg&disable=upscale"
+      logo="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/blt62c331bb718721a2/6ab2229498a4e3ea4353ee80/Ducati_red_logo_1.svg"
+      logoAlt="Ducati"
+      title={values.title as string}
       scale={values.scale as number}
       duration={values.duration as number}
       radius={values.radius as number}
       aspectRatio={values.aspectRatio as string}
-      eyebrowColor={values.eyebrowColor as string}
+      scrim={values.scrim as boolean}
       titleColor={values.titleColor as string}
       href={values.href as string}
       onClick={(e) => e.preventDefault()}
@@ -437,12 +504,83 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   ),
   "reveal-link-card": ({ values }) => (
     <RevealLinkCard
-      src="/demo-images/catalog-tile.svg"
+      src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltca51762d5e987ae0/6aba052344cd9a42234330eb/That_s_your_AI_advantage_-_3.webp?width=600&format=pjpg&disable=upscale"
       title={values.title as string}
       linkLabel={values.linkLabel as string}
       color={values.color as string}
       textColor={values.textColor as string}
       lift={values.lift as boolean}
+      href={values.href as string}
+      onClick={(e) => e.preventDefault()}
+    />
+  ),
+  "scroll-color-background": ({ values }) => {
+    // Light text on dark grounds, dark text on light ones.
+    const ink = (hex: string) => {
+      const n = parseInt(hex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
+      const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+      return lum > 0.6 ? "#000000" : "#FFFFFF";
+    };
+    const colors = [values.color1, values.color2, values.color3] as string[];
+    return (
+      // The colour follows scroll, so the preview scrolls inside itself.
+      <div className="h-[640px] overflow-y-auto overscroll-contain">
+        <ScrollColorBackground
+          key={String(values.arriveAt)}
+          arriveAt={values.arriveAt as number}
+          duration={values.duration as number}
+          sections={colors.map((color, i) => ({
+            color,
+            textColor: ink(color),
+            className: "flex min-h-[720px] flex-col items-center justify-center gap-2 font-mono text-xs opacity-60",
+            children: (
+              <>
+                <span>Section 0{i + 1}</span>
+                {i === 0 && <span>Scroll inside the preview ↓</span>}
+              </>
+            ),
+          }))}
+        />
+      </div>
+    );
+  },
+  "count-up": ({ values }) => <CountUpDemo values={values} />,
+  "faq-accordion": ({ values }) => (
+    <div className="w-full max-w-[1280px] rounded-2xl bg-white px-6 py-12 md:px-10">
+      <FaqAccordion
+        key={String(values.collapsible)}
+        className={interTight.className}
+        items={novusFaqs}
+        heading={(values.heading as string) || undefined}
+        duration={values.duration as number}
+        collapsible={values.collapsible as boolean}
+        numbered={values.numbered as boolean}
+        cardColor={values.cardColor as string}
+      />
+    </div>
+  ),
+  "bento-grid": ({ values }) => (
+    <div className="w-full bg-white px-5 py-12 md:px-10" onClickCapture={(e) => e.preventDefault()}>
+      <BentoGrid
+        className={`${interTight.className} mx-auto max-w-[1242px]`}
+        tiles={netappBento}
+        scale={values.scale as number}
+        duration={values.duration as number}
+        radius={values.radius as number}
+      />
+    </div>
+  ),
+  "rising-copy-card": ({ values }) => (
+    <RisingCopyCard
+      className={interTight.className}
+      src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltcff7aaa939feab51/6ab8f95944cd9a513b432fb6/block_1_(1).webp?width=710&format=pjpg&disable=upscale"
+      title={values.title as string}
+      description={(values.description as string) || undefined}
+      ctaLabel={values.ctaLabel as string}
+      scale={values.scale as number}
+      duration={values.duration as number}
+      tint={values.tint as string}
+      height={Number(values.height)}
       href={values.href as string}
       onClick={(e) => e.preventDefault()}
     />
@@ -475,8 +613,8 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         fade={values.fade as boolean}
         minWidth={0}
       >
-        {Array.from({ length: 4 }, (_, i) => (
-          <PlaceholderCard key={i} index={i} />
+        {seemplicityProblems.map((card) => (
+          <SeemplicityCard key={card.title} {...card} />
         ))}
       </StackingCards>
       <div className="h-[520px]" />
@@ -702,7 +840,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         }
         items={awards.map((award) => ({
           // eslint-disable-next-line @next/next/no-img-element
-          image: <img src={`/demo-awards/${award.badge}.svg`} alt="" />,
+          image: <img src={`https://seemplicity.ai/wp-content/uploads/${award.badge}`} alt="" />,
           title: award.name,
         }))}
       />
@@ -720,20 +858,24 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         duration={values.duration as number}
         contentDuration={values.contentDuration as number}
         overlay={values.overlay as boolean}
-        items={stories.map((story, i) => ({
-          label: story.logo,
-          media: <StoryArt colors={story.colors} index={i} />,
+        items={stories.map((story) => ({
+          label: story.company,
+          media: (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ironcladUpload(story.image)} alt={story.alt} className="object-cover" />
+          ),
           content: (
             <div className="text-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/demo-logos/${story.logo.toLowerCase()}.svg`}
-                alt={story.logo}
-                className="mb-[30px] h-[50px] w-auto brightness-0 invert"
+                src={ironcladUpload(story.logo)}
+                alt={story.company}
+                style={{ width: story.logoWidth }}
+                className="mb-[30px] h-auto brightness-0 invert"
               />
               <p className="max-w-[420px] text-[24px] leading-[1.2] min-[992px]:text-[30px]">
                 &ldquo;{story.lead}
-                <strong className="font-semibold">{story.bold}</strong>
+                {story.bold && <strong className="font-semibold">{story.bold}</strong>}
                 {story.tail}&rdquo;
               </p>
             </div>
@@ -758,10 +900,11 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         labelColor={values.labelColor as string}
         trayTint={values.trayTint as string}
         tabClassName={`${spaceMono.className} text-sm lowercase`}
-        mediaBackground="radial-gradient(120% 90% at 100% 100%, #A548C2 0%, transparent 45%), radial-gradient(90% 80% at 0% 100%, #9B4DB8 0%, transparent 40%), linear-gradient(180deg, #4A0060 0%, #6A0A82 100%)"
+        mediaBackground={`url(${seemplicityUpload("2026/04/video-bg.webp")})`}
         items={analystSteps.map((step) => ({
           label: step.label,
-          media: <AnalystScreen step={step} />,
+          // eslint-disable-next-line @next/next/no-img-element
+          media: <img src={seemplicityUpload(step.image)} alt="" className="object-cover" />,
           content: (
             <div className="flex flex-col gap-2.5">
               <p className="max-w-[730px] text-[28px] leading-none font-normal tracking-[-0.72px] text-[#410051] min-[992px]:text-[36px]">

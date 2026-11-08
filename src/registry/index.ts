@@ -23,6 +23,7 @@ export const categories: Category[] = [
       { id: "carousels", title: "Carousels" },
       { id: "pin-scrollers", title: "Pin scrollers" },
       { id: "tabs", title: "Tabs" },
+      { id: "accordions", title: "Accordions" },
     ],
   },
   {
@@ -491,10 +492,10 @@ export const registry: RegistryEntry[] = [
     slug: "zoom-image-card",
     title: "Zoom image card",
     description:
-      "Hovering the card scales its image inside a fixed rounded frame, used on Seemplicity website",
+      "Hovering the customer tile slowly grows its photo inside a fixed rounded frame while the logo holds still, used on NetApp AI website",
     category: "interactions",
     group: "image-hovers",
-    source: "https://seemplicity.ai/",
+    source: "https://netapp.ai/evaluate/customer-results/",
     componentName: "ZoomImageCard",
     defaultTheme: "light",
     files: [
@@ -503,66 +504,71 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/image-hovers/zoom-image-card.tsx",
       },
     ],
-    usageProps: ['src="/images/report-cover.webp"', 'eyebrow="Whitepapers & research"', 'title="2026 Risk Exposure Report"'],
+    usageProps: ['src="/images/ducati.webp"', 'logo="/images/ducati-logo.svg"', 'logoAlt="Ducati"'],
     motion: {
       intent:
-        "A hover state for a linked card with an image (a resource, blog post or case study). Hovering anywhere on the card slowly zooms the image inside its rounded frame: the picture grows, the frame stays put. It should feel calm and gentle, an invitation to click rather than a jump.",
+        "A hover state for a linked customer tile: a photo in a rounded frame, a logo in its corner and a caption below. Hovering anywhere on the card slowly grows the photo inside the frame: the picture moves, the frame, logo and caption don't. It should feel calm and barely there, an invitation to click rather than a jump.",
       trigger:
-        "Pointer hover anywhere on the card, not just the image, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same zoom. On touch there is no zoom; a tap just follows the link.",
+        "Pointer hover anywhere on the card (frame or caption), only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same zoom. On touch there is no zoom; a tap just follows the link.",
       states: [
-        "Image: `scale(1)` at rest → `scale({scale})` when active, from the centre (the default `transform-origin`).",
-        "Frame: the image's container keeps its size and its rounded corners, and clips the growing image.",
-        "Nothing else moves. The eyebrow, title and card layout stay the same.",
+        "Photo: `scale(1)` at rest → `scale({scale})` when active, from the centre (the default `transform-origin`).",
+        "Frame: keeps its size and rounded corners and clips the growing photo.",
+        "{scrim|true=Corner scrim (a black gradient in the top-left behind the logo) and logo: they sit above the photo and don't move or zoom.|*=Logo: sits above the photo and doesn't move or zoom.}",
+        "Caption: doesn't change.",
       ],
       timing: [
         "Duration: {duration}ms, in and out.",
-        "Easing: CSS `ease` (`cubic-bezier(0.25, 0.1, 0.25, 1)`).",
+        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`).",
         "No delay.",
       ],
       interruption: transitionInterruption("the zoom"),
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, the image doesn't zoom at all: it stays at `scale(1)` on hover and focus. Don't swap the zoom for an instant jump.",
+        "Under `prefers-reduced-motion: reduce`, the photo doesn't zoom at all: it stays at `scale(1)` on hover and focus (gate the scale with `motion-safe:`). Don't swap the zoom for an instant jump.",
       rules: [
-        "The whole card is one link, and the hover is on the card, so the zoom starts wherever the pointer enters the card.",
-        "Animate the image with `transform: scale`. Don't animate its width, height or `background-size`.",
-        "The frame needs `overflow: hidden` plus `isolation: isolate`; without the isolation, Safari loses the rounded corners while the image is transformed.",
-        "If the site has its own Image component, put the transition on the element that renders the image and keep it filling the frame with `object-fit: cover`.",
+        "The whole card is one link, and the hover is on the card, so the zoom starts wherever the pointer enters it, caption included.",
+        "Animate the photo with `transform: scale`. Don't animate its width, height or `background-size`.",
+        "The frame needs `overflow: hidden` plus `isolation: isolate`; without the isolation, Safari loses the rounded corners while the photo is transformed.",
+        "Put the scrim and logo in the frame above the photo, not inside the scaled element, so they hold still.",
+        "If the site has its own Image component, put the transition on the element that renders the photo and keep it filling the frame with `object-fit: cover`.",
       ],
       checks: [
-        "Hover the title text, not the image: the image still zooms to {scale}× over {duration}ms.",
-        "The frame's rounded corners stay rounded while the image grows, including in Safari.",
-        "Move the pointer off halfway: the image shrinks back from where it was, with no snap.",
-        "Tab to the card: the image zooms and the card shows a visible focus ring.",
-        "Turn on reduced motion: the image doesn't zoom.",
-        "On a touch device: tapping doesn't leave the image stuck zoomed.",
+        "Hover the caption, not the photo: the photo still grows to {scale}× over {duration}ms, and the logo doesn't move.",
+        "The frame's rounded corners stay rounded while the photo grows, including in Safari.",
+        "Move the pointer off halfway: the photo shrinks back from where it was, with no snap.",
+        "Tab to the card: the photo zooms and the card shows a visible focus outline.",
+        "Turn on reduced motion: the photo doesn't zoom.",
+        "On a touch device: tapping doesn't leave the photo stuck zoomed.",
       ],
     },
     controls: [
-      { type: "number", name: "scale", label: "Zoom scale", default: 1.1, min: 1, max: 1.3, step: 0.01 },
-      { type: "number", name: "duration", label: "Duration", default: 300, min: 100, max: 1000, step: 10, unit: "ms" },
+      { type: "text", name: "title", label: "Caption", default: "Ducati fuels motorsport innovation with NetApp", always: true },
+      { type: "number", name: "scale", label: "Zoom scale", default: 1.04, min: 1, max: 1.2, step: 0.01 },
+      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
       { type: "number", name: "radius", label: "Corner radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
       {
         type: "select",
         name: "aspectRatio",
         label: "Aspect ratio",
-        default: "2 / 1",
+        default: "301 / 360",
         options: [
-          { label: "2:1", value: "2 / 1" },
-          { label: "16:9", value: "16 / 9" },
+          { label: "301:360 (desktop)", value: "301 / 360" },
+          { label: "330:360 (mobile)", value: "330 / 360" },
           { label: "4:3", value: "4 / 3" },
-          { label: "1:1", value: "1 / 1" },
+          { label: "16:9", value: "16 / 9" },
         ],
       },
-      { type: "color", name: "eyebrowColor", label: "Eyebrow color", default: "#E3308C" },
-      { type: "color", name: "titleColor", label: "Title color", default: "#0B0623" },
-      { type: "text", name: "href", label: "Link", default: "/resources/risk-exposure-report", always: true },
+      { type: "boolean", name: "scrim", label: "Corner scrim", default: true },
+      { type: "color", name: "titleColor", label: "Caption color", default: "#000000" },
+      { type: "text", name: "href", label: "Link", default: "/customers/ducati", always: true },
     ],
     promptNotes: [
-      "The whole card is one <a>: hovering anywhere on it (or keyboard focus) zooms the image. Pass `href` and any other anchor props.",
-      "The easing is a prop too (`easing`, any CSS timing function); it defaults to the original's `ease`.",
-      "`eyebrow` and `title` are optional; omit both to use it as a bare zoom image. The eyebrow renders as a lowercase `/label` in the site's mono font (the original uses Space Mono); the title inherits the site font (the original uses Cabinet Grotesk).",
-      "It renders a plain <img>. If the site has its own Image component (e.g. components/common/Image), swap it in with fill/object-cover and keep the transition classes on it.",
+      "The whole card is one <a>: hovering anywhere on it (or keyboard focus) zooms the photo. Pass `href` and any other anchor props.",
+      "`logo` and `logoAlt` are optional; the logo sits 30px in from the frame's top-left, capped at 60px tall and 205px wide. Use a white logo with the scrim on (`scrim`, default true), which darkens that corner.",
+      "Other props: `easing` (any CSS timing function, default Tailwind's ease-out), `frameColor` (shows under the photo while it loads, default NetApp's #0054D7), `alt`.",
+      "The frame is fluid: it fills its column and keeps `aspectRatio`. The original uses 301 / 360 in its grid and 330 / 360 in the single-column mobile layout.",
+      "It renders plain <img> tags. If the site has its own Image component (e.g. components/common/Image), swap it in for the photo with fill/object-cover and keep the transition and scale classes on it.",
       "No client JavaScript, so it works in a Server Component.",
+      "Original typography: F37 Judge (licensed), caption 20px / 32px with 0.2px tracking (16px / 26px below the xl breakpoint), black. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
     ],
   },
   {
@@ -619,12 +625,12 @@ export const registry: RegistryEntry[] = [
       ],
     },
     controls: [
-      { type: "text", name: "title", label: "Title", default: "Halcyon Cloud", always: true },
+      { type: "text", name: "title", label: "Title", default: "Business continuity", always: true },
       { type: "text", name: "linkLabel", label: "Link label", default: "Learn More" },
-      { type: "color", name: "color", label: "Card color", default: "#19426C" },
+      { type: "color", name: "color", label: "Card color", default: "#0E2219" },
       { type: "color", name: "textColor", label: "Text color", default: "#FFFFFF" },
       { type: "boolean", name: "lift", label: "Lift on hover", default: true },
-      { type: "text", name: "href", label: "Link", default: "/products/cloud", always: true },
+      { type: "text", name: "href", label: "Link", default: "/customers/business-continuity", always: true },
     ],
     promptNotes: [
       "The whole card is one <a>; pass `href` and any other anchor props. Keyboard focus triggers the same reveal as hover.",
@@ -632,6 +638,159 @@ export const registry: RegistryEntry[] = [
       "No client JavaScript, so it works in a Server Component.",
       "It renders a plain <img>. If the site has its own Image component (e.g. components/common/Image), swap it in with fill/object-cover and keep the `absolute inset-0 -z-10` classes.",
       "The original uses Inter; the component inherits the site's font.",
+    ],
+  },
+  {
+    slug: "rising-copy-card",
+    title: "Rising copy card",
+    description:
+      "Hovering the image tile zooms its art and carries the headline from the foot of the card to the top, used on NetApp AI website",
+    category: "interactions",
+    group: "image-hovers",
+    source: "https://netapp.ai/evaluate/customer-results/",
+    componentName: "RisingCopyCard",
+    defaultTheme: "light",
+    files: [
+      {
+        name: "rising-copy-card.tsx",
+        path: "src/registry/interactions/image-hovers/rising-copy-card.tsx",
+      },
+    ],
+    usageProps: ['src="/images/story-tile.webp"'],
+    motion: {
+      intent:
+        "A hover state for a linked story tile: art, a big headline and a CTA. At rest the headline sits at the foot of the card just above the CTA. On hover the art slowly zooms, the headline travels up to the top of the card and an optional description opens under it, the CTA stays at the foot, and the art takes on a colour tint. Everything moves together on one long ease-out, so it feels like a single calm shift rather than separate effects.",
+      trigger:
+        "Pointer hover anywhere on the card, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same state. On touch nothing changes: the card shows its resting state and a tap follows the link.",
+      states: [
+        "Art: `scale(1)` at rest → `scale({scale})` when active, from the centre. The card keeps its size and rounded corners and clips the growing art.",
+        "Headline block: at the foot of the card, 30px above the CTA → at the top of the card, at the card's 40px padding. The CTA row does not move.",
+        "Description (optional): a row under the headline, collapsed at rest (`grid-template-rows: 0fr`) → open to its natural height (`1fr`), with 15px above the copy. Its copy fades `opacity: 0 → 1`. Nothing clips the copy, so at rest it hangs below the headline (over the CTA, cut off by the card) and rises with it, still mostly transparent as it crosses the CTA.",
+        "Copy scrim: a 240° gradient from transparent (first 25%) to `rgba(0,0,0,0.35)`, behind the copy, `opacity: 1 → 0`.",
+        "Tint: a 233° gradient from transparent (-6%) to {tint} (105%) in `mix-blend-mode: hue`, `opacity: 0 → 1`. The hue blend turns the art toward the tint without darkening it.",
+        "CTA chip (20px disc with an arrow): dark `#2A2A2A` → a #0054D7 to #00DDF4 gradient. It swaps instantly, with no transition, like the original's sprite swap.",
+      ],
+      timing: [
+        "Duration: {duration}ms for the zoom, the headline's travel, the description row, and both fades.",
+        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`) for all of them.",
+        "Everything starts together, with no delay or stagger.",
+      ],
+      interruption: transitionInterruption("every part"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove the transitions so the headline and description jump straight to their hover positions, and don't zoom the art at all. The fades and the chip still change, instantly.",
+      rules: [
+        "The whole card is one link, and the hover is on the card, so everything reacts wherever the pointer enters it.",
+        "Move the headline with two flex spacers, not `justify-content` (it can't animate) and not a transform (the travel depends on the card and copy height). The card is a flex column: an empty spacer above the copy with `flex-grow: 1 → 0`, and one above the CTA with `flex-basis: 30px; flex-grow: 0 → 1`. The two factors always add up to 1, so the copy moves in a straight line.",
+        "Open the description with a `grid-template-rows: 0fr → 1fr` row whose child has `min-height: 0` and no padding (padding can't collapse, so it would leave a gap at rest). Don't use a guessed `max-height`.",
+        "Zoom the art with `transform: scale` on the image. The card needs `overflow: hidden` and `isolation: isolate`, so the zoom stays inside the rounded corners in Safari and the hue blend only mixes with the card's own art.",
+        "Without a CTA, leave out the lower spacer too, or its 30px lifts the copy off the foot at rest.",
+      ],
+      checks: [
+        "Hover: over {duration}ms the art zooms to {scale}× while the headline travels to the top and the CTA stays put; a description, if passed, opens under the headline and fades in.",
+        "The headline moves in one straight line, with no jump at the start or end.",
+        "Move the pointer off halfway: everything goes back from where it was, with no snap.",
+        "Tab to the card: the same state shows, plus a visible focus outline.",
+        "Turn on reduced motion: the copy jumps to its hover position and the art doesn't zoom.",
+        "On a touch device: tapping doesn't leave the card stuck in its hover state.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "title", label: "Title", default: "Unleashing imagination with data — petabytes at a time", always: true },
+      { type: "text", name: "description", label: "Description", default: "" },
+      { type: "text", name: "ctaLabel", label: "CTA label", default: "Explore the IDC study", always: true },
+      { type: "number", name: "scale", label: "Zoom scale", default: 1.1, min: 1, max: 1.3, step: 0.01 },
+      { type: "number", name: "duration", label: "Duration", default: 500, min: 200, max: 1200, step: 10, unit: "ms" },
+      { type: "color", name: "tint", label: "Hover tint", default: "#25006D" },
+      {
+        type: "select",
+        name: "height",
+        label: "Card height",
+        default: "360",
+        options: [
+          { label: "360px (short)", value: "360" },
+          { label: "426px (mobile)", value: "426" },
+          { label: "560px (tall)", value: "560" },
+        ],
+      },
+      { type: "text", name: "href", label: "Link", default: "/customers/dreamworks", always: true },
+    ],
+    promptNotes: [
+      "The whole card is one <a>; pass `href` and any other anchor props. Keyboard focus triggers the same state as hover.",
+      "`height` is a number in px (the original's tiles are 355×360, 355×560 and 270×426 on mobile). `width` (default 355) is a maximum, so the card shrinks in a narrower column; pass `width=\"fill\"` to fill a grid cell. The headline drops from 40px to 32px when the card is narrower than 320px (a container query on its content box).",
+      "`description` is optional. On touch it never opens, so don't put anything there the reader needs. Pick a `height` that fits the headline, the open description and the CTA inside the padding; with a long headline and a description, use the tall card (560).",
+      "Other props: `easing`, `color` (card background under the art), `chipFrom` / `chipTo` (the CTA chip's hover gradient), `radius` (20), `padding` (40), `titleAs` (default h3).",
+      "The original tints each tile differently by position: #25006D, #540063, #182F00. Pass `tint` per card to do the same.",
+      "No client JavaScript, so it works in a Server Component.",
+      "It renders a plain <img>. If the site has its own Image component (e.g. components/common/Image), swap it in with fill/object-cover and keep the transition and scale classes on it.",
+      "Original typography: F37 Judge (licensed), headline 40px / 1.1 weight 100 with -0.4px tracking (32px below the xxl breakpoint), CTA label 16px / 1.6 weight 100 with 0.32px tracking. The component uses weight 300 and inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
+    ],
+  },
+  {
+    slug: "bento-grid",
+    title: "Bento grid",
+    description:
+      "Five image cards in a bento layout; hovering a linked card slowly zooms its art and lights up its CTA chip, used on NetApp AI website",
+    category: "interactions",
+    group: "image-hovers",
+    source: "https://netapp.ai/technology/ai-data-security-governance/",
+    componentName: "BentoGrid",
+    defaultTheme: "light",
+    files: [
+      {
+        name: "bento-grid.tsx",
+        path: "src/registry/interactions/image-hovers/bento-grid.tsx",
+      },
+    ],
+    usageProps: ["tiles={tiles}"],
+    fullBleed: true,
+    motion: {
+      intent:
+        "A bento of five image cards linking to related content. Hovering a linked card slowly zooms its art inside the rounded card, and a light card's frosted CTA chip turns bright. The card, its copy and its neighbours stay put, so it feels calm: an invitation to click, not a jump.",
+      trigger:
+        "Pointer hover anywhere on a linked card, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same state. Cards without a link don't react.",
+      states: [
+        "Art: `scale(1)` at rest → `scale({scale})` when active, from the centre. The card keeps its size and rounded corners and clips the growing art.",
+        "CTA chip on light (white-copy) cards: a frosted glass disc → a #0054D7 to #00DDF4 gradient disc. It swaps instantly, with no transition, as the original's sprite swap does. Dark-copy cards keep their dark disc.",
+        "Copy, card size and the grid don't change.",
+      ],
+      timing: [
+        "Zoom: {duration}ms, in and out.",
+        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`).",
+        "No delay.",
+      ],
+      interruption: transitionInterruption("the zoom"),
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the art doesn't zoom at all (gate the scale with `motion-safe:`). The chip still swaps.",
+      responsive:
+        "From 900px of container width: a 3-column grid (422fr 398fr 402fr) with rows 203.5px, 203.5px, 165px and 10px gaps. Tile 1 spans all three rows of column 1; tile 2 spans two rows of column 2; tiles 3 and 4 stack in column 3; tile 5 spans columns 2–3 on the bottom row. Copy sits at the top on tiles 2 and 3, at the bottom on the rest. Below 900px the cards stack 20px apart with minimum heights 592, 417, 204, 204 and 165px, and the corners halve to 10px. (The original switches at the 992px viewport breakpoint and only zooms from 1280px.)",
+      rules: [
+        "Each linked card is one link, and the hover is on the card, so the zoom starts wherever the pointer enters it.",
+        "Animate the art with `transform: scale`. The card needs `overflow: hidden` plus `isolation: isolate` so the zoom stays inside the rounded corners in Safari.",
+        "Don't zoom cards that don't link anywhere.",
+        "Lay the five slots out with explicit grid placement (col/row start and span), not auto-flow, so the pattern holds whatever the content. A sixth tile starts the same pattern again below.",
+      ],
+      checks: [
+        "Hover the tall left card: its art grows to {scale}× over {duration}ms, its chip turns bright, and nothing else moves.",
+        "Hover the wide bottom card (no link): nothing happens.",
+        "Move the pointer off halfway: the art shrinks back from where it was, with no snap.",
+        "Tab through: each linked card gets a visible focus outline and the same zoom.",
+        "Narrow the container below 900px: the cards stack in order at their minimum heights.",
+        "Turn on reduced motion: the art doesn't zoom.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "scale", label: "Zoom scale", default: 1.04, min: 1, max: 1.2, step: 0.01 },
+      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "radius", label: "Corner radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
+    ],
+    promptNotes: [
+      "`tiles` is an array of `{ image, alt?, title?, ctaLabel?, href?, tone? }`. `href` makes the whole card a link and turns on its zoom; `ctaLabel` only shows on linked cards. `tone` is \"light\" (white copy on dark art, the default) or \"dark\" (dark #1E252F copy on pale art, plus a faint #D2CEEB hairline).",
+      "The layout is built for five tiles; tiles 6–10 start a second bento below, and so on. Pass fewer and the empty slots stay empty.",
+      "Other props: `easing`, `chipFrom` / `chipTo` (the light chip's hover gradient).",
+      "Card padding 30px (21px top and bottom on the wide card in the original), copy gap 20px, titles 28px / 1.1 (22px stacked), CTA label 16px / 1.6.",
+      "It renders plain <img> tags. If the site has its own Image component, swap it in with fill/object-cover and keep the transition and scale classes on it.",
+      "No client JavaScript, so it works in a Server Component.",
+      "Original typography: F37 Judge (licensed), weight 300 titles. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
     ],
   },
   {
@@ -725,6 +884,211 @@ export const registry: RegistryEntry[] = [
       "By default the scroll progress is measured on the closest `<section>`, as in the original (whose section has 259px top / 251px bottom padding, 102px / 98px below 1280px): the component names a view timeline on it. Pass `timeline=\"self\"` if the text isn't inside a section or the section is very tall.",
       "Gotcha: no ancestor between the text and the page scroller may have `overflow: hidden`/`auto`/`scroll`. Any of those makes that ancestor the scroll container, the view timeline attaches to it, and since it never scrolls the text stays frozen. Use `overflow: clip` (Tailwind `overflow-clip`) on the section to clip decorations instead.",
       "Original typography: F37 Judge (licensed) at 60px / 66px, weight 100, -0.6px tracking, centred in a 1060px column (30px / 33px, -0.3px below 1280px), white over a light aurora background, with a 30px-tall attribution logo (20px below 1280px) 60px above it. The demo uses Inter Tight weight 300 as the closest Google Font.",
+    ],
+  },
+  {
+    slug: "scroll-color-background",
+    title: "Scroll color background",
+    description:
+      "The page background fades to a new color as each section scrolls in, so dark and light sections hand over smoothly, used on NetApp AI website",
+    category: "animations",
+    group: "scroll-triggers",
+    source: "https://netapp.ai/solutions/ai-training-fine-tuning/",
+    componentName: "ScrollColorBackground",
+    files: [
+      {
+        name: "scroll-color-background.tsx",
+        path: "src/registry/animations/scroll-triggers/scroll-color-background.tsx",
+      },
+    ],
+    usageProps: ["sections={sections}"],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A run of sections that share one background. As you scroll into the next section, the whole background (and the text colour) fades to that section's colour, so the page feels like it changes mood rather than cutting between blocks. Here: {color1} → {color2} → {color3}.",
+      trigger:
+        "Scroll position. A section becomes the active one when its top rises above {arriveAt*100}% of the viewport height (the original's \"bottom fifth\" edge). The active section is the last one that has crossed that line, so scrolling back up hands the colour back the same way.",
+      states: [
+        "Wrapper background: the active section's colour. Sections themselves are transparent.",
+        "Wrapper text colour: the active section's `textColor`, if given, so copy stays readable on dark and light grounds.",
+        "On load: the first measure picks the right section with the transition off, so nothing fades in on page load.",
+      ],
+      timing: [
+        "Crossfade: {duration}ms, CSS `ease`, for `background-color` and `color` together.",
+        "It starts the moment the new section crosses the line, while that section is still mostly below the fold, so the fade is done by the time it fills the screen.",
+      ],
+      interruption:
+        "Use a CSS transition on `background-color` and `color`. Scrolling back across the line mid-fade reverses from wherever the colour is, with no jump.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the colours still change at the same scroll points but instantly, with no fade.",
+      rules: [
+        "Put the colour on one wrapper behind all the sections and keep the sections transparent. Don't fade each section's own background: their edges would show during the fade.",
+        "Measure section tops on scroll and resize, at most once per animation frame, and only write the colour when the active section changes. Don't write styles every frame.",
+        "Server-render the first section's colour so the page has its ground before JavaScript runs.",
+        "Listen for scroll in the capture phase on window, so it also works inside a nested scroll container.",
+      ],
+      checks: [
+        "Scroll down slowly: as the second section's top reaches the bottom fifth of the screen, the background fades to {color2} over {duration}ms; the same again for {color3}.",
+        "Scroll back up: the colours hand back at the same points.",
+        "Reload half-way down the page: the background is already the right colour, with no fade on load.",
+        "Turn on reduced motion: the colours switch instantly at the same points.",
+      ],
+    },
+    controls: [
+      { type: "color", name: "color1", label: "Section 1", default: "#FFFFFF" },
+      { type: "color", name: "color2", label: "Section 2", default: "#000000" },
+      { type: "color", name: "color3", label: "Section 3", default: "#0054D7" },
+      { type: "number", name: "duration", label: "Duration", default: 500, min: 0, max: 2000, step: 50, unit: "ms" },
+      { type: "number", name: "arriveAt", label: "Switch at (viewport)", default: 0.8, min: 0.2, max: 1, step: 0.05 },
+    ],
+    promptNotes: [
+      "`sections` is an array of `{ color, textColor?, className?, children? }`, one per section, in page order. Each renders as a transparent <section>; give it height and content as usual. The active section also gets a `data-active` attribute for styling its own content.",
+      "Other props: `easing` (default `ease`), `arriveAt`, `duration`.",
+      "It's a client component, but the first colour is server-rendered.",
+      "The original is NetApp's \"dark takeover\": when a dark section arrives, the WHOLE page (including the header and sections outside it) fades to black (a #001330 → #000 gradient over the first 540px), and it hands back once that section has scrolled fully off the top. This component scopes the effect to its own wrapper and generalises it to any number of colours.",
+    ],
+  },
+  {
+    slug: "count-up",
+    title: "Count up",
+    description:
+      "A number counts up from 0 to its value the first time it scrolls into view, used on NetApp AI website",
+    category: "animations",
+    group: "scroll-triggers",
+    source: "https://netapp.ai/platform/novus/",
+    componentName: "CountUp",
+    defaultTheme: "light",
+    files: [
+      {
+        name: "count-up.tsx",
+        path: "src/registry/animations/scroll-triggers/count-up.tsx",
+      },
+    ],
+    motion: {
+      intent:
+        "A stat's number counts up from 0 to its value as the stat arrives on screen, so the figure feels earned rather than printed. In a row of stats the original counts them one after another, left to right, each starting when the one before lands. It plays once per page load and then the numbers just sit there.",
+      trigger:
+        "Scroll into view, once: the first time {threshold*100}% of the number is visible (an IntersectionObserver), then the observer disconnects. It never replays on later scrolls; only a reload arms it again. The original watches the whole stat row and starts when 40% of the row is visible.",
+      states: [
+        "Number: `0` → the value, written into the number's own text every animation frame. It keeps the value's decimals the whole way (2.6 counts 0.0, 0.1 … 2.6) and lands on exactly the value.",
+        "Prefix and suffix (e.g. \"K+\", \"TB/s\"): rendered once and never rewritten.",
+        "Before the trigger: the number already reads `0`. It's zeroed on hydration, before the first paint, so a reader scrolling down meets 0, never the final figure snapping back to 0.",
+      ],
+      timing: [
+        "Duration: {duration}ms per number.",
+        "{easing|linear=Easing: linear (constant speed, no ease-in or ease-out), as in the original.|*=Easing: ease-out (cubic, `1 - (1 - t)^3`), so the count slows into the final value.}",
+        "In a row: each number starts when the previous one lands, i.e. stat n waits n × {duration}ms after the trigger (`delay={index * duration}`).",
+      ],
+      interruption:
+        "Nothing interrupts it. Once started, a count runs to its value even if the stat scrolls back out of view. If the component unmounts mid-count, stop the frame loop and timer.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, don't count and don't zero: the final number is shown from the start.",
+      rules: [
+        "Server-render the final number, then zero it in a layout effect on the client. Without JavaScript the reader sees the real figure.",
+        "Rewrite only the number's own text node with requestAnimationFrame. Don't re-render React state every frame, and don't touch the prefix or suffix.",
+        "Give screen readers the final value once (visually hidden text) and hide the counting digits with `aria-hidden`, so the count isn't announced frame by frame.",
+        "Use `font-variant-numeric: tabular-nums` so the number's width doesn't jitter while it counts (the original doesn't; it's an improvement).",
+      ],
+      checks: [
+        "Load the page with the stats below the fold: they read 0 until you scroll to them, then count up over {duration}ms.",
+        "Scroll away and back: they don't count again.",
+        "A decimal value like 2.6 lands on 2.6, not 3 or 2.",
+        "Turn on reduced motion and reload: the final numbers show immediately.",
+        "With JavaScript off, the final numbers show.",
+        "A screen reader reads each stat once, with its final value.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "value", label: "Value", default: 100, min: 0, max: 1000, step: 1, always: true },
+      { type: "text", name: "prefix", label: "Prefix", default: "" },
+      { type: "text", name: "suffix", label: "Suffix", default: "TB/s", always: true },
+      { type: "number", name: "duration", label: "Duration", default: 1000, min: 200, max: 3000, step: 50, unit: "ms" },
+      {
+        type: "select",
+        name: "easing",
+        label: "Easing",
+        default: "linear",
+        options: [
+          { label: "Linear (original)", value: "linear" },
+          { label: "Ease out", value: "ease-out" },
+        ],
+      },
+      { type: "number", name: "threshold", label: "Visible to start", default: 0.4, min: 0, max: 1, step: 0.05 },
+    ],
+    promptNotes: [
+      "One <CountUp> per number. `value` is the number, `prefix` / `suffix` are the fixed text around it (`value={50} suffix=\"K+\"`, `value={100} suffix=\"TB/s\"`).",
+      "To count a row one after another, give each stat `delay={index * duration}`. Each CountUp watches itself, so in a row that comes into view together this matches the original's group sequence.",
+      "It's a client component (\"use client\"), but it server-renders the final number. Drop it inside a Server Component's markup as-is.",
+      "In the original the numbers sit in a framed stat row (a 1px #CFDDE6 frame split by hairlines, label at the top of each cell, figure at the bottom at 120px / 0.9 / -1.2px, 72px on mobile). That layout is the section's; the component is just the number.",
+      "Original typography: F37 Judge (licensed), labels 28px / 1.1, figures weight 100. The demo uses Inter Tight weight 300 as the closest Google Font.",
+    ],
+  },
+  {
+    slug: "faq-accordion",
+    title: "FAQ accordion",
+    description:
+      "Numbered question cards where opening one answer closes the other, with the chevron turning over as the answer slides open, used on NetApp AI website",
+    category: "animations",
+    group: "accordions",
+    source: "https://netapp.ai/platform/novus/",
+    componentName: "FaqAccordion",
+    defaultTheme: "light",
+    files: [
+      {
+        name: "faq-accordion.tsx",
+        path: "src/registry/animations/accordions/faq-accordion.tsx",
+      },
+    ],
+    usageProps: ["items={faqs}", 'heading="Frequently asked questions"'],
+    motion: {
+      intent:
+        "An FAQ list of rounded, numbered question cards. {collapsible|true=One answer is open at a time, and clicking the open card closes it.|*=One answer is always open: opening a card closes the one that was open, and clicking the open card does nothing.} The answer slides open to its own height while the chevron turns over, on one long ease-out, so it feels smooth and unhurried.",
+      trigger:
+        "Click anywhere on a closed card (the card's header row is a <button> and a closed card is all header), or Tab to it and press Enter or Space.",
+      states: [
+        "Answer: collapsed (`grid-template-rows: 0fr`) → open to its natural height (`1fr`). The 20px above and below the answer sit inside the collapsing box, so they open and close with it.",
+        "Chevron (22px, pointing down): `rotate(0)` → `rotate(180deg)` when its card is open.",
+        "The card that was open closes at the same moment, with the same motion in reverse.",
+        "Nothing fades; the answer is clipped by its row as it opens.",
+      ],
+      timing: [
+        "Duration: {duration}ms for the answer and the chevron.",
+        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`) for both.",
+        "Opening one card and closing the other start together.",
+      ],
+      interruption:
+        "Use CSS transitions. Clicking another card mid-way reverses the half-open one from wherever it is, with no jump.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove the transitions: answers open and close instantly and the chevron flips instantly.",
+      rules: [
+        "Animate `grid-template-rows` from `0fr` to `1fr` on a wrapper whose only child has `overflow: hidden`. Don't measure heights in JS or guess a `max-height`.",
+        "Put the answer's padding inside the collapsing child, not on the grid, or a closed card stays padded open.",
+        "Mark a closed answer `inert` so links inside it can't be tabbed to.",
+        "The header button gets `aria-expanded` and `aria-controls` pointing at the answer. Don't give each answer `role=\"region\"`: with many rows, every answer would become a page landmark.",
+        "Rotate the chevron with `transform`.",
+      ],
+      checks: [
+        "Click a closed card: its answer opens over {duration}ms as the open one closes, and both chevrons turn over.",
+        "{collapsible|true=Click the open card: it closes, leaving none open.|*=Click the open card: nothing happens.}",
+        "Click a second card while the first is still opening: it reverses smoothly.",
+        "Tab through: focus lands on each card's header with a visible outline, never on links inside a closed answer; Enter and Space toggle.",
+        "Turn on reduced motion: cards open and close instantly.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "heading", label: "Heading", default: "Frequently asked questions" },
+      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "boolean", name: "collapsible", label: "Allow all closed", default: false },
+      { type: "boolean", name: "numbered", label: "Step numbers", default: true },
+      { type: "color", name: "cardColor", label: "Card color", default: "#F6F5F7" },
+    ],
+    promptNotes: [
+      "`items` is an array of `{ question, answer }`; both are ReactNodes, so the answer can hold paragraphs (spaced 1.6em apart) and links.",
+      "`heading` is optional. With it, the heading sits in a left column beside the cards once the component is at least 960px wide (the cards take 62.1%), and stacks above them below that. Without it, the component is just the cards.",
+      "Other props: `defaultOpen` (index, default 0), `easing`, `textColor`, `answerColor`, `numberColor`. The step numbers only show once the card list is at least 600px wide, as in the original's desktop-only numbers.",
+      "Layout: 20px corner cards on #F6F5F7, 10px apart, 25px side padding and 20px top and bottom; number column 42px; questions 28px / 1.1 (18px narrow), answers 16px / 1.6 #333 (14px narrow).",
+      "Original typography: F37 Judge (licensed), questions weight 300, heading 60px. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
     ],
   },
   {
