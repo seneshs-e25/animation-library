@@ -139,6 +139,7 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
               themeToggle={entry.themeToggle ?? true}
               fullBleed={entry.fullBleed}
               defaultTheme={entry.defaultTheme}
+              clickNotice={entry.group === "button-hovers"}
             >
               {Preview ? <Preview values={values} /> : <p className="text-muted-foreground">No preview</p>}
             </PreviewStage>

@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 const VISIBLE_MS = 2600;
 
 /**
- * Preview stage that confirms clicks on any button or link inside it.
+ * Preview stage. With `clickNotice`, it confirms clicks on any button or
+ * link inside it (used for the button components).
  *
  * Accessibility (WCAG 2.x):
  * - 4.1.3 Status Messages: the confirmation is announced through a polite
@@ -29,6 +30,7 @@ export function PreviewStage({
   themeToggle = true,
   fullBleed = false,
   defaultTheme = "dark",
+  clickNotice = false,
 }: {
   children: React.ReactNode;
   /** Show the light/dark background toggle. When false the stage stays dark. */
@@ -37,6 +39,8 @@ export function PreviewStage({
   fullBleed?: boolean;
   /** Stage the preview starts on. Dark unless the component is light-only. */
   defaultTheme?: StageTheme;
+  /** Confirm clicks with a "Button clicked" notice. Only for button components. */
+  clickNotice?: boolean;
 }) {
   const [selectedTheme, setTheme] = React.useState<StageTheme>(defaultTheme);
   const theme: StageTheme = themeToggle ? selectedTheme : "dark";
@@ -55,6 +59,7 @@ export function PreviewStage({
     const target = (event.target as HTMLElement).closest("a, button");
     if (!target || !event.currentTarget.contains(target)) return;
     if (target.tagName === "A") event.preventDefault();
+    if (!clickNotice) return;
 
     const label =
       target.textContent?.trim() ||
@@ -127,41 +132,45 @@ export function PreviewStage({
       )}
 
       {/* Always mounted so assistive tech is already listening when it changes. */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {visible ? message : ""}
-      </div>
+      {clickNotice && (
+        <>
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {visible ? message : ""}
+          </div>
 
-      <div
-        aria-hidden
-        data-visible={visible}
-        className={cn(
-          "pointer-events-none absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full",
-          "bg-neutral-900 py-2 pr-4 pl-2.5 text-sm text-neutral-50 shadow-lg ring-1 ring-white/10",
-          // Enter: 200ms strong ease-out; exit faster so it gets out of the way.
-          "transition-[opacity,translate,scale] ease-[cubic-bezier(0.23,1,0.32,1)]",
-          "data-[visible=true]:translate-y-0 data-[visible=true]:scale-100 data-[visible=true]:opacity-100 data-[visible=true]:duration-200",
-          "translate-y-2 scale-[0.97] opacity-0 duration-150",
-          "motion-reduce:translate-y-0 motion-reduce:scale-100",
-        )}
-      >
-        <span className="grid size-5 place-items-center rounded-full bg-emerald-500 text-neutral-950">
-          <Check className="size-3.5" strokeWidth={3} />
-        </span>
-        <span className="font-medium">Button clicked</span>
-        {notice && (
-          <span className="text-neutral-400">
-            {notice.label}
-            {notice.count > 1 && (
-              <span className="tabular-nums"> ×{notice.count}</span>
+          <div
+            aria-hidden
+            data-visible={visible}
+            className={cn(
+              "pointer-events-none absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full",
+              "bg-neutral-900 py-2 pr-4 pl-2.5 text-sm text-neutral-50 shadow-lg ring-1 ring-white/10",
+              // Enter: 200ms strong ease-out; exit faster so it gets out of the way.
+              "transition-[opacity,translate,scale] ease-[cubic-bezier(0.23,1,0.32,1)]",
+              "data-[visible=true]:translate-y-0 data-[visible=true]:scale-100 data-[visible=true]:opacity-100 data-[visible=true]:duration-200",
+              "translate-y-2 scale-[0.97] opacity-0 duration-150",
+              "motion-reduce:translate-y-0 motion-reduce:scale-100",
             )}
-          </span>
-        )}
-      </div>
+          >
+            <span className="grid size-5 place-items-center rounded-full bg-emerald-500 text-neutral-950">
+              <Check className="size-3.5" strokeWidth={3} />
+            </span>
+            <span className="font-medium">Button clicked</span>
+            {notice && (
+              <span className="text-neutral-400">
+                {notice.label}
+                {notice.count > 1 && (
+                  <span className="tabular-nums"> ×{notice.count}</span>
+                )}
+              </span>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
