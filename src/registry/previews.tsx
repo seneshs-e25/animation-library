@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import type { ControlValues } from "./types";
 import { FillSweepButton } from "./interactions/button-hovers/fill-sweep-button";
 import { CornerBloomButton } from "./interactions/button-hovers/corner-bloom-button";
@@ -13,6 +13,7 @@ import { RevealLinkCard } from "./interactions/image-hovers/reveal-link-card";
 import { RisingCopyCard } from "./interactions/image-hovers/rising-copy-card";
 import { BentoGrid, type BentoTile } from "./interactions/image-hovers/bento-grid";
 import { LogoMarquee } from "./animations/carousels/logo-marquee";
+import { CardMarquee } from "./animations/carousels/card-marquee";
 import { StackingCards } from "./animations/pin-scrollers/stacking-cards";
 import { FocusScroll } from "./animations/pin-scrollers/focus-scroll";
 import { CollapsingStack } from "./animations/pin-scrollers/collapsing-stack";
@@ -20,11 +21,16 @@ import { ExpandingCards } from "./animations/carousels/expanding-cards";
 import { SpotlightSlider, SpotlightSlide } from "./animations/carousels/spotlight-slider";
 import { AwardsCarousel } from "./animations/carousels/awards-carousel";
 import { ScrollTextReveal } from "./animations/scroll-triggers/scroll-text-reveal";
-import { CountUp } from "./animations/scroll-triggers/count-up";
+import { CountUp } from "./animations/text-effects/count-up";
+import { ScrollShiftHeadline } from "./animations/scroll-triggers/scroll-shift-headline";
+import { RisingHeadline } from "./animations/text-effects/rising-headline";
+import { WaveHeadline } from "./animations/text-effects/wave-headline";
 import { ScrollColorBackground } from "./animations/scroll-triggers/scroll-color-background";
 import { FaqAccordion } from "./animations/accordions/faq-accordion";
 import { ProgressTabs } from "./animations/tabs/progress-tabs";
-import { Hanken_Grotesk, Inter_Tight, Lexend_Exa, Mona_Sans, Space_Mono } from "next/font/google";
+import { StepTabs } from "./animations/tabs/step-tabs";
+import { VerticalTabSlider } from "./animations/tabs/vertical-tab-slider";
+import { Bricolage_Grotesque, Hanken_Grotesk, Instrument_Sans, Inter_Tight, Lexend_Exa, Mona_Sans, Space_Mono } from "next/font/google";
 import { Aurora } from "./shaders/backgrounds/aurora";
 import { Curtain } from "./shaders/backgrounds/curtain";
 
@@ -134,10 +140,12 @@ function SophosArrowLink({ children, color }: { children: ReactNode; color: stri
 }
 
 const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"] });
-const interTight = Inter_Tight({ weight: ["300", "400"], subsets: ["latin"] });
+const interTight = Inter_Tight({ weight: ["100", "300", "400"], subsets: ["latin"] });
 const lexendExa = Lexend_Exa({ weight: ["300", "400"], subsets: ["latin"] });
-const hankenGrotesk = Hanken_Grotesk({ weight: ["300", "400"], subsets: ["latin"] });
+const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
+const hankenGrotesk = Hanken_Grotesk({ weight: ["200", "300", "400"], subsets: ["latin"] });
 const monaSans = Mona_Sans({ subsets: ["latin"] });
+const bricolage = Bricolage_Grotesque({ weight: ["300"], subsets: ["latin"] });
 
 /** The seven award badges from Seemplicity's /why page (WordPress uploads). */
 const awards = [
@@ -221,6 +229,60 @@ const analystSteps = [
     image: "2026/04/AI-agents-team-provide-Image-4.webp",
     title: "Get the fix across the finish line.",
     body: "Bridge the security-engineering gap with org-aware routing and tailored, step-by-step guidance formatted perfectly for your development tools.",
+  },
+];
+
+/** The five benefit cards from Seemplicity's "Centralize exposure data" page, with its live icons and copy. */
+const seemplicityBenefits = [
+  {
+    icon: "2026/02/icons8-badge-1.svg",
+    title: "Ensure Audit Readiness",
+    body: "Maintain continuous visibility with traceable, inspection-ready remediation records.",
+  },
+  {
+    icon: "2026/02/ccwi-icon-1.svg",
+    title: "Reduce Findings Backlog",
+    body: "Automatically aggregate findings into consolidated fixes to shrink overwhelming backlogs.",
+  },
+  {
+    icon: "2026/02/ccwi-icon-5.svg",
+    title: "Prioritize High-Impact Risks",
+    body: "Focus teams on the exposures that matter most using automated risk scoring.",
+  },
+  {
+    icon: "2026/02/icons8-automation-1-1.svg",
+    title: "Automate Vulnerability Management",
+    body: "Replace manual triage with intelligent workflows that ingest and route tasks.",
+  },
+  {
+    icon: "2026/02/icons8-management-1.svg",
+    title: "Improve Cross-Team Alignment",
+    body: "Unify security and IT around a single source of truth to speed up fixes.",
+  },
+];
+
+/** The three steps from the Seemplicity "Why" page, with its live icons, images and copy. */
+const seemplicitySteps = [
+  {
+    label: "Collect",
+    icon: "2026/03/Tab-Slider-with-Media-1.svg",
+    image: "2026/04/your_backlog_doesn_t_stand_a_chance_image_2_2x.webp",
+    title: "Consolidate and normalize every signal.",
+    body: "Stop wrestling with mismatched data formats. Seemplicity ingests findings from your security stack and normalizes them into a unified schema. By standardizing findings, we create a consistent data layer ready for analysis and action.",
+  },
+  {
+    label: "Contextualize",
+    icon: "2026/03/Tab-Slider-with-Media-3.svg",
+    image: "2026/04/your_backlog_doesn_t_stand_a_chance_image_3_2x.webp",
+    title: "Decipher the noise with intelligent context.",
+    body: "Our advanced AI agents analyze your infrastructure map and business hierarchy. By automatically correlating findings with asset value and exposure, Seemplicity filters out the noise and spotlights the critical issues that demand verified priority.",
+  },
+  {
+    label: "Close",
+    icon: "2026/03/Tab-Slider-with-Media-2.svg",
+    image: "2026/04/your_backlog_doesn_t_stand_a_chance_image_4_2x.webp",
+    title: "Make resolution seamless.",
+    body: "Set your engineering teams up for success. We deliver prioritized fix requests, enriched with context and remediation guidance, into their native tools, making it easy for them to fix problems and for you to verify closure.",
   },
 ];
 
@@ -345,6 +407,172 @@ function CountUpDemo({ values }: { values: ControlValues }) {
         type="button"
         onClick={() => setRun((n) => n + 1)}
         className="rounded-full border border-black/15 px-4 py-1.5 text-sm text-neutral-700 hover:bg-black/5 group-data-[theme=dark]/stage:border-white/20 group-data-[theme=dark]/stage:text-white/80 group-data-[theme=dark]/stage:hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/** The eight25 hero headline, with a Replay button since it plays once. */
+function RisingHeadlineDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  const inView = values.trigger === "view";
+  return (
+    <div className="relative isolate w-full overflow-clip bg-white">
+      {/* A stand-in for the original's fan of vertical lines (decoration, not part of the component). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 -z-10 w-[55%] bg-[repeating-linear-gradient(90deg,#7A2BD8_0_2px,transparent_2px_14px)] opacity-70 [mask-image:radial-gradient(120%_90%_at_0%_100%,#000_20%,transparent_70%)]"
+      />
+      <div className={inView ? "h-[640px] overflow-y-auto overscroll-contain" : ""}>
+        {inView && <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>}
+        {inView && <div className="h-[420px]" />}
+        <div className="px-5 py-24 xl:px-[100px] xl:py-32">
+          <RisingHeadline
+            key={run}
+            text={values.text as string}
+            trigger={values.trigger as "load" | "view"}
+            stagger={values.stagger as number}
+            duration={values.duration as number}
+            distance={values.distance as number}
+            className={`${hankenGrotesk.className} text-[52px] leading-[0.9] font-light tracking-[-2.12px] text-[#4E008E] xl:text-[120px] xl:tracking-[-3px]`}
+          />
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-black/15 bg-white px-4 py-1.5 text-sm text-neutral-700 hover:bg-black/5"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/** The eight25 "accelerate growth" statement, in a preview that scrolls inside itself. */
+function ScrollShiftHeadlineDemo({ values }: { values: ControlValues }) {
+  return (
+    <div className="h-[640px] w-full overflow-y-auto overscroll-contain bg-white [container-type:inline-size]">
+      <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+      <div className="h-[360px]" />
+      <section className="relative overflow-x-clip py-24">
+        {/* A stand-in for the original's fan of faint vertical lines (decoration, not part of the component). */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-1/2 w-[45%] -translate-x-1/2 bg-[repeating-linear-gradient(90deg,rgba(78,0,142,0.2)_0_2px,transparent_2px_12px)] [mask-image:radial-gradient(60%_50%_at_50%_50%,#000_30%,transparent_80%)]"
+        />
+        <ScrollShiftHeadline
+          key={String(values.measure)}
+          headline={(values.headline as string) || undefined}
+          headlineSecondary={(values.headlineSecondary as string) || undefined}
+          travel={values.travel as number}
+          overlap={values.overlap as number}
+          measure={values.measure as "section" | "self"}
+          className={`${hankenGrotesk.className} relative leading-[1.1] font-extralight text-[#4E008E]`}
+          style={{ fontSize: "min(260px, 18.0556cqi)" }}
+        />
+      </section>
+      <div className="h-[520px]" />
+    </div>
+  );
+}
+
+/** The eight25 services list; photos are from the eight25 site. */
+const eight25Services = [
+  {
+    title: "Digital Experience Strategy",
+    description:
+      "We turn complex business challenges into actionable digital strategies through research, insights, and clear roadmaps.",
+    image: "/demo-images/vertical-tab-slider/strategy.webp",
+  },
+  {
+    title: "Experience Design & UX",
+    description: "Interfaces and journeys designed around how your buyers actually research, compare and decide.",
+    image: "/demo-images/vertical-tab-slider/design.webp",
+  },
+  {
+    title: "Composable CMS Implementations",
+    description: "Contentful, Storyblok and Contentstack builds that let marketing teams ship pages without waiting on a sprint.",
+    image: "/demo-images/vertical-tab-slider/cms.webp",
+  },
+  {
+    title: "Integration & Enablement",
+    description: "Your CRM, analytics and marketing tools wired into one stack, with the training to run it.",
+    image: "/demo-images/vertical-tab-slider/integration.webp",
+  },
+  {
+    title: "Ongoing Growth Programs",
+    description: "Continuous testing, optimisation and new campaigns that keep the site compounding after launch.",
+    image: "/demo-images/vertical-tab-slider/growth.jpg",
+  },
+].map((s) => ({ ...s, href: "#" }));
+
+/** The services section, in a preview that scrolls inside itself so the plate can play. */
+function VerticalTabSliderDemo({ values }: { values: ControlValues }) {
+  return (
+    <div className={`${instrumentSans.className} h-[760px] w-full overflow-y-auto overscroll-contain`} style={{ background: values.background as string }}>
+      <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+      <div className="h-[300px]" />
+      <VerticalTabSlider
+        key={String(values.reveal)}
+        items={eight25Services}
+        slideDuration={values.slideDuration as number}
+        tabShift={values.tabShift as number}
+        inactiveOpacity={values.inactiveOpacity as number}
+        glow={values.glow as boolean}
+        reveal={values.reveal as boolean}
+        background={values.background as string}
+        color={values.color as string}
+        revealBackground={values.revealBackground as string}
+        revealColor={values.revealColor as string}
+        className="px-5 py-[100px] @min-[960px]:px-10 @min-[960px]:py-[200px] [&_[role=group]]:font-(family-name:--vts-tab-font)"
+        style={{ "--vts-tab-font": hankenGrotesk.style.fontFamily } as CSSProperties}
+      >
+        {/* A stand-in for the original's faint white bars over the card column; decoration, not part of the component. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-[240px] left-0 h-[1100px] w-[400px] bg-[repeating-linear-gradient(90deg,#fff_0_2px,transparent_2px_10.47px)] opacity-[0.08] [mask-image:linear-gradient(transparent,#000_25%,#000_75%,transparent)] max-[959px]:hidden"
+        />
+        <h2 className={`${hankenGrotesk.className} text-[44px] leading-none font-light @min-[960px]:text-[80px] @min-[960px]:font-normal`}>
+          What we do
+        </h2>
+      </VerticalTabSlider>
+      <div className="h-[520px]" />
+    </div>
+  );
+}
+
+/** The NetApp AI hero headline, with a Replay button since it plays once. */
+function WaveHeadlineDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div
+      className={`${interTight.className} relative isolate flex min-h-[560px] w-full flex-col items-center justify-center gap-8 overflow-hidden bg-[#0B0730] px-5 py-24 text-center text-white`}
+    >
+      {/* A stand-in for the hero's looping background video (not part of the component). */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[radial-gradient(60%_80%_at_0%_30%,#0B4BD8_0%,transparent_60%),radial-gradient(50%_70%_at_100%_20%,#9B1C8C_0%,transparent_60%),radial-gradient(70%_60%_at_60%_0%,#5B21D6_0%,transparent_55%)] opacity-80"
+      />
+      <p className="text-sm tracking-[0.12em] text-white/90 uppercase">NetApp AI Solutions</p>
+      <WaveHeadline
+        key={run}
+        text={values.text as string}
+        trigger={values.trigger as "view" | "load"}
+        delay={values.delay as number}
+        stagger={values.stagger as number}
+        duration={values.duration as number}
+        rise={values.rise as number}
+        overshoot={values.overshoot as number}
+        blur={values.blur as number}
+        className="max-w-[1100px] text-[50px] leading-[0.9] font-thin tracking-[-0.8px] md:text-[80px] xl:text-[120px] xl:tracking-[-1.2px]"
+      />
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/20 px-4 py-1.5 text-sm text-white/80 hover:bg-white/10"
       >
         Replay
       </button>
@@ -544,6 +772,9 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       </div>
     );
   },
+  "scroll-shift-headline": ({ values }) => <ScrollShiftHeadlineDemo values={values} />,
+  "wave-headline": ({ values }) => <WaveHeadlineDemo values={values} />,
+  "rising-headline": ({ values }) => <RisingHeadlineDemo values={values} />,
   "count-up": ({ values }) => <CountUpDemo values={values} />,
   "faq-accordion": ({ values }) => (
     <div className="w-full max-w-[1280px] rounded-2xl bg-white px-6 py-12 md:px-10">
@@ -729,10 +960,10 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   "scroll-text-reveal": ({ values }) => (
     // The reveal is tied to scroll, so the preview scrolls inside itself.
     <div className="h-[640px] overflow-y-auto overscroll-contain bg-white">
-      <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
-      <div className="h-[320px]" />
+      <p className="py-6 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+      <div className="h-[340px]" />
       {/* The NetApp AI Gartner stats section: its background image, logo and padding (Contentstack URLs). */}
-      <section className="relative overflow-clip px-5 pt-[102px] pb-[98px] xl:pt-[259px] xl:pb-[251px]">
+      <section className="relative overflow-clip px-5 pt-[60px] pb-[98px] xl:pt-[100px] xl:pb-[251px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltfe61c08543248add/6a85d095971ef95cbe534b26/netapp-ai-temp-bg.png?width=1600&format=pjpg&disable=upscale"
@@ -757,11 +988,11 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
             rise={values.rise as boolean}
             riseDistance={values.riseDistance as number}
             riseDuration={values.riseDuration as number}
-            className={`${interTight.className} w-full max-w-[1060px] text-center text-[30px] leading-[1.1] font-light tracking-[-0.01em] text-white xl:text-[60px] xl:tracking-[-0.01em]`}
+            className={`${interTight.className} w-full max-w-[1060px] text-center text-[30px] leading-[1.1] font-light tracking-[-0.01em] text-black xl:text-[60px] xl:tracking-[-0.01em]`}
           />
         </div>
       </section>
-      <div className="h-[640px]" />
+      <div className="h-[400px]" />
     </div>
   ),
   "spotlight-slider": ({ values }) => (
@@ -846,6 +1077,43 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       />
     </div>
   ),
+  "card-marquee": ({ values }) => (
+    <div className={`${monaSans.className} min-w-0 bg-white py-16`}>
+      <div className="mb-10 px-6 text-center text-[#410051] min-[992px]:mb-[63px]">
+        <h2 className={`${bricolage.className} mb-[13px] text-[clamp(36px,27.09px+2.29vw,60px)] leading-none font-light tracking-[-1.2px]`}>
+          Unified visibility for enterprise scale
+        </h2>
+        <p className="mx-auto max-w-[640px] text-sm leading-[1.4] md:text-lg">
+          Eliminate data silos to drive faster fixes across cloud, code, and infrastructure.
+        </p>
+      </div>
+      <CardMarquee
+        speed={values.speed as number}
+        direction={values.direction as "left" | "right"}
+        pauseOnHover={values.pauseOnHover as boolean}
+        cardWidth={values.cardWidth as number}
+        cardHeight={values.cardHeight as number}
+        hoverGrow={values.hoverGrow as number}
+        hoverDuration={values.hoverDuration as number}
+        hoverBorder={values.hoverBorder as string}
+        label="Benefits"
+        items={seemplicityBenefits.map((card) => ({
+          // eslint-disable-next-line @next/next/no-img-element
+          icon: <img src={seemplicityUpload(card.icon)} alt="" />,
+          title: (
+            <h3
+              className="text-[22px] leading-[1.2] font-bold text-[#410051] min-[992px]:font-(family-name:--display) min-[992px]:text-4xl min-[992px]:font-normal min-[992px]:tracking-[-0.56px]"
+              style={{ "--display": bricolage.style.fontFamily } as React.CSSProperties}
+            >
+              {card.title}
+            </h3>
+          ),
+          description: <p className="text-sm leading-normal text-[#0B0623] md:text-base">{card.body}</p>,
+          href: "#",
+        }))}
+      />
+    </div>
+  ),
   "expanding-cards": ({ values }) => (
     <div className="min-w-0 bg-[#F2F1EE] px-6 py-16 md:px-10">
       <ExpandingCards
@@ -884,6 +1152,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       />
     </div>
   ),
+  "vertical-tab-slider": ({ values }) => <VerticalTabSliderDemo values={values} />,
   "progress-tabs": ({ values }) => (
     <div className="min-w-0 bg-white px-6 py-16 md:px-10">
       <ProgressTabs
@@ -913,6 +1182,38 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
               <p className="max-w-[730px] text-base leading-[1.4] text-[#0B0623]">{step.body}</p>
             </div>
           ),
+        }))}
+      />
+    </div>
+  ),
+  "step-tabs": ({ values }) => (
+    <div className={`${monaSans.className} min-w-0 bg-[#F5F5F5] px-2 py-16 md:px-6`}>
+      <StepTabs
+        fadeDuration={values.fadeDuration as number}
+        slideDuration={values.slideDuration as number}
+        slideOffset={values.slideOffset as number}
+        connectors={values.connectors as boolean}
+        accentFrom={values.accentFrom as string}
+        accentTo={values.accentTo as string}
+        connectorFrom={values.connectorFrom as string}
+        labelColor={values.labelColor as string}
+        className="mx-auto max-w-[1280px]"
+        items={seemplicitySteps.map((step) => ({
+          label: step.label,
+          // eslint-disable-next-line @next/next/no-img-element
+          icon: <img src={seemplicityUpload(step.icon)} alt="" />,
+          content: (
+            <>
+              <h3
+                className={`${bricolage.className} mb-5 text-[clamp(30px,24.06px+1.52vw,46px)] leading-[1.2] font-light tracking-[-0.92px] text-[#410051]`}
+              >
+                {step.title}
+              </h3>
+              <p className="text-sm leading-[1.4] text-[#0B0623] md:text-lg min-[992px]:leading-[1.6]">{step.body}</p>
+            </>
+          ),
+          // eslint-disable-next-line @next/next/no-img-element
+          media: <img src={seemplicityUpload(step.image)} alt="" />,
         }))}
       />
     </div>

@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ControlsPanel } from "@/components/controls-panel";
 import { CopyIcon } from "@/components/copy-icon";
 import { PreviewStage } from "@/components/preview-stage";
-import { getDefaultValues, getEntry, getNeighbors, type ControlValues } from "@/registry";
+import { getDefaultValues, getEntry, getNeighbors, levelLabels, type ControlValues } from "@/registry";
 import { previews } from "@/registry/previews";
 import { buildPrompt, buildUsage } from "@/lib/prompt";
 import { cn } from "@/lib/utils";
@@ -64,10 +64,17 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 pt-10 pb-16 md:px-10 md:pt-14">
+    <main className="mx-auto w-full max-w-6xl px-6 pt-6 pb-16 md:px-10 md:pt-8">
       <div className="flex items-start justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-medium tracking-tight md:text-5xl">{entry.title}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl font-medium tracking-tight md:text-5xl">{entry.title}</h1>
+            <span
+              className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+            >
+              {levelLabels[entry.level]} level component
+            </span>
+          </div>
           <p className="mt-3 text-lg text-muted-foreground">
             <Description text={entry.description} source={entry.source} />
           </p>

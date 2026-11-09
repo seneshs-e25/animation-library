@@ -19,6 +19,7 @@ export const categories: Category[] = [
     id: "animations",
     title: "Animated sections",
     groups: [
+      { id: "text-effects", title: "Text effects" },
       { id: "scroll-triggers", title: "Scroll triggers" },
       { id: "carousels", title: "Carousels" },
       { id: "pin-scrollers", title: "Pin scrollers" },
@@ -90,6 +91,7 @@ export const registry: RegistryEntry[] = [
     description: "Background fills from one edge while the label inverts",
     category: "interactions",
     group: "button-hovers",
+    level: "atom",
     componentName: "FillSweepButton",
     files: [
       {
@@ -163,6 +165,7 @@ export const registry: RegistryEntry[] = [
       "An ellipse blooms out of the bottom-right corner and floods the pill, used on Ironclad website",
     category: "interactions",
     group: "button-hovers",
+    level: "atom",
     source: "https://ironcladapp.com/",
     componentName: "CornerBloomButton",
     files: [
@@ -231,6 +234,7 @@ export const registry: RegistryEntry[] = [
       "An outlined ghost pill snaps to a solid fill with brand-colored text, used on Sophos website",
     category: "interactions",
     group: "button-hovers",
+    level: "atom",
     source: "https://www.sophos.com/en-us",
     componentName: "GhostFillButton",
     files: [
@@ -295,6 +299,7 @@ export const registry: RegistryEntry[] = [
       "A deep green pill snaps to bright orange on hover, with a lighter press state, used on Ziing website",
     category: "interactions",
     group: "button-hovers",
+    level: "atom",
     source: "https://www.ziing.com/",
     componentName: "ColorSnapButton",
     files: [
@@ -360,6 +365,7 @@ export const registry: RegistryEntry[] = [
       "A plum-to-pink gradient opens out of the center of the pill as an expanding circle, used on Seemplicity website",
     category: "interactions",
     group: "button-hovers",
+    level: "atom",
     source: "https://seemplicity.ai/",
     componentName: "CircleRevealButton",
     files: [
@@ -429,6 +435,7 @@ export const registry: RegistryEntry[] = [
       "An outlined pill fills from the left with a rounded sweep while the label flips to white, used on eight25 website",
     category: "interactions",
     group: "button-hovers",
+    level: "atom",
     source: "https://www.eight25media.com/",
     componentName: "OutlineSweepButton",
     defaultTheme: "light",
@@ -495,6 +502,7 @@ export const registry: RegistryEntry[] = [
       "Hovering the customer tile slowly grows its photo inside a fixed rounded frame while the logo holds still, used on NetApp AI website",
     category: "interactions",
     group: "image-hovers",
+    level: "box",
     source: "https://netapp.ai/evaluate/customer-results/",
     componentName: "ZoomImageCard",
     defaultTheme: "light",
@@ -578,6 +586,7 @@ export const registry: RegistryEntry[] = [
       "Hovering the image tile lifts it and fades up a Learn More link over a rising gradient, used on Qlik website",
     category: "interactions",
     group: "image-hovers",
+    level: "box",
     source: "https://www.qlik.com/us",
     componentName: "RevealLinkCard",
     defaultTheme: "light",
@@ -647,6 +656,7 @@ export const registry: RegistryEntry[] = [
       "Hovering the image tile zooms its art and carries the headline from the foot of the card to the top, used on NetApp AI website",
     category: "interactions",
     group: "image-hovers",
+    level: "box",
     source: "https://netapp.ai/evaluate/customer-results/",
     componentName: "RisingCopyCard",
     defaultTheme: "light",
@@ -732,6 +742,7 @@ export const registry: RegistryEntry[] = [
       "Five image cards in a bento layout; hovering a linked card slowly zooms its art and lights up its CTA chip, used on NetApp AI website",
     category: "interactions",
     group: "image-hovers",
+    level: "section",
     source: "https://netapp.ai/technology/ai-data-security-governance/",
     componentName: "BentoGrid",
     defaultTheme: "light",
@@ -794,12 +805,240 @@ export const registry: RegistryEntry[] = [
     ],
   },
   {
+    slug: "rising-headline",
+    title: "Rising headline",
+    description:
+      "A display headline whose letters fill in from the bottom up as they rise into place, one after another, used on eight25 website",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://cntfl-eight25corporate-e25qa.vercel.app/",
+    componentName: "RisingHeadline",
+    dependencies: ["gsap"],
+    files: [
+      {
+        name: "rising-headline.tsx",
+        path: "src/registry/animations/text-effects/rising-headline.tsx",
+      },
+    ],
+    usageProps: ['as="h1"'],
+    defaultTheme: "light",
+    fullBleed: true,
+    motion: {
+      intent:
+        "A display headline that writes itself in: every letter fills from its baseline up while rising {distance}px into place, left to right, so the line feels poured rather than faded. It plays once and then the headline just sits there.",
+      trigger:
+        "{trigger|view=Scroll into view, once: the first time 20% of the headline is visible (an IntersectionObserver), then the observer disconnects.|*=Page load, once: it starts as soon as the component mounts (it's the hero, so it's already on screen).} It never replays.",
+      states: [
+        "Each letter: `clip-path: inset(120% -10% -20% -10%)` → `inset(-20% -10% -20% -10%)` (the top inset pulls up, so the letter fills bottom → top; the box is padded past the glyph so descenders and ascenders aren't cut off) and `translateY({distance}px)` → `0`, together.",
+        "Spaces are letters too (a 0.3em inline-block), so the stagger keeps its rhythm across words. The stagger runs through the whole headline in reading order, across line breaks.",
+      ],
+      timing: ["Letters: {duration}s each, `power2.out`, {stagger}s between one letter starting and the next."],
+      interruption:
+        "It's a one-shot intro: nothing can interrupt or reverse it. If the text changes, the tween is reverted and plays again from hidden.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` the letters are shown in place, with no motion. The pre-hydration hiding is scoped to `prefers-reduced-motion: no-preference`, so nothing is hidden even before JavaScript runs.",
+      rules: [
+        "Split into words → letters. Wrap each word in a `white-space: nowrap` inline-block so inline-block letters never break mid-word. The split spans are `aria-hidden`; screen readers get the full headline once from a visually hidden copy inside the heading.",
+        "Hide the letters with CSS before hydration (clipped and pushed down), so nothing flashes, and add a `<noscript>` rule that shows them when JavaScript is off.",
+        "Animate only `clip-path` and `transform`: no layout properties. Run it as one staggered GSAP tween in a `gsap.context` scoped to the heading and revert it on unmount.",
+        "Clear the inline styles on complete, so the finished headline is plain text with nothing left on `will-change`.",
+      ],
+      checks: [
+        "{trigger|view=Scroll to the headline|*=Reload the page}: letters fill bottom-up and rise {distance}px, one after another, left to right.",
+        "Descenders (y, p, g) aren't cut off mid-animation.",
+        "Before JavaScript loads, nothing flashes visible then hides; with JavaScript off, the headline is visible.",
+        "Turn on reduced motion: the headline is shown in place, with no motion.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "text", label: "Text", default: "Transform your", always: true },
+      {
+        type: "select",
+        name: "trigger",
+        label: "Plays on",
+        default: "load",
+        options: [
+          { label: "Load", value: "load" },
+          { label: "Into view", value: "view" },
+        ],
+      },
+      { type: "number", name: "stagger", label: "Letter stagger", default: 0.11, min: 0.01, max: 0.3, step: 0.01, unit: "s" },
+      { type: "number", name: "duration", label: "Letter duration", default: 1.2, min: 0.2, max: 3, step: 0.05, unit: "s" },
+      { type: "number", name: "distance", label: "Rise distance", default: 32, min: 0, max: 120, step: 2, unit: "px" },
+    ],
+    promptNotes: [
+      "`text` must be a plain string because every letter becomes a span: marks and links can't survive the split. Use \"\\n\" for a hard line break.",
+      "This is a base component: it only handles the letters and their motion. Font, size, colour, leading and width come from `className` (it renders one `as` element, `h1` by default).",
+      "Splitting into inline-blocks drops kerning between letters. That's true of the original too; keep tracking in `className`.",
+      "In the original it's the opening headline of the `Banner with Expanding Media` hero, over a decorative fan of fading vertical lines (not part of this component).",
+      "Original typography: Landour Display (licensed) weight 300 at 120px / 90% with -3px tracking from 1200px (52px, -2.12px tracking below), colour #4E008E on white. The demo uses Hanken Grotesk weight 300 as the closest Google Font.",
+      "It's a Client Component (\"use client\").",
+    ],
+  },  {
+    slug: "wave-headline",
+    title: "Wave headline",
+    description:
+      "A ripple crosses the headline and each letter rises out of it, blurred to sharp with a small overshoot, like a flag waving once, used on NetApp AI website",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://netapp.ai/",
+    componentName: "WaveHeadline",
+    files: [
+      {
+        name: "wave-headline.tsx",
+        path: "src/registry/animations/text-effects/wave-headline.tsx",
+      },
+    ],
+    usageProps: ['as="h1"'],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "The headline arrives as a wave: a ripple crosses the line left to right and each letter rises out of it, from a blurred cloud below its seat up through its baseline to a small overshoot, then settles, like a flag waving once. The stagger is the wave, so it should read as one front passing through the line, not letters animating one by one.",
+      trigger:
+        "{trigger|load=On mount, once.|*=The first time any part of the headline is in view (an IntersectionObserver with no threshold), once; the observer then disconnects.} The letters' animations are armed paused at first paint and released together by a `data-in-view` stamp on the heading, so they keep their timing relative to each other.",
+      states: [
+        "0%: `opacity: 0; translate: 0 {rise}em; filter: blur({blur}px)`.",
+        "55%: `opacity: 1` (the letter is whole while it's still travelling).",
+        "70%: `translate: 0 -{overshoot}em; filter: blur(0)` (the top of the flap, past the seat).",
+        "100%: `opacity: 1; translate: 0 0; filter: blur(0)`.",
+        "Slots are counted across words and lines in reading order. Spaces keep a slot without a span, so the ripple holds its rhythm across word gaps.",
+      ],
+      timing: [
+        "Each letter: {duration}ms, `cubic-bezier(0.22, 0.61, 0.36, 1)`, `fill-mode: backwards` (held hidden through its own delay).",
+        "Letter n starts at {delay}ms + n × {stagger}ms. In the original that's measured off the comp: the front crosses ~15 characters in ~630ms, and the 470ms lead lets the eyebrow above uncover first.",
+      ],
+      interruption: "A one-shot entrance: it plays once and can't be interrupted or reversed.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` there's no animation at all: the settled line, nothing hidden. The animations are only declared inside `@media (prefers-reduced-motion: no-preference)`.",
+      rules: [
+        "CSS keyframes on every letter, not JavaScript per frame: one `@keyframes`, a per-letter `--slot` custom property, and `animation-delay: calc(delay + slot × stagger)`.",
+        "Arm the animations `paused` and release them with one attribute on the heading, so the whole line starts on one clock. Under `@media (scripting: none)` release them outright, or the headline would stay hidden without JavaScript.",
+        "Letters must be `display: inline-block` (`translate` does nothing to an inline box). Wrap each word in a `white-space: nowrap` inline-block so a narrow headline only breaks at spaces; keep the spaces as text.",
+        "Screen readers get the headline once from a visually hidden copy; the split spans are `aria-hidden`.",
+      ],
+      checks: [
+        "{trigger|load=Reload|*=Reload with the headline on screen}: after {delay}ms the first letter rises out of a blur, and the front crosses the line at {stagger}ms per letter, each letter overshooting slightly and settling.",
+        "Nothing flashes visible before the wave starts.",
+        "Turn on reduced motion: the headline is just there, sharp, with no movement.",
+        "Narrow the window: the headline wraps only between words.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "text", label: "Text", default: "Intelligent data. Unmatched value.", always: true },
+      {
+        type: "select",
+        name: "trigger",
+        label: "Plays on",
+        default: "view",
+        options: [
+          { label: "Into view", value: "view" },
+          { label: "Load", value: "load" },
+        ],
+      },
+      { type: "number", name: "delay", label: "Delay", default: 470, min: 0, max: 2000, step: 10, unit: "ms" },
+      { type: "number", name: "stagger", label: "Letter stagger", default: 42, min: 5, max: 150, step: 1, unit: "ms" },
+      { type: "number", name: "duration", label: "Letter duration", default: 500, min: 100, max: 2000, step: 10, unit: "ms" },
+      { type: "number", name: "rise", label: "Rise", default: 0.42, min: 0, max: 1.5, step: 0.02, unit: "em" },
+      { type: "number", name: "overshoot", label: "Overshoot", default: 0.06, min: 0, max: 0.3, step: 0.01, unit: "em" },
+      { type: "number", name: "blur", label: "Blur", default: 14, min: 0, max: 40, step: 1, unit: "px" },
+    ],
+    promptNotes: [
+      "`text` must be a plain string because every letter becomes a span: marks and links can't survive the split. Use \"\\n\" for a hard line break.",
+      "This is a base component: it only handles the letters and their motion. Font, size, colour and alignment come from `className` (it renders one `as` element, `h1` by default).",
+      "Splitting into inline-blocks drops kerning pairs across letters, as in the original.",
+      "In the original it's the NetApp AI homepage hero: a 300ms bottom-up uncover on the eyebrow above it first (which is why the wave waits 470ms), the headline centred over a looping background video, and a prompt bar and tiles that arrive after it.",
+      "Original typography: F37 Judge (licensed) Thin at 120px / 90% with -1.2px tracking (80px / -0.8px below 1280px, 50px below 992px), white. The demo uses Inter Tight weight 100 as the closest Google Font.",
+      "It's a Client Component (\"use client\") only for the in-view stamp; the motion itself is CSS.",
+    ],
+  },
+
+  {
+    slug: "count-up",
+    title: "Count up",
+    description:
+      "A number counts up from 0 to its value the first time it scrolls into view, used on NetApp AI website",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://netapp.ai/platform/novus/",
+    componentName: "CountUp",
+    defaultTheme: "light",
+    files: [
+      {
+        name: "count-up.tsx",
+        path: "src/registry/animations/text-effects/count-up.tsx",
+      },
+    ],
+    motion: {
+      intent:
+        "A stat's number counts up from 0 to its value as the stat arrives on screen, so the figure feels earned rather than printed. In a row of stats the original counts them one after another, left to right, each starting when the one before lands. It plays once per page load and then the numbers just sit there.",
+      trigger:
+        "Scroll into view, once: the first time {threshold*100}% of the number is visible (an IntersectionObserver), then the observer disconnects. It never replays on later scrolls; only a reload arms it again. The original watches the whole stat row and starts when 40% of the row is visible.",
+      states: [
+        "Number: `0` → the value, written into the number's own text every animation frame. It keeps the value's decimals the whole way (2.6 counts 0.0, 0.1 … 2.6) and lands on exactly the value.",
+        "Prefix and suffix (e.g. \"K+\", \"TB/s\"): rendered once and never rewritten.",
+        "Before the trigger: the number already reads `0`. It's zeroed on hydration, before the first paint, so a reader scrolling down meets 0, never the final figure snapping back to 0.",
+      ],
+      timing: [
+        "Duration: {duration}ms per number.",
+        "{easing|linear=Easing: linear (constant speed, no ease-in or ease-out), as in the original.|*=Easing: ease-out (cubic, `1 - (1 - t)^3`), so the count slows into the final value.}",
+        "In a row: each number starts when the previous one lands, i.e. stat n waits n × {duration}ms after the trigger (`delay={index * duration}`).",
+      ],
+      interruption:
+        "Nothing interrupts it. Once started, a count runs to its value even if the stat scrolls back out of view. If the component unmounts mid-count, stop the frame loop and timer.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, don't count and don't zero: the final number is shown from the start.",
+      rules: [
+        "Server-render the final number, then zero it in a layout effect on the client. Without JavaScript the reader sees the real figure.",
+        "Rewrite only the number's own text node with requestAnimationFrame. Don't re-render React state every frame, and don't touch the prefix or suffix.",
+        "Give screen readers the final value once (visually hidden text) and hide the counting digits with `aria-hidden`, so the count isn't announced frame by frame.",
+        "Use `font-variant-numeric: tabular-nums` so the number's width doesn't jitter while it counts (the original doesn't; it's an improvement).",
+      ],
+      checks: [
+        "Load the page with the stats below the fold: they read 0 until you scroll to them, then count up over {duration}ms.",
+        "Scroll away and back: they don't count again.",
+        "A decimal value like 2.6 lands on 2.6, not 3 or 2.",
+        "Turn on reduced motion and reload: the final numbers show immediately.",
+        "With JavaScript off, the final numbers show.",
+        "A screen reader reads each stat once, with its final value.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "value", label: "Value", default: 100, min: 0, max: 1000, step: 1, always: true },
+      { type: "text", name: "prefix", label: "Prefix", default: "" },
+      { type: "text", name: "suffix", label: "Suffix", default: "TB/s", always: true },
+      { type: "number", name: "duration", label: "Duration", default: 1000, min: 200, max: 3000, step: 50, unit: "ms" },
+      {
+        type: "select",
+        name: "easing",
+        label: "Easing",
+        default: "linear",
+        options: [
+          { label: "Linear (original)", value: "linear" },
+          { label: "Ease out", value: "ease-out" },
+        ],
+      },
+      { type: "number", name: "threshold", label: "Visible to start", default: 0.4, min: 0, max: 1, step: 0.05 },
+    ],
+    promptNotes: [
+      "One <CountUp> per number. `value` is the number, `prefix` / `suffix` are the fixed text around it (`value={50} suffix=\"K+\"`, `value={100} suffix=\"TB/s\"`).",
+      "To count a row one after another, give each stat `delay={index * duration}`. Each CountUp watches itself, so in a row that comes into view together this matches the original's group sequence.",
+      "It's a client component (\"use client\"), but it server-renders the final number. Drop it inside a Server Component's markup as-is.",
+      "In the original the numbers sit in a framed stat row (a 1px #CFDDE6 frame split by hairlines, label at the top of each cell, figure at the bottom at 120px / 0.9 / -1.2px, 72px on mobile). That layout is the section's; the component is just the number.",
+      "Original typography: F37 Judge (licensed), labels 28px / 1.1, figures weight 100. The demo uses Inter Tight weight 300 as the closest Google Font.",
+    ],
+  },
+  {
     slug: "scroll-text-reveal",
     title: "Scroll text reveal",
     description:
       "A dimmed statement fills in letter by letter as its section scrolls through the viewport, after fading up into place, used on NetApp AI website",
     category: "animations",
     group: "scroll-triggers",
+    level: "atom",
     source: "https://netapp.ai/",
     componentName: "ScrollTextReveal",
     files: [
@@ -883,7 +1122,84 @@ export const registry: RegistryEntry[] = [
       "`text` must be a plain string because it is split into one span per character (or per word with `split=\"word\"`). Screen readers get the full text once from a visually hidden copy; the split spans are `aria-hidden`.",
       "By default the scroll progress is measured on the closest `<section>`, as in the original (whose section has 259px top / 251px bottom padding, 102px / 98px below 1280px): the component names a view timeline on it. Pass `timeline=\"self\"` if the text isn't inside a section or the section is very tall.",
       "Gotcha: no ancestor between the text and the page scroller may have `overflow: hidden`/`auto`/`scroll`. Any of those makes that ancestor the scroll container, the view timeline attaches to it, and since it never scrolls the text stays frozen. Use `overflow: clip` (Tailwind `overflow-clip`) on the section to clip decorations instead.",
-      "Original typography: F37 Judge (licensed) at 60px / 66px, weight 100, -0.6px tracking, centred in a 1060px column (30px / 33px, -0.3px below 1280px), white over a light aurora background, with a 30px-tall attribution logo (20px below 1280px) 60px above it. The demo uses Inter Tight weight 300 as the closest Google Font.",
+      "Original typography: F37 Judge (licensed) at 60px / 66px, weight 100, -0.6px tracking, centred in a 1060px column (30px / 33px, -0.3px below 1280px), white over a light aurora background, with a 30px-tall attribution logo (20px below 1280px) 60px above it. The demo uses Inter Tight weight 300 as the closest Google Font, in black so it reads on the light background.",
+    ],
+  },
+  {
+    slug: "scroll-shift-headline",
+    title: "Scroll shift headline",
+    description:
+      "Two huge centred lines slide past each other in opposite directions as you scroll, landing dead centre when the section is centred, used on eight25 website",
+    category: "animations",
+    group: "scroll-triggers",
+    level: "atom",
+    source: "https://cntfl-eight25corporate-e25qa.vercel.app/",
+    componentName: "ScrollShiftHeadline",
+    files: [
+      {
+        name: "scroll-shift-headline.tsx",
+        path: "src/registry/animations/scroll-triggers/scroll-shift-headline.tsx",
+      },
+    ],
+    usageProps: ['as="h2"'],
+    defaultTheme: "light",
+    fullBleed: true,
+    motion: {
+      intent:
+        "A two-line display statement that leans with the reader's scrolling: the lines are pulled apart sideways while the section approaches, close onto a centred stack as it reaches the middle of the screen, and cross past each other as it leaves. It's tied to scroll, never on a timer, so the type only moves while you do.",
+      trigger:
+        "Scroll position, as a scrub. One progress number is a pure function of where {measure|self=the heading|*=the closest `<section>` around the heading} sits: `+1` while it's fully below the viewport's middle, `0` when its centre is on the viewport's middle, `-1` once it's fully above (clamped to that range).",
+      states: [
+        "Line one: `translateX(progress × {travel}em × -1)`, so it sits to the left below centre and to the right above it.",
+        "Line two: `translateX(progress × {travel}em)`, the same distance the opposite way.",
+        "At `progress = 0` both lines are at 0: centred (`text-align: center` on the heading is their whole resting position, with no horizontal offsets that would have to agree).",
+        "The travel is in `em`, so it scales with the type: {travel}em is about {travel*260}px at a 260px display size.",
+      ],
+      timing: [
+        "No duration or easing: linear, mapped 1:1 to scroll position.",
+        "Write the progress as a CSS custom property on the heading at most once per animation frame, and only when it changed (4 decimal places).",
+      ],
+      interruption:
+        "There's no state to interrupt: the offset always matches the scroll position, so stopping freezes it and scrolling back walks the lines back the way they came.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` (watched live), stop listening and remove the property: both lines sit centred and never move.",
+      rules: [
+        "Publish one custom property (progress) from a passive scroll listener (capture phase on `window`, so nested scroll containers count too) plus resize, coalesced into `requestAnimationFrame`. The lines read it in a `calc()` with a `0` fallback, so server HTML and no-JS render the centred composition.",
+        "Measure progress against the nearest scroll container (the window, unless the heading sits in a scrolling box).",
+        "Each line is a single, `white-space: nowrap` copy of its text: nothing loops. A line wider than the viewport bleeds past both edges, so clip the section horizontally with `overflow-x: clip` (not `hidden`, which would make it a scroll container).",
+        "Only `transform` changes. React must not re-render on scroll.",
+      ],
+      checks: [
+        "Scroll the section up from below: line one starts left and line two right, and they meet in a centred stack exactly when the section is centred in the viewport.",
+        "Keep scrolling: they cross and part the other way as the section leaves the top. Scroll back: they retrace.",
+        "Stop scrolling: nothing moves.",
+        "No horizontal scrollbar at any width.",
+        "Turn on reduced motion: both lines sit centred and stay still.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "headline", label: "Line 1", default: "accelerate", always: true },
+      { type: "text", name: "headlineSecondary", label: "Line 2", default: "growth", always: true },
+      { type: "number", name: "travel", label: "Travel", default: 0.6, min: 0, max: 2, step: 0.05, unit: "em" },
+      { type: "number", name: "overlap", label: "Line overlap", default: 0.35, min: 0, max: 0.6, step: 0.01, unit: "em" },
+      {
+        type: "select",
+        name: "measure",
+        label: "Centred on",
+        default: "section",
+        options: [
+          { label: "Section", value: "section" },
+          { label: "Heading", value: "self" },
+        ],
+      },
+    ],
+    promptNotes: [
+      "`headline` and `headlineSecondary` are the two lines (plain strings, as the original's CMS fields). Either can be left out; with one line it still slides, just with nothing to pass.",
+      "This is a base component: it only handles the two lines and their slide. Font, size, weight, leading and colour come from `className`/`style` on the component (one `as` element, `h2` by default, `text-align: center`). `overlap` pulls line two up into line one in em (the original uses 0.3462em at 260px, 0.3889em on mobile).",
+      "Put it in a section with `overflow-x: clip` so the bleeding lines never cause a horizontal scrollbar. By default progress is measured on that closest `<section>`; pass `measure=\"self\"` if there isn't one.",
+      "In the original it's the `onscrollText` content section, over a decorative fan of faint vertical lines in rgba(78, 0, 142, 0.2) that sway slowly (not part of this component).",
+      "Original typography: Landour Display (licensed) weight 200 (Extra Light, from the variable font with `\"opsz\" 72`), fluid `min(260px, 18.0556vw)` (260px at 1440), 110% leading, 0 tracking, colour #4E008E on white. The demo uses Hanken Grotesk weight 200 as the closest Google Font.",
+      "It's a Client Component (\"use client\"); no dependencies.",
     ],
   },
   {
@@ -893,6 +1209,7 @@ export const registry: RegistryEntry[] = [
       "The page background fades to a new color as each section scrolls in, so dark and light sections hand over smoothly, used on NetApp AI website",
     category: "animations",
     group: "scroll-triggers",
+    level: "page",
     source: "https://netapp.ai/solutions/ai-training-fine-tuning/",
     componentName: "ScrollColorBackground",
     files: [
@@ -950,154 +1267,13 @@ export const registry: RegistryEntry[] = [
     ],
   },
   {
-    slug: "count-up",
-    title: "Count up",
-    description:
-      "A number counts up from 0 to its value the first time it scrolls into view, used on NetApp AI website",
-    category: "animations",
-    group: "scroll-triggers",
-    source: "https://netapp.ai/platform/novus/",
-    componentName: "CountUp",
-    defaultTheme: "light",
-    files: [
-      {
-        name: "count-up.tsx",
-        path: "src/registry/animations/scroll-triggers/count-up.tsx",
-      },
-    ],
-    motion: {
-      intent:
-        "A stat's number counts up from 0 to its value as the stat arrives on screen, so the figure feels earned rather than printed. In a row of stats the original counts them one after another, left to right, each starting when the one before lands. It plays once per page load and then the numbers just sit there.",
-      trigger:
-        "Scroll into view, once: the first time {threshold*100}% of the number is visible (an IntersectionObserver), then the observer disconnects. It never replays on later scrolls; only a reload arms it again. The original watches the whole stat row and starts when 40% of the row is visible.",
-      states: [
-        "Number: `0` → the value, written into the number's own text every animation frame. It keeps the value's decimals the whole way (2.6 counts 0.0, 0.1 … 2.6) and lands on exactly the value.",
-        "Prefix and suffix (e.g. \"K+\", \"TB/s\"): rendered once and never rewritten.",
-        "Before the trigger: the number already reads `0`. It's zeroed on hydration, before the first paint, so a reader scrolling down meets 0, never the final figure snapping back to 0.",
-      ],
-      timing: [
-        "Duration: {duration}ms per number.",
-        "{easing|linear=Easing: linear (constant speed, no ease-in or ease-out), as in the original.|*=Easing: ease-out (cubic, `1 - (1 - t)^3`), so the count slows into the final value.}",
-        "In a row: each number starts when the previous one lands, i.e. stat n waits n × {duration}ms after the trigger (`delay={index * duration}`).",
-      ],
-      interruption:
-        "Nothing interrupts it. Once started, a count runs to its value even if the stat scrolls back out of view. If the component unmounts mid-count, stop the frame loop and timer.",
-      reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, don't count and don't zero: the final number is shown from the start.",
-      rules: [
-        "Server-render the final number, then zero it in a layout effect on the client. Without JavaScript the reader sees the real figure.",
-        "Rewrite only the number's own text node with requestAnimationFrame. Don't re-render React state every frame, and don't touch the prefix or suffix.",
-        "Give screen readers the final value once (visually hidden text) and hide the counting digits with `aria-hidden`, so the count isn't announced frame by frame.",
-        "Use `font-variant-numeric: tabular-nums` so the number's width doesn't jitter while it counts (the original doesn't; it's an improvement).",
-      ],
-      checks: [
-        "Load the page with the stats below the fold: they read 0 until you scroll to them, then count up over {duration}ms.",
-        "Scroll away and back: they don't count again.",
-        "A decimal value like 2.6 lands on 2.6, not 3 or 2.",
-        "Turn on reduced motion and reload: the final numbers show immediately.",
-        "With JavaScript off, the final numbers show.",
-        "A screen reader reads each stat once, with its final value.",
-      ],
-    },
-    controls: [
-      { type: "number", name: "value", label: "Value", default: 100, min: 0, max: 1000, step: 1, always: true },
-      { type: "text", name: "prefix", label: "Prefix", default: "" },
-      { type: "text", name: "suffix", label: "Suffix", default: "TB/s", always: true },
-      { type: "number", name: "duration", label: "Duration", default: 1000, min: 200, max: 3000, step: 50, unit: "ms" },
-      {
-        type: "select",
-        name: "easing",
-        label: "Easing",
-        default: "linear",
-        options: [
-          { label: "Linear (original)", value: "linear" },
-          { label: "Ease out", value: "ease-out" },
-        ],
-      },
-      { type: "number", name: "threshold", label: "Visible to start", default: 0.4, min: 0, max: 1, step: 0.05 },
-    ],
-    promptNotes: [
-      "One <CountUp> per number. `value` is the number, `prefix` / `suffix` are the fixed text around it (`value={50} suffix=\"K+\"`, `value={100} suffix=\"TB/s\"`).",
-      "To count a row one after another, give each stat `delay={index * duration}`. Each CountUp watches itself, so in a row that comes into view together this matches the original's group sequence.",
-      "It's a client component (\"use client\"), but it server-renders the final number. Drop it inside a Server Component's markup as-is.",
-      "In the original the numbers sit in a framed stat row (a 1px #CFDDE6 frame split by hairlines, label at the top of each cell, figure at the bottom at 120px / 0.9 / -1.2px, 72px on mobile). That layout is the section's; the component is just the number.",
-      "Original typography: F37 Judge (licensed), labels 28px / 1.1, figures weight 100. The demo uses Inter Tight weight 300 as the closest Google Font.",
-    ],
-  },
-  {
-    slug: "faq-accordion",
-    title: "FAQ accordion",
-    description:
-      "Numbered question cards where opening one answer closes the other, with the chevron turning over as the answer slides open, used on NetApp AI website",
-    category: "animations",
-    group: "accordions",
-    source: "https://netapp.ai/platform/novus/",
-    componentName: "FaqAccordion",
-    defaultTheme: "light",
-    files: [
-      {
-        name: "faq-accordion.tsx",
-        path: "src/registry/animations/accordions/faq-accordion.tsx",
-      },
-    ],
-    usageProps: ["items={faqs}", 'heading="Frequently asked questions"'],
-    motion: {
-      intent:
-        "An FAQ list of rounded, numbered question cards. {collapsible|true=One answer is open at a time, and clicking the open card closes it.|*=One answer is always open: opening a card closes the one that was open, and clicking the open card does nothing.} The answer slides open to its own height while the chevron turns over, on one long ease-out, so it feels smooth and unhurried.",
-      trigger:
-        "Click anywhere on a closed card (the card's header row is a <button> and a closed card is all header), or Tab to it and press Enter or Space.",
-      states: [
-        "Answer: collapsed (`grid-template-rows: 0fr`) → open to its natural height (`1fr`). The 20px above and below the answer sit inside the collapsing box, so they open and close with it.",
-        "Chevron (22px, pointing down): `rotate(0)` → `rotate(180deg)` when its card is open.",
-        "The card that was open closes at the same moment, with the same motion in reverse.",
-        "Nothing fades; the answer is clipped by its row as it opens.",
-      ],
-      timing: [
-        "Duration: {duration}ms for the answer and the chevron.",
-        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`) for both.",
-        "Opening one card and closing the other start together.",
-      ],
-      interruption:
-        "Use CSS transitions. Clicking another card mid-way reverses the half-open one from wherever it is, with no jump.",
-      reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, remove the transitions: answers open and close instantly and the chevron flips instantly.",
-      rules: [
-        "Animate `grid-template-rows` from `0fr` to `1fr` on a wrapper whose only child has `overflow: hidden`. Don't measure heights in JS or guess a `max-height`.",
-        "Put the answer's padding inside the collapsing child, not on the grid, or a closed card stays padded open.",
-        "Mark a closed answer `inert` so links inside it can't be tabbed to.",
-        "The header button gets `aria-expanded` and `aria-controls` pointing at the answer. Don't give each answer `role=\"region\"`: with many rows, every answer would become a page landmark.",
-        "Rotate the chevron with `transform`.",
-      ],
-      checks: [
-        "Click a closed card: its answer opens over {duration}ms as the open one closes, and both chevrons turn over.",
-        "{collapsible|true=Click the open card: it closes, leaving none open.|*=Click the open card: nothing happens.}",
-        "Click a second card while the first is still opening: it reverses smoothly.",
-        "Tab through: focus lands on each card's header with a visible outline, never on links inside a closed answer; Enter and Space toggle.",
-        "Turn on reduced motion: cards open and close instantly.",
-      ],
-    },
-    controls: [
-      { type: "text", name: "heading", label: "Heading", default: "Frequently asked questions" },
-      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
-      { type: "boolean", name: "collapsible", label: "Allow all closed", default: false },
-      { type: "boolean", name: "numbered", label: "Step numbers", default: true },
-      { type: "color", name: "cardColor", label: "Card color", default: "#F6F5F7" },
-    ],
-    promptNotes: [
-      "`items` is an array of `{ question, answer }`; both are ReactNodes, so the answer can hold paragraphs (spaced 1.6em apart) and links.",
-      "`heading` is optional. With it, the heading sits in a left column beside the cards once the component is at least 960px wide (the cards take 62.1%), and stacks above them below that. Without it, the component is just the cards.",
-      "Other props: `defaultOpen` (index, default 0), `easing`, `textColor`, `answerColor`, `numberColor`. The step numbers only show once the card list is at least 600px wide, as in the original's desktop-only numbers.",
-      "Layout: 20px corner cards on #F6F5F7, 10px apart, 25px side padding and 20px top and bottom; number column 42px; questions 28px / 1.1 (18px narrow), answers 16px / 1.6 #333 (14px narrow).",
-      "Original typography: F37 Judge (licensed), questions weight 300, heading 60px. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
-    ],
-  },
-  {
     slug: "logo-marquee",
     title: "Logo marquee",
     description:
       "An endless strip of logos scrolls sideways at a slow, steady pace, and a linked logo grows and pauses the strip on hover, used on Sophos website",
     category: "animations",
     group: "carousels",
+    level: "section",
     source: "https://www.sophos.com/en-us",
     componentName: "LogoMarquee",
     files: [
@@ -1171,12 +1347,95 @@ export const registry: RegistryEntry[] = [
     ],
   },
   {
+    slug: "card-marquee",
+    title: "Card marquee",
+    description:
+      "An endless row of icon cards drifts sideways; hovering one pauses the row while the card grows, turns white and reveals its copy, used on Seemplicity website",
+    category: "animations",
+    group: "carousels",
+    level: "section",
+    source: "https://seemplicity.ai/centralize-exposure-data/",
+    recreated: "WordPress",
+    componentName: "CardMarquee",
+    files: [
+      {
+        name: "card-marquee.tsx",
+        path: "src/registry/animations/carousels/card-marquee.tsx",
+      },
+    ],
+    usageProps: [
+      "items={benefits.map((benefit) => ({\n    icon: <img src={benefit.icon} alt=\"\" />,\n    title: <h3 className=\"text-[22px] font-bold min-[992px]:text-4xl\">{benefit.title}</h3>,\n    description: <p>{benefit.body}</p>,\n    href: benefit.url,\n  }))}",
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A row of benefit cards that drifts past on its own, slow enough to read. When the reader hovers a card the row holds still and that card lifts out of the row: it grows taller, turns white and opens a line of copy under its heading.",
+      trigger:
+        "The row moves continuously from mount. Hovering the row{pauseOnHover|true= (or keyboard focus on a card) pauses it|*= doesn't pause it}. Hovering or focusing a card opens it. Hover only applies on devices that really hover (`@media (hover: hover)`); on touch the cards stay closed and a tap follows the link.",
+      states: [
+        "Row: `translateX(0 → -50%)` of a track holding two identical halves, looping forever{direction|right= in reverse|*=}.",
+        "Card at rest: {cardWidth}px wide, {cardHeight}px tall (240px below 992px), `rgb(163 9 187 / 0.05)` background, transparent 1px border, no shadow. Icon top, heading bottom, copy hidden.",
+        "Card open: {hoverGrow}px taller (half above, half below, centred in its slot so neighbours don't move), white background, `{hoverBorder}` border, `0 8px 28px rgb(11 6 35 / 0.12)` shadow. The copy opens under the heading (`grid-template-rows: 0fr → 1fr`, opacity 0 → 1), pushing the heading up.",
+      ],
+      timing: [
+        "Row: {speed}px per second, `linear`. The duration is measured: one half's width ÷ {speed}.",
+        "Card open / close: {hoverDuration}ms, CSS `ease`, on height, background, border, shadow, and the copy's rows and opacity together.",
+      ],
+      interruption:
+        "Pausing freezes the row mid-move and it resumes from there (`animation-play-state`). A card that loses hover mid-open closes from wherever it is with the same transition. Resizing only re-measures the duration and copy count; the row doesn't jump back.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the row doesn't move: one copy of the cards shows as a horizontal scroll area, and cards open and close instantly.",
+      responsive:
+        "Below 992px: cards are 240px tall with 30px padding, a 20px gap and a 22px bold heading. From 992px: {cardHeight}px tall, 40px padding, 30px gap, 36px heading. Speed is {speed}px/s at every width.",
+      rules: [
+        "Animate the row with a CSS keyframe on `transform` only; never move it with JS each frame.",
+        "Put each card's spacing in its own right margin (not a flex `gap`), so -50% lands exactly on the start of the second half.",
+        "Render enough copies per half to cover the viewport (measure with a ResizeObserver). Every copy after the first is `aria-hidden` with `tabIndex={-1}` on its links.",
+        "Keep each card in a fixed-height slot and position it absolutely centred, so its grow never reflows the row.",
+      ],
+      checks: [
+        "Watch one card for 10 seconds: it moves about {speed*10}px at a constant pace, and a full loop shows no jump.",
+        "Hover a card: the row stops, the card grows {hoverGrow}px over {hoverDuration}ms and its copy opens under the heading; neighbours don't move. Move off: it closes and the row carries on from the same place.",
+        "Tab to a card: it opens with a focus ring and the row pauses.",
+        "Turn on reduced motion: the row stands still and scrolls sideways.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "speed", label: "Speed", default: 77, min: 10, max: 200, step: 1, unit: "px/s" },
+      {
+        type: "select",
+        name: "direction",
+        label: "Direction",
+        default: "left",
+        options: [
+          { label: "Left", value: "left" },
+          { label: "Right", value: "right" },
+        ],
+      },
+      { type: "boolean", name: "pauseOnHover", label: "Pause on hover", default: true },
+      { type: "number", name: "cardWidth", label: "Card width", default: 340, min: 240, max: 480, step: 10, unit: "px" },
+      { type: "number", name: "cardHeight", label: "Card height", default: 324, min: 240, max: 440, step: 4, unit: "px" },
+      { type: "number", name: "hoverGrow", label: "Hover grow", default: 58, min: 0, max: 120, step: 2, unit: "px" },
+      { type: "number", name: "hoverDuration", label: "Hover", default: 300, min: 0, max: 800, step: 10, unit: "ms" },
+      { type: "color", name: "hoverBorder", label: "Hover border", default: "#D9CCDC" },
+    ],
+    promptNotes: [
+      "`items` is an array of `{ icon?, title, description?, href? }`. `title` and `description` are nodes so the site's heading and paragraph styles apply; the title is clamped to 3 lines. With `href` the card is a link; without it the card is still focusable so keyboard users can open it.",
+      "The section heading and intro above the row are not part of this component - render them separately. The original section is white with 197px / 162px padding from 992px (80px below), and 83px between the intro and the row.",
+      "Original typography: heading Cabinet Grotesk (licensed) 36px / 1.2, weight 400, -0.56px tracking, #410051 from 992px; 22px bold below. Copy 16px / 1.5 #0B0623 (14px on phones). Icons are 32px pink line icons. The demo uses Bricolage Grotesque for the heading.",
+      "Motion matches the original: a CSS keyframe marquee at about 77px/s (7500px every 97.8s), and on hover the card goes from 324px to 382px tall, rgb(163 9 187 / 0.05) to white, with a #D9CCDC border and `0 8px 28px rgb(11 6 35 / 0.12)` shadow over 300ms `ease`. Deliberate changes: the original's copy pops in with `display: none → block` and its card grows only as tall as the row allows; here the copy opens smoothly with the grow, the card grows evenly about its centre, and the row pauses on hover so the open card stays under the pointer.",
+      "It is a Client Component (\"use client\") because it measures its width with a ResizeObserver. The keyframes and pause rules ship inside the component in a React 19 `<style href precedence>` tag; on React 18, move them into the global CSS.",
+    ],
+  },
+  {
     slug: "expanding-cards",
     title: "Expanding cards",
     description:
       "A row of slim, faded testimonial cards where the hovered one grows to fill the row and slides its quote in, used on Ironclad website",
     category: "animations",
     group: "carousels",
+    level: "section",
     source: "https://ironcladapp.com/",
     recreated: "WordPress",
     componentName: "ExpandingCards",
@@ -1253,6 +1512,7 @@ export const registry: RegistryEntry[] = [
       "One testimonial card in focus while its neighbours peek in blurred and shrunk, autoplaying until someone uses the arrows, swipes, dots or a row of logo tabs, used on Sophos website",
     category: "animations",
     group: "carousels",
+    level: "section",
     source: "https://www.sophos.com/en-us",
     componentName: "SpotlightSlider",
     files: [
@@ -1345,6 +1605,7 @@ export const registry: RegistryEntry[] = [
       "A row of award badges on soft pink and purple glows that two pill arrows beside the heading move one card at a time, used on Seemplicity website",
     category: "animations",
     group: "carousels",
+    level: "section",
     source: "https://seemplicity.ai/why/",
     recreated: "WordPress",
     componentName: "AwardsCarousel",
@@ -1422,6 +1683,7 @@ export const registry: RegistryEntry[] = [
       "Cards stick as you scroll, and each one slides up, shrinks, blurs and fades as the next card covers it, used on Seemplicity website",
     category: "animations",
     group: "pin-scrollers",
+    level: "section",
     source: "https://seemplicity.ai/",
     recreated: "WordPress",
     componentName: "StackingCards",
@@ -1492,6 +1754,7 @@ export const registry: RegistryEntry[] = [
       "A media column pins in place while text blocks scroll past, crossfading to the visual for the block in focus, with a swipeable card row on phones, used on Sophos website",
     category: "animations",
     group: "pin-scrollers",
+    level: "section",
     source: "https://www.sophos.com/en-us",
     componentName: "FocusScroll",
     files: [
@@ -1588,6 +1851,7 @@ export const registry: RegistryEntry[] = [
       "Rows of heading, copy and art are dealt into a pile as you scroll, each new row sliding up over the last and folding it into a strip, used on NetApp AI website",
     category: "animations",
     group: "pin-scrollers",
+    level: "section",
     source: "https://netapp.ai/technology/ai-performance-scale/",
     componentName: "CollapsingStack",
     dependencies: ["gsap"],
@@ -1659,12 +1923,96 @@ export const registry: RegistryEntry[] = [
     ],
   },
   {
+    slug: "vertical-tab-slider",
+    title: "Vertical tab slider",
+    description:
+      "Hovering a list of service titles slides a tall photo card to match, steps the title forward on a leader line and glows the card's colours behind it, while the section fades to a dark plate, used on eight25 website",
+    category: "animations",
+    group: "tabs",
+    level: "section",
+    source: "https://cntfl-eight25corporate-e25qa.vercel.app/",
+    componentName: "VerticalTabSlider",
+    files: [
+      {
+        name: "vertical-tab-slider.tsx",
+        path: "src/registry/animations/tabs/vertical-tab-slider.tsx",
+      },
+    ],
+    usageProps: ["items={services}"],
+    usageChildren: "<h2>{headline}</h2>",
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A services list that drives a photo card: running the pointer down the titles slides a 400×520 card window up or down to that service's card, and the hovered title steps forward with a hairline running into it from behind the card, so the list and the card read as one control. The card's own photo glows, blurred, behind the column.{reveal|true= As the section scrolls in, the whole band fades from {background} to a dark {revealBackground} plate, and fades back when it leaves.|*=}",
+      trigger:
+        "Desktop (container ≥ 960px): hovering a title with a mouse selects it (`pointerenter`, `pointerType === \"mouse\"` only, so a tap or a pen hovering doesn't select). Click selects too, as the fallback. Keyboard: Enter/Space select; focus alone doesn't (tabbing through doesn't drag the track), but a focused title shows at full opacity. Narrow: swiping the card carousel; the card nearest the scroller's centre becomes active.{reveal|true= Plate: scroll position, via two IntersectionObservers: it goes dark once the section's top has risen above 34% of the viewport height (`rootMargin: 0 0 -66% 0`) and back once its bottom has risen above 30% (`rootMargin: -30% 0 0 0`). It's dark only while both report intersecting, and it never latches, so it plays on every pass.|*=}",
+      states: [
+        "Card track: a column of 520px cards with 10px gaps inside a 400×520 `overflow: hidden` window. Active card n → `translateY(-n × 530px)`.",
+        "Active title: `opacity: 1` and `translateX(-{tabShift}px)`. The others: `opacity: {inactiveOpacity}`.",
+        "Leader rule: a 1px line, 729px long, ending at the active title's left edge at its vertical centre, `linear-gradient(to right, currentColor 85%, transparent)`, opacity 0 → 1. It belongs to each title (so it follows a title that wraps) and paints behind the card.",
+        "{glow|true=Glow: every card's photo stacked in one box (938×1024 desktop, 518×565 narrow), mirrored horizontally, `blur(75px)` (41px narrow) with a 403px corner radius, centred on the card column; only the active one is at opacity 1, so the colours dissolve between cards. The box is at `opacity: 0.4`{reveal|true= once the plate is dark, 0 before|*=}.|*=No glow.}",
+        "{reveal|true=Plate: section `background-color` {background} → {revealBackground} and `color` {color} → {revealColor}. The titles and leader rule inherit the colour; the card copy is always white on its dark scrim.|*=No plate change: the section stays {background} with {color} text.}",
+        "Narrow (< 960px): the same cards as a horizontal scroll-snap carousel (300px wide; the active card is 420px tall, the others 400px), with a 5px progress bar filled to (active + 1) / count and an `n / total` counter. No tab column.",
+        "Plus link: a white disc with a purple plus; on hover of the disc itself a violet disc wipes in from the bottom-left corner (`clip-path: circle(0% at 0% 100%)` → `circle(150% at 0% 100%)`).",
+      ],
+      timing: [
+        "Card track: {slideDuration}ms `ease-out` on `transform`.",
+        "Title step and opacity, leader rule: 300ms `ease-out`.",
+        "Narrow card height (400 ↔ 420): 300ms `ease-out`.",
+        "{glow|true=Glow crossfade: 700ms `ease-out`.|*=}",
+        "{reveal|true=Plate: 700ms `ease-out` on `background-color` and `color`.|*=}",
+        "Plus wipe: 300ms `ease-out`.",
+      ],
+      interruption:
+        "Everything is a CSS transition on state, so running the pointer quickly down the list retargets the track from wherever it is, with no queue. The plate reverses mid-fade the same way.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, keep the selection (it's how the card is chosen) but make the track move, title step and crossfades instant, and skip the plus wipe. The plate can still change colour, without the fade.",
+      rules: [
+        "Translate the `<ul>` inside the window with a CSS custom property set from state; don't scroll it.",
+        "On narrow screens use a native `scroll-snap` carousel so touch keeps the browser's own inertia, and read the active card back out of the scroll position (the slide whose centre is nearest the scroller's centre) rather than driving it.",
+        "Measure the plate's IntersectionObservers against the nearest scrolling ancestor if there is one, otherwise the viewport.",
+        "Stack the glow images and crossfade them on opacity rather than swapping one `src`, so a change is a dissolve, not a pop while bytes load. At 75px of blur a small image is enough.",
+        "Lift the card window above the tab column (`z-index`) so the leader rule passes behind the card.",
+      ],
+      checks: [
+        "Run the pointer down the titles: the card window slides to each card in {slideDuration}ms, the hovered title steps {tabShift}px left at full opacity with the line running into it from behind the card, and the others dim to {inactiveOpacity}.",
+        "Tap a title on a touch screen: it selects only on the tap, not on touch-down.",
+        "Tab through the titles with the keyboard: focus shows on each without moving the card; Enter selects.",
+        "{reveal|true=Scroll the section in: the band fades to {revealBackground} with white type once its top passes a third of the way up the screen, and back as it leaves the top; scroll back and it plays again.|*=}",
+        "Narrow the container below 960px: the cards become a swipe carousel with the progress bar and counter, and the counter follows the swipe.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "slideDuration", label: "Card slide", default: 500, min: 0, max: 1200, step: 50, unit: "ms" },
+      { type: "number", name: "tabShift", label: "Active tab step", default: 40, min: 0, max: 80, step: 2, unit: "px" },
+      { type: "number", name: "inactiveOpacity", label: "Inactive tabs", default: 0.4, min: 0.1, max: 1, step: 0.05 },
+      { type: "boolean", name: "glow", label: "Photo glow", default: true },
+      { type: "boolean", name: "reveal", label: "Dark plate on scroll", default: true },
+      { type: "color", name: "background", label: "Background", default: "#FFFFFF" },
+      { type: "color", name: "color", label: "Text", default: "#4E008E" },
+      { type: "color", name: "revealBackground", label: "Plate background", default: "#290044" },
+      { type: "color", name: "revealColor", label: "Plate text", default: "#FFFFFF" },
+    ],
+    promptNotes: [
+      "`items` is an array of `{ title, description?, image, imageAlt?, href?, linkLabel? }`, one per card and tab. `title` is the tab label and the small title at the top of the card; `description` is the large copy at the bottom (clamped to 5 lines); `href` adds the plus link (no href, no plus, but the slot is kept so copy wraps the same on every card).",
+      "Use the raw photo for `image`: the component lays the original's scrim over it (a corner shade, a shade up from the bottom left and a flat 20% black) so white copy reads on any photo. An image with the scrim already baked in comes out about 40% too dark.",
+      "`children` render above the card row (headline, intro copy, a CTA) and inherit the section's text colour, so they flip with the plate. The original has an 80px headline, then copy indented to the tab column's left edge (550px).",
+      "The original darkens the WHOLE PAGE (it sets `data-plate=\"dark\"` on <html> and recolours the neighbouring sections and the header). This component scopes the plate to its own section. If the site wants the page-wide version, set a data attribute on <html> from the same `revealed` state.",
+      "Layout: from a 960px-wide container the row is the 400px card window and a 730px tab column with at least 150px between them; the card is 520px tall in a 445px row, overflowing 37.5px above and below. It's a container query, so it follows the section's width, not the viewport (the original switches at the 1200px viewport).",
+      "The original also draws 39 white bars under `mix-blend-overlay` and two blurred curve shapes behind the card column (decoration, not part of this component; the demo has a simple stand-in).",
+      "Original typography: tabs in Landour Text (licensed) 34px / 110%, -1px tracking; card title Instrument Sans bold 14px / 160% (18px narrow); card copy Instrument Sans 24px / 140% (18px narrow). The demo uses Hanken Grotesk for the tabs as the closest Google Font, and Instrument Sans (a Google Font) for the cards.",
+      "It's a Client Component (\"use client\"); no dependencies. The demo photos are from the eight25 site.",
+    ],
+  },
+  {
     slug: "progress-tabs",
     title: "Progress tabs",
     description:
       "Autoplaying tabs where a fill sweeps across the active tab as its time runs out, then the media panel slides to the next one, used on Seemplicity website",
     category: "animations",
     group: "tabs",
+    level: "section",
     source: "https://seemplicity.ai/",
     recreated: "WordPress",
     componentName: "ProgressTabs",
@@ -1740,12 +2088,156 @@ export const registry: RegistryEntry[] = [
     ],
   },
   {
+    slug: "step-tabs",
+    title: "Step tabs",
+    description:
+      "Pill tabs joined by dotted gradient lines; picking one crossfades the card below while its image slides in from the right, used on Seemplicity website",
+    category: "animations",
+    group: "tabs",
+    level: "section",
+    source: "https://seemplicity.ai/why/",
+    recreated: "WordPress",
+    componentName: "StepTabs",
+    files: [
+      {
+        name: "step-tabs.tsx",
+        path: "src/registry/animations/tabs/step-tabs.tsx",
+      },
+    ],
+    usageProps: [
+      "items={steps.map((step) => ({\n    label: step.label,\n    icon: <img src={step.icon} alt=\"\" />,\n    content: <YourStepText title={step.title} body={step.body} />,\n    media: <img src={step.image} alt={step.imageAlt} />,\n  }))}",
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A short sequence of steps (Collect, Contextualize, Close) as pill tabs joined by dotted lines. Picking a step swaps the card below with a soft crossfade while its product image glides in from the right, so each step feels like it arrives rather than blinks in.",
+      trigger:
+        "Clicking a pill, or arrow keys / Home / End on the tab list. Nothing moves on its own: there is no autoplay.",
+      states: [
+        "Active pill: `linear-gradient(90deg, {accentFrom}, {accentTo})` background, white label and icon, `0 5px 20px rgb(65 0 81 / 0.4)` shadow, no border. Inactive pills: white with a 1px `rgb(65 0 81 / 0.1)` border and {labelColor} label.",
+        "Cards: all stacked in one grid cell; the active one is `opacity: 1`, the rest `opacity: 0`.",
+        "Image inside each card: `translateX({slideOffset}%)` when inactive, `translateX(0)` when active, clipped by its rounded (10px) box. The outgoing image slides back out to {slideOffset}% while its card fades.",
+      ],
+      timing: [
+        "Card crossfade: {fadeDuration}ms, CSS `ease`.",
+        "Image slide: {slideDuration}ms, `cubic-bezier(0.33, 1, 0.68, 1)` (easeOutCubic), both in and out.",
+        "Pill gradient, shadow and label colour: 300ms `ease-out`.",
+      ],
+      interruption:
+        "Everything is CSS transitions on state, so clicking another pill mid-transition retargets each card and image from where it is. Nothing jumps.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the crossfade stays (opacity only) but the image doesn't slide; it sits in place.",
+      responsive:
+        "Below 768px the card stacks (copy above image), pills shrink (40px tall, 12px semibold label, 15px icon) with 30px connectors, and the pill row scrolls sideways, keeping the active pill centred. From 768px the card is two equal columns; from 992px it's 5fr / 7fr with 50px 88px 60px 60px copy padding.",
+      rules: [
+        "Animate only `opacity` (cards) and `transform` (images). Stack the cards in one grid cell so the section's height is the tallest card's and never changes on switch.",
+        "Use the WAI-ARIA tabs pattern (tablist / tab / tabpanel, roving tabindex) and make inactive panels `inert`.",
+      ],
+      checks: [
+        "Click the next pill: the card crossfades over {fadeDuration}ms and its image slides in from the right over {slideDuration}ms, decelerating into place.",
+        "Click two pills quickly: nothing snaps; the images reverse from where they are.",
+        "The section's height doesn't change between steps.",
+        "Use the arrow keys on the tab list: focus and the card move together.",
+        "Turn on reduced motion: the card still fades, the image doesn't move.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "fadeDuration", label: "Crossfade", default: 600, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "slideDuration", label: "Image slide", default: 700, min: 0, max: 1400, step: 10, unit: "ms" },
+      { type: "number", name: "slideOffset", label: "Slide from", default: 80, min: 0, max: 100, step: 5, unit: "%" },
+      { type: "boolean", name: "connectors", label: "Connectors", default: true },
+      { type: "color", name: "accentFrom", label: "Accent from", default: "#410051" },
+      { type: "color", name: "accentTo", label: "Accent to", default: "#E3308C" },
+      { type: "color", name: "connectorFrom", label: "Line start", default: "#A309BB" },
+      { type: "color", name: "labelColor", label: "Label", default: "#410051" },
+    ],
+    promptNotes: [
+      "`items` is an array of `{ label, icon?, content, media }`. `label` is the pill text; `icon` is a ~26px `img` or `svg` before it (an `img` turns white on the active pill via `brightness(0) invert(1)`; an `svg` using `currentColor` follows the label). `content` is the left column (heading + copy, styled with the site's typography); `media` is the right column, sized to a 730 / 460 rounded box with `object-cover`.",
+      "The section heading, intro and any CTA below are not part of this component - render them around it. The original section background is #F5F5F5.",
+      "Card: white, 1px #D9CCDC border, 20px radius, `0 10px 30px rgb(65 0 81 / 0.2)` shadow. The wrapper has 30px padding so the shadow isn't clipped. From 768px the image box pulls 23px left into the copy column's padding, as in the original.",
+      "Connectors: a 1px line from #A309BB to #E3308C with a 6px dot at each end (the original is a 66 x 6 PNG); 72px wide from 768px, 30px below.",
+      "Original typography: pills Mona Sans 16px bold (a Google Font); card heading Cabinet Grotesk (licensed) 300 weight, `clamp(30px, 24.06px + 1.52vw, 46px)`, -0.92px tracking, line-height 1.2, #410051; copy 18px / 1.6 #0B0623. The demo uses Bricolage Grotesque for the heading.",
+      "Motion matches the original Swiper setup: `effect: fade` with `crossFade` at 600ms, and the image `translateX(80%) → 0` over 700ms `cubic-bezier(0.33, 1, 0.68, 1)`. Keep these unless asked. Deliberate changes: the pill gradient fades in over 300ms instead of switching instantly, and there's no swipe on the card (the pills and keys are the controls).",
+      "It is a Client Component (\"use client\"). Only the active tab is state; every transition is CSS.",
+    ],
+  },
+  {
+    slug: "faq-accordion",
+    title: "FAQ accordion",
+    description:
+      "Numbered question cards where opening one answer closes the other, with the chevron turning over as the answer slides open, used on NetApp AI website",
+    category: "animations",
+    group: "accordions",
+    level: "section",
+    source: "https://netapp.ai/platform/novus/",
+    componentName: "FaqAccordion",
+    defaultTheme: "light",
+    files: [
+      {
+        name: "faq-accordion.tsx",
+        path: "src/registry/animations/accordions/faq-accordion.tsx",
+      },
+    ],
+    usageProps: ["items={faqs}", 'heading="Frequently asked questions"'],
+    motion: {
+      intent:
+        "An FAQ list of rounded, numbered question cards. {collapsible|true=One answer is open at a time, and clicking the open card closes it.|*=One answer is always open: opening a card closes the one that was open, and clicking the open card does nothing.} The answer slides open to its own height while the chevron turns over, on one long ease-out, so it feels smooth and unhurried.",
+      trigger:
+        "Click anywhere on a closed card (the card's header row is a <button> and a closed card is all header), or Tab to it and press Enter or Space.",
+      states: [
+        "Answer: collapsed (`grid-template-rows: 0fr`) → open to its natural height (`1fr`). The 20px above and below the answer sit inside the collapsing box, so they open and close with it.",
+        "Chevron (22px, pointing down): `rotate(0)` → `rotate(180deg)` when its card is open.",
+        "The card that was open closes at the same moment, with the same motion in reverse.",
+        "Nothing fades; the answer is clipped by its row as it opens.",
+      ],
+      timing: [
+        "Duration: {duration}ms for the answer and the chevron.",
+        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`) for both.",
+        "Opening one card and closing the other start together.",
+      ],
+      interruption:
+        "Use CSS transitions. Clicking another card mid-way reverses the half-open one from wherever it is, with no jump.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, remove the transitions: answers open and close instantly and the chevron flips instantly.",
+      rules: [
+        "Animate `grid-template-rows` from `0fr` to `1fr` on a wrapper whose only child has `overflow: hidden`. Don't measure heights in JS or guess a `max-height`.",
+        "Put the answer's padding inside the collapsing child, not on the grid, or a closed card stays padded open.",
+        "Mark a closed answer `inert` so links inside it can't be tabbed to.",
+        "The header button gets `aria-expanded` and `aria-controls` pointing at the answer. Don't give each answer `role=\"region\"`: with many rows, every answer would become a page landmark.",
+        "Rotate the chevron with `transform`.",
+      ],
+      checks: [
+        "Click a closed card: its answer opens over {duration}ms as the open one closes, and both chevrons turn over.",
+        "{collapsible|true=Click the open card: it closes, leaving none open.|*=Click the open card: nothing happens.}",
+        "Click a second card while the first is still opening: it reverses smoothly.",
+        "Tab through: focus lands on each card's header with a visible outline, never on links inside a closed answer; Enter and Space toggle.",
+        "Turn on reduced motion: cards open and close instantly.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "heading", label: "Heading", default: "Frequently asked questions" },
+      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "boolean", name: "collapsible", label: "Allow all closed", default: false },
+      { type: "boolean", name: "numbered", label: "Step numbers", default: true },
+      { type: "color", name: "cardColor", label: "Card color", default: "#F6F5F7" },
+    ],
+    promptNotes: [
+      "`items` is an array of `{ question, answer }`; both are ReactNodes, so the answer can hold paragraphs (spaced 1.6em apart) and links.",
+      "`heading` is optional. With it, the heading sits in a left column beside the cards once the component is at least 960px wide (the cards take 62.1%), and stacks above them below that. Without it, the component is just the cards.",
+      "Other props: `defaultOpen` (index, default 0), `easing`, `textColor`, `answerColor`, `numberColor`. The step numbers only show once the card list is at least 600px wide, as in the original's desktop-only numbers.",
+      "Layout: 20px corner cards on #F6F5F7, 10px apart, 25px side padding and 20px top and bottom; number column 42px; questions 28px / 1.1 (18px narrow), answers 16px / 1.6 #333 (14px narrow).",
+      "Original typography: F37 Judge (licensed), questions weight 300, heading 60px. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
+    ],
+  },
+  {
     slug: "aurora",
     title: "Aurora",
     description:
       "Soft, flowing light seen through vertical fluted glass, a WebGL shader background",
     category: "shaders",
     group: "backgrounds",
+    level: "atom",
     componentName: "Aurora",
     files: [
       {
@@ -1805,6 +2297,7 @@ export const registry: RegistryEntry[] = [
       "A deep-blue gradient with a curtain of slowly drifting, undulating layers that fades out toward the bottom, a WebGL shader background",
     category: "shaders",
     group: "backgrounds",
+    level: "atom",
     componentName: "Curtain",
     files: [
       {

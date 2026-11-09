@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { categories, registry } from "@/registry";
+import { LevelBrowser } from "@/components/level-browser";
 
 const pillars: Record<string, string> = {
   interactions: "Micro-interactions on small UI: button hovers, links, icons.",
@@ -46,7 +47,7 @@ const promptSections = [
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 pt-10 pb-16 md:px-10 md:pt-14">
+    <main className="mx-auto w-full max-w-4xl px-6 pt-6 pb-16 md:px-10 md:pt-8">
       <h1 className="text-4xl font-medium tracking-tight md:text-5xl">Animation Library</h1>
       <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
         Production-ready motion for enterprise marketing websites. Every component respects
@@ -84,6 +85,10 @@ export default function Home() {
           );
         })}
       </div>
+
+      <LevelBrowser
+        items={registry.map(({ slug, title, level }) => ({ slug, title, level }))}
+      />
 
       <h2 className="mt-14 text-xl font-medium tracking-tight">How to use</h2>
       <ol className="mt-4 space-y-3">

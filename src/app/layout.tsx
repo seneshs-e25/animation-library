@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,9 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SidebarProvider style={{ "--sidebar-width": "17rem" } as React.CSSProperties}>
             <AppSidebar />
             <SidebarInset>
-              <header className="flex h-12 items-center px-4 md:hidden">
-                <SidebarTrigger />
-              </header>
+              <SiteHeader />
               {children}
             </SidebarInset>
           </SidebarProvider>

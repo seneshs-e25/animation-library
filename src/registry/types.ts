@@ -9,6 +9,19 @@
 
 export type CategoryId = "interactions" | "animations" | "shaders";
 
+/**
+ * Atomic level: atom (one element, e.g. a button), box (a card or block),
+ * section (a full page band), page (behaviour across sections).
+ */
+export type ComponentLevel = "atom" | "box" | "section" | "page";
+
+export const levelLabels: Record<ComponentLevel, string> = {
+  atom: "Atom",
+  box: "Box",
+  section: "Section",
+  page: "Page",
+};
+
 export type Control = (
   | {
       type: "color";
@@ -101,6 +114,8 @@ export type RegistryEntry = {
   category: CategoryId;
   /** Group id inside the category, e.g. `button-hovers`. */
   group: string;
+  /** How much of a page the component covers; shown as a label beside the title. */
+  level: ComponentLevel;
   /** The live site the effect was taken from, linked on the component page and in the brief. */
   source?: string;
   /**

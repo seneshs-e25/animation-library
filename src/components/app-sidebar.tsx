@@ -2,7 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  GalleryHorizontal,
+  Image as ImageIcon,
+  ListCollapse,
+  MousePointerClick,
+  MoveDown,
+  PanelTop,
+  Pin,
+  Sparkles,
+  Type,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +30,23 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { categories, getGroupEntries, getEntry } from "@/registry";
+import { Eight25Logo } from "@/components/eight25-logo";
+
+/** Sidebar icon per group. Kept here so the registry stays plain data. */
+const groupIcons: Record<string, LucideIcon> = {
+  "button-hovers": MousePointerClick,
+  "image-hovers": ImageIcon,
+  "scroll-triggers": MoveDown,
+  "text-effects": Type,
+  carousels: GalleryHorizontal,
+  "pin-scrollers": Pin,
+  tabs: PanelTop,
+  accordions: ListCollapse,
+  backgrounds: Sparkles,
+};
+
+const iconClass =
+  "text-muted-foreground transition-colors group-hover/menu-button:text-sidebar-accent-foreground";
 
 const gettingStarted = [{ title: "Introduction", href: "/" }];
 
@@ -29,10 +58,9 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r-0">
       <SidebarHeader className="px-4 pt-5 pb-2">
-        <Link href="/" className="flex items-center gap-2 text-[15px] font-medium tracking-tight">
-          <span className="grid size-6 place-items-center rounded-md bg-foreground text-[11px] font-semibold text-background">
-            AL
-          </span>
+        <Link href="/" className="flex items-center gap-2.5 text-[15px] font-medium tracking-tight">
+          <Eight25Logo className="h-3.5 w-auto shrink-0" />
+          <span aria-hidden className="h-3.5 w-px bg-foreground/20" />
           Animation Library
         </Link>
       </SidebarHeader>
@@ -57,13 +85,15 @@ export function AppSidebar() {
             <SidebarMenu>
               {category.groups.map((group) => {
                 const entries = getGroupEntries(category.id, group.id);
+                const Icon = groupIcons[group.id];
 
                 if (entries.length === 0) {
                   return (
                     <SidebarMenuItem key={group.id}>
-                      <SidebarMenuButton disabled className="justify-between opacity-50">
+                      <SidebarMenuButton disabled className="opacity-50">
+                        {Icon && <Icon className={iconClass} />}
                         {group.title}
-                        <span className="text-[11px] text-muted-foreground">Soon</span>
+                        <span className="ml-auto text-[11px] text-muted-foreground">Soon</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
@@ -81,19 +111,19 @@ export function AppSidebar() {
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
-                        <SidebarMenuButton className="justify-between">
+                        <SidebarMenuButton>
+                          {Icon && <Icon className={iconClass} />}
                           {group.title}
-                          <ChevronRight className="text-muted-foreground transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none" />
+                          <ChevronRight className="ml-auto text-muted-foreground transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="mx-0 border-l-0 px-0">
+                        <SidebarMenuSub className="mr-0 pr-0">
                           {entries.map((entry) => (
                             <SidebarMenuSubItem key={entry.slug}>
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={entry.slug === activeSlug}
-                                className="pl-4"
                               >
                                 <Link href={`/components/${entry.slug}`}>{entry.title}</Link>
                               </SidebarMenuSubButton>
