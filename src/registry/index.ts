@@ -569,6 +569,22 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "titleColor", label: "Caption color", default: "#000000" },
       { type: "text", name: "href", label: "Link", default: "/customers/ducati", always: true },
     ],
+    assets: [
+      {
+        prop: "src",
+        label: "Customer photo",
+        fit: "Fills the frame at `aspectRatio` ({aspectRatio}) with object-cover",
+        placeholder: "602x720",
+      },
+      {
+        prop: "logo",
+        label: "Customer logo",
+        fit: "Sits 30px in from the frame's top-left, at most 205px wide and 60px tall",
+        placeholder: "410x120",
+        notes: "Use a white logo, trimmed, on a transparent background: it sits on the dark corner scrim.",
+        optional: true,
+      },
+    ],
     promptNotes: [
       "The whole card is one <a>: hovering anywhere on it (or keyboard focus) zooms the photo. Pass `href` and any other anchor props.",
       "`logo` and `logoAlt` are optional; the logo sits 30px in from the frame's top-left, capped at 60px tall and 205px wide. Use a white logo with the scrim on (`scrim`, default true), which darkens that corner.",
@@ -640,6 +656,15 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "textColor", label: "Text color", default: "#FFFFFF" },
       { type: "boolean", name: "lift", label: "Lift on hover", default: true },
       { type: "text", name: "href", label: "Link", default: "/customers/business-continuity", always: true },
+    ],
+    assets: [
+      {
+        prop: "src",
+        label: "Tile art",
+        fit: "Fills the card at `aspectRatio` (default 220 / 280) with object-cover",
+        placeholder: "440x560",
+        notes: "Bake any background into the art, or keep it transparent so `color` shows through.",
+      },
     ],
     promptNotes: [
       "The whole card is one <a>; pass `href` and any other anchor props. Keyboard focus triggers the same reveal as hover.",
@@ -724,6 +749,15 @@ export const registry: RegistryEntry[] = [
       },
       { type: "text", name: "href", label: "Link", default: "/customers/dreamworks", always: true },
     ],
+    assets: [
+      {
+        prop: "src",
+        label: "Card photo",
+        fit: "Fills the whole card (fluid width, `height` tall) with object-cover",
+        placeholder: "800x720",
+        notes: "White copy rises over it, so a photo that's darker towards the bottom reads best.",
+      },
+    ],
     promptNotes: [
       "The whole card is one <a>; pass `href` and any other anchor props. Keyboard focus triggers the same state as hover.",
       "`height` is a number in px (the original's tiles are 355×360, 355×560 and 270×426 on mobile). `width` (default 355) is a maximum, so the card shrinks in a narrower column; pass `width=\"fill\"` to fill a grid cell. The headline drops from 40px to 32px when the card is narrower than 320px (a container query on its content box).",
@@ -794,6 +828,15 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
       { type: "number", name: "radius", label: "Corner radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
     ],
+    assets: [
+      {
+        prop: "tiles[].image",
+        label: "Tile art",
+        fit: "Fills each of the five tiles with object-cover. From 900px the tiles are about 422×592 (1), 398×417 (2), 402×204 (3 and 4) and 800×165 (5)",
+        placeholder: "844x1184 for tile 1, 800x834 for tile 2, 804x408 for tiles 3 and 4, 1600x330 for tile 5",
+        notes: "Copy sits on the art: use `tone: \"dark\"` for pale art.",
+      },
+    ],
     promptNotes: [
       "`tiles` is an array of `{ image, alt?, title?, ctaLabel?, href?, tone? }`. `href` makes the whole card a link and turns on its zoom; `ctaLabel` only shows on linked cards. `tone` is \"light\" (white copy on dark art, the default) or \"dark\" (dark #1E252F copy on pale art, plus a faint #D2CEEB hairline).",
       "The layout is built for five tiles; tiles 6–10 start a second bento below, and so on. Pass fewer and the empty slots stay empty.",
@@ -802,6 +845,98 @@ export const registry: RegistryEntry[] = [
       "It renders plain <img> tags. If the site has its own Image component, swap it in with fill/object-cover and keep the transition and scale classes on it.",
       "No client JavaScript, so it works in a Server Component.",
       "Original typography: F37 Judge (licensed), weight 300 titles. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
+    ],
+  },
+  {
+    slug: "hover-card-list",
+    title: "Hover card list",
+    description:
+      "A list of big titles with arch thumbnails; hovering a row tints it and pops out a detail card with a photo, tag pills and bullets, used on Hatch website",
+    category: "interactions",
+    group: "image-hovers",
+    level: "section",
+    source: "https://www.hatch.lk/",
+    recreated: "Framer",
+    componentName: "HoverCardList",
+    files: [
+      {
+        name: "hover-card-list.tsx",
+        path: "src/registry/interactions/image-hovers/hover-card-list.tsx",
+      },
+    ],
+    usageProps: ['heading="Meeting Rooms"', "groups={groups}"],
+    defaultTheme: "light",
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A list you scan by pointing: each row is a big title with an arch-shaped thumbnail, and the row under the pointer tints and pops a detail card (photo, tags, bullets) out beside the title, over the rows above and below. It should feel quick and direct, like flipping a card over, so sweeping down the list previews each item in turn.",
+      trigger:
+        "Pointer hover on a row, only on devices that really hover (Tailwind v4's `hover:` already checks `@media (hover: hover)`), or keyboard focus inside the row (`:focus-within`). Below 900px of container width, or on touch, tapping a row (or Enter/Space on it) toggles its details open inline instead.",
+      states: [
+        "Row: background `#FAFAFA` (`background`) \u2192 `{accent}`. 1px `{accent}` rules sit between rows.",
+        "Detail card, 900px+: `opacity: 0; scale: 0.96; visibility: hidden` \u2192 `opacity: 1; scale: 1; visible`. It's 330px wide, absolutely positioned 159px from the row's right edge (about 55px left of the index) and centred on the row (`top: 50%; translateY(-50%)`), so it overhangs the neighbouring rows; the hovered row is raised (`z-index`) above them.",
+        "Card contents: photo (299:222, only the top-right corner rounded, 34px), white tag pills (10px, icon + label) and a 16px bullet list in #666, on an `{accent}` card with 16px padding.",
+        "Below 900px: the details open inline under the title with a `grid-template-rows: 0fr \u2192 1fr` reveal and a fade, and the row stays tinted while open.",
+        "Location toggle (when there's more than one group): the active tab is a white pill with black text, the others 50% black on #F3F3F3. Switching swaps the list and closes any open row.",
+      ],
+      timing: [
+        "Row tint: {duration}ms, `cubic-bezier(0.22, 1, 0.36, 1)`, in and out.",
+        "Detail card: {cardDuration}ms `ease-out` for opacity and scale{cardDuration|0= (0 = it just appears, as on Hatch)|*=}.",
+        "Inline accordion: {duration}ms, the same curve as the tint.",
+      ],
+      interruption:
+        "All CSS transitions: moving to the next row fades the old card out while the new one fades in, and the tints cross over, both retargeting from wherever they are. Moving the pointer onto the card keeps its row hovered (the card is a child of the row).",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the tint, card and accordion change instantly.",
+      responsive:
+        "From 900px of container width: rows 32px top and bottom with 75px left and 60px right padding, a 112px thumbnail (60px 60px 30px 30px arch), titles clamp(40px, 4.3cqw, 62px) and 38px indexes, and the floating card. Below 900px: 18px 20px rows, a 50px thumbnail, 28px titles, 20px indexes, and the inline accordion instead of the card.",
+      rules: [
+        "Keep the hover in CSS (`group-hover`, `group-focus-within`); state is only the selected group and the open row for taps.",
+        "Hide closed cards with `visibility: hidden` (transitioned along with opacity) so the invisible cards, which overhang the neighbouring rows, never catch the pointer or a click.",
+        "Put the card inside the row, not in a shared overlay, so hovering the card keeps the row hovered and the card sits beside its own row.",
+        "Animate only `opacity`, `scale` and `background-color` (plus `grid-template-rows` for the small-screen accordion).",
+      ],
+      checks: [
+        "Hover a row: it tints to {accent} over {duration}ms and its card scales up into place beside the title, overlapping the rows above and below.",
+        "Sweep down the list: each row's card takes over smoothly, with no flicker or stuck cards.",
+        "Move the pointer from the row onto its card: the card stays open.",
+        "Tab through the rows: each one tints and shows its card.",
+        "Switch the toggle: the other list shows and nothing is left open.",
+        "Below 900px or on a phone: tapping a row opens its details inline; tapping again closes them.",
+        "Turn on reduced motion: everything changes instantly.",
+      ],
+    },
+    controls: [
+      { type: "color", name: "accent", label: "Accent", default: "#CDCEA6" },
+      { type: "number", name: "duration", label: "Tint", default: 400, min: 0, max: 1000, step: 10, unit: "ms" },
+      { type: "number", name: "cardDuration", label: "Card reveal", default: 200, min: 0, max: 600, step: 10, unit: "ms" },
+      { type: "boolean", name: "numbered", label: "Index numbers", default: true },
+    ],
+    assets: [
+      {
+        prop: "groups[].items[].thumb",
+        label: "Row thumbnail",
+        fit: "A square, arch-shaped thumbnail at the start of the row: 50px, 112px from 900px, object-cover",
+        placeholder: "224x224",
+        optional: true,
+      },
+      {
+        prop: "groups[].items[].image",
+        label: "Card photo",
+        fit: "The photo on the hover card, 299 / 222, object-cover. Defaults to `thumb`",
+        placeholder: "660x490",
+        optional: true,
+      },
+    ],
+    promptNotes: [
+      "`groups` is an array of `{ label, items }`; with more than one group a toggle shows (Hatch uses one per location), with one it doesn't. Each item is `{ title, thumb?, image?, alt?, tags?, bullets?, href? }`: `image` (the card photo) defaults to `thumb`, `tags` are `{ icon?, label }` pills, and `href` makes the row a link. Items without an image, tags or bullets get no card.",
+      "The file also exports `HourglassIcon` and `ArmchairIcon` (Tabler icons, MIT) for duration and capacity tags.",
+      "Other props: `heading`, `background` (#FAFAFA, the resting row colour), `numbered` (01, 02... at the end of each row).",
+      "Deliberate change: on Hatch the card just appears (it mounts on hover). Here it fades and scales in over `cardDuration` (200ms) so sweeping the list reads as one motion; set `cardDuration={0}` for the original snap. The tint uses Framer's 0.4s spring there, matched with an ease-out curve here. Hatch's card also carries a faint stripe pattern in the corner (brand artwork, not included).",
+      "It renders plain <img> tags. If the site has its own Image component, swap it in with object-cover and keep the classes.",
+      "It's a Client Component (\"use client\") for the toggle and the tap-to-open state; the hover itself is CSS.",
+      "Original typography: Montserrat (Google Font) for the heading (38px / 500), titles (62px / 400), indexes and tags; Open Sans 16px for the bullets. The component inherits the site's font; the demo uses Montserrat.",
     ],
   },
   {
@@ -955,6 +1090,355 @@ export const registry: RegistryEntry[] = [
     ],
   },
 
+  {
+    slug: "line-mask-reveal",
+    title: "Line mask reveal",
+    description:
+      "A paragraph splits into its rendered lines and each line slides up out of its own mask, one after another, used on Weonic's Weo Motion library",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://weonic-website.web.app/motion?tab=playground&n=56",
+    componentName: "LineMaskReveal",
+    dependencies: ["gsap"],
+    files: [
+      {
+        name: "line-mask-reveal.tsx",
+        path: "src/registry/animations/text-effects/line-mask-reveal.tsx",
+      },
+    ],
+    usageProps: ['as="p"'],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A lead paragraph that slides in line by line, each line rising out from under an invisible edge (its own clipping mask), so the copy reads as being set in place rather than faded in. It's calm and quick to settle: a long, heavily eased slide with a short stagger.",
+      trigger:
+        "{trigger|view=Scroll into view: it plays when 20% of the paragraph is visible (an IntersectionObserver). {replay|true=When the paragraph has left the viewport completely it resets to hidden, unseen, and plays again on the way back.|*=It plays once, then the observer disconnects.}|*=Page load: it plays as soon as the component mounts.}",
+      states: [
+        "The text is split into the lines the browser actually rendered (not sentences), and each line is wrapped in a mask with `overflow: clip`.",
+        "Each line: `translateY(125%)` of its own height → `0`, inside its mask. Nothing fades: the mask alone hides it, so a line is fully opaque the moment its top edge clears.",
+        "The mask is padded 0.12em top and bottom (with a matching negative margin, so layout doesn't change) so ascenders and descenders aren't cut off under tight leading.",
+      ],
+      timing: [
+        "Lines: {duration}s each, `{ease}`, {stagger}s between one line starting and the next, led from the {from|start=first line|end=last line|center=middle line|random=lines in random order}.",
+      ],
+      interruption:
+        "{trigger|view={replay|true=Leaving the viewport mid-animation lets it finish off screen; once fully out it snaps back to hidden, and entering again restarts it from hidden.|*=It's a one-shot: once started it always finishes.}|*=It's a one-shot intro: nothing interrupts or reverses it.} If the width changes or the web font loads, the lines are re-measured and re-split, and the tween keeps its progress (a finished paragraph stays finished).",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` the text is never split and shows in place, with no motion. The pre-hydration hiding only applies under `prefers-reduced-motion: no-preference`.",
+      rules: [
+        "Use GSAP SplitText (free since GSAP 3.13) with `type: \"lines\"`, `mask: \"lines\"` and `autoSplit: true`, and create the tween inside `onSplit`, returning it, so a re-split on resize or font load keeps its progress. Don't split by hand on `\\n` or sentences: lines depend on the width.",
+        "Lines don't exist until the text is measured, so hide the whole element (`visibility: hidden`) until the split is ready, then show it. Add a `<noscript>` rule that shows it when JavaScript is off.",
+        "Keep the `<style>` tags outside the split element, or SplitText will split them too.",
+        "SplitText puts the full text on an `aria-label` and hides the split line spans from screen readers; keep its default `aria: \"auto\"`.",
+        "Animate only `transform` (yPercent). Revert the split on unmount so React gets its original text node back.",
+      ],
+      checks: [
+        "{trigger|view=Scroll the paragraph into view|*=Reload the page}: each line slides up from under its own edge, top line first, {stagger}s apart.",
+        "Descenders (g, y, p) aren't clipped at rest, and no sliver of a hidden line shows below the line above before it moves.",
+        "Resize the window after it's played: the lines re-wrap and the paragraph stays fully visible (it doesn't replay or vanish).",
+        "Before JavaScript loads nothing flashes visible and then hides; with JavaScript off, the paragraph is visible.",
+        "Turn on reduced motion: the paragraph is shown in place, with no motion.",
+      ],
+    },
+    controls: [
+      {
+        type: "text",
+        name: "text",
+        label: "Text",
+        default:
+          "Motion should explain, not decorate. Every movement on this page tells you where something came from and where it went.",
+        always: true,
+      },
+      {
+        type: "select",
+        name: "trigger",
+        label: "Plays on",
+        default: "view",
+        options: [
+          { label: "Into view", value: "view" },
+          { label: "Load", value: "load" },
+        ],
+      },
+      { type: "boolean", name: "replay", label: "Replay on re-entry", default: true },
+      { type: "number", name: "stagger", label: "Line stagger", default: 0.12, min: 0, max: 0.5, step: 0.01, unit: "s" },
+      { type: "number", name: "duration", label: "Line duration", default: 1, min: 0.2, max: 3, step: 0.05, unit: "s" },
+      {
+        type: "select",
+        name: "ease",
+        label: "Easing",
+        default: "power4.out",
+        options: [
+          { label: "Power 4 out", value: "power4.out" },
+          { label: "Expo out", value: "expo.out" },
+          { label: "Power 3 out", value: "power3.out" },
+          { label: "Circ out", value: "circ.out" },
+          { label: "Back out", value: "back.out(1.4)" },
+        ],
+      },
+      {
+        type: "select",
+        name: "from",
+        label: "Stagger from",
+        default: "start",
+        options: [
+          { label: "Start", value: "start" },
+          { label: "Center", value: "center" },
+          { label: "End", value: "end" },
+          { label: "Random", value: "random" },
+        ],
+      },
+    ],
+    promptNotes: [
+      "`text` must be a plain string: the element's content is split into line spans at runtime, so marks and links can't survive. Use \"\\n\" for a hard line break (it becomes a `<br>`).",
+      "This is a base component: it only handles the split and the motion. Font, size, colour, leading and max width come from `className` (it renders one `as` element, `p` by default). The width decides where lines break, so set it on the element.",
+      "Deliberate change: the original pushes lines down 110%. Here it's 125% because the mask is padded for descenders, and 110% would leave a sliver of the hidden line showing under tight leading.",
+      "In the original it's pattern 056 (Line-by-line Reveal) in the Weo Motion playground: `data-wm-split=\"lines\"`, `data-wm-effect=\"mask\"`, 120ms stagger, 1000ms, `power4.out`, replaying on re-entry. The other effects in that playground (rise, blur, flip...) aren't part of this component.",
+      "Original typography: DM Sans (Google Font) 24px / 600 at 1.5 leading, max width 24ch, light text on a near-black stage. The demo matches it.",
+      "It's a Client Component (\"use client\") and registers the SplitText plugin at module level.",
+    ],
+  },
+
+  {
+    slug: "stretch-headline",
+    title: "Stretch headline",
+    description:
+      "Each letter lands like rubber: squashed flat and wide, it springs up tall and narrow, wobbles once and settles, one after another, used on Weonic's Weo Motion library",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://weonic-website.web.app/motion?tab=playground&n=65",
+    componentName: "StretchHeadline",
+    files: [
+      {
+        name: "stretch-headline.tsx",
+        path: "src/registry/animations/text-effects/stretch-headline.tsx",
+      },
+    ],
+    usageProps: ['as="h2"'],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A short, punchy headline whose letters land like they're made of rubber: each one arrives squashed flat and wide, springs up past its height going tall and narrow, wobbles back once and settles. Staggered letter by letter, it reads as a playful bounce running along the word, so keep it for short display words, not sentences.",
+      trigger:
+        "{trigger|view=Scroll into view: it plays when 20% of the headline is visible (an IntersectionObserver). {replay|true=When the headline has left the viewport completely it resets to hidden, unseen, and plays again on the way back.|*=It plays once, then the observer disconnects.}|*=Page load: it plays as soon as the component mounts.}",
+      states: [
+        "Each letter runs four evenly spaced keyframes of `transform: scale(x, y)` and `opacity`: `scale(1.9, 0.25)` at opacity 0 → `scale(0.82, 1.3)` at opacity 1 → `scale(1.08, 0.94)` → `scale(1, 1)`. The origin is the letter's centre.",
+        "{intensity|1=|*=The intensity is {intensity}: each scale value's distance from 1 is multiplied by it (clamped at 0.02 so no letter flips or vanishes).}",
+        "Only letters animate; spaces stay as plain text and don't take a stagger slot. The stagger runs through the whole headline in reading order, across line breaks, led from the {from|start=first letter|end=last letter|center=middle letter outwards|random=letters in random order}.",
+      ],
+      timing: [
+        "Each letter: {duration}ms with one `power2.out` ease (`cubic-bezier(0.33, 1, 0.68, 1)`) across the whole keyframe run, not per step, so the squash snaps and the wobble slows down. {stagger}ms between one letter starting and the next.",
+      ],
+      interruption:
+        "{trigger|view={replay|true=Leaving the viewport mid-animation lets it finish off screen; once fully out it snaps back to hidden, and entering again restarts it from the first keyframe.|*=It's a one-shot: once started it always finishes.}|*=It's a one-shot intro: nothing interrupts or reverses it.} Replaying cancels any running letter animations before starting new ones.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` the headline is shown in place, with no motion. The pre-hydration hiding only applies under `prefers-reduced-motion: no-preference`.",
+      rules: [
+        "Use the Web Animations API (`element.animate`) per letter, with `easing` on the animation (so the ease spans all keyframes like the original), `delay: slot × stagger` and `fill: \"backwards\"` so each letter is held at its first keyframe until its turn. No animation library is needed. Cancel the animations on unmount and on reset.",
+        "Letters must be `display: inline-block` (transforms do nothing to an inline box). Wrap each word in a `white-space: nowrap` inline-block so a narrow headline only breaks at spaces; keep the spaces as text.",
+        "Hide the letters with CSS (`opacity: 0`) until they play, so nothing flashes before hydration, and add a `<noscript>` rule that shows them when JavaScript is off.",
+        "Animate only `transform` and `opacity`. Screen readers get the headline once from a visually hidden copy; the split spans are `aria-hidden`.",
+      ],
+      checks: [
+        "{trigger|view=Scroll the headline into view|*=Reload the page}: each letter pops in flat and wide, stretches tall and narrow, wobbles once and settles, {stagger}ms apart.",
+        "Nothing flashes visible before the letters play; with JavaScript off, the headline is visible.",
+        "Narrow the window: the headline wraps only between words.",
+        "Turn on reduced motion: the headline is shown in place, with no motion.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "text", label: "Text", default: "Stretchy", always: true },
+      {
+        type: "select",
+        name: "trigger",
+        label: "Plays on",
+        default: "view",
+        options: [
+          { label: "Into view", value: "view" },
+          { label: "Load", value: "load" },
+        ],
+      },
+      { type: "boolean", name: "replay", label: "Replay on re-entry", default: true },
+      { type: "number", name: "stagger", label: "Letter stagger", default: 50, min: 0, max: 200, step: 5, unit: "ms" },
+      { type: "number", name: "duration", label: "Letter duration", default: 1100, min: 200, max: 3000, step: 50, unit: "ms" },
+      { type: "number", name: "intensity", label: "Intensity", default: 1, min: 0, max: 1.5, step: 0.05 },
+      {
+        type: "select",
+        name: "from",
+        label: "Stagger from",
+        default: "start",
+        options: [
+          { label: "Start", value: "start" },
+          { label: "Center", value: "center" },
+          { label: "End", value: "end" },
+          { label: "Random", value: "random" },
+        ],
+      },
+    ],
+    promptNotes: [
+      "`text` must be a plain string because every letter becomes a span: marks and links can't survive the split. Use \"\\n\" for a hard line break.",
+      "This is a base component: it only handles the letters and their motion. Font, size, colour and alignment come from `className` (it renders one `as` element, `h2` by default).",
+      "Splitting into inline-blocks drops kerning pairs across letters; keep tracking in `className`.",
+      "In the original it's pattern 065 (Text Elastic Stretch) in the Weo Motion playground: `data-wm-split=\"chars\"`, `data-wm-effect=\"stretch\"`, 50ms stagger, 1100ms, `power2.out`, replaying on re-entry. `intensity` is an addition here (1 matches the original).",
+      "Original typography: DM Sans (Google Font) weight 800 at clamp(28px, 7vw, 54px), 1.02 leading, -0.04em tracking, light text on a near-black stage. The demo matches it.",
+      "It's a Client Component (\"use client\").",
+    ],
+  },
+
+  {
+    slug: "text-marquee",
+    title: "Text marquee",
+    description:
+      "A line of big words that slides sideways forever and eases to a stop under the mouse, fading out at both edges, used on Weonic's Weo Motion library",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://weonic-website.web.app/motion?tab=playground&n=70",
+    componentName: "TextMarquee",
+    files: [
+      {
+        name: "text-marquee.tsx",
+        path: "src/registry/animations/text-effects/text-marquee.tsx",
+      },
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A band of oversized words that drifts sideways forever at a steady, unhurried pace, like a ticker for the brand's keywords. It's ambient: it never asks for attention, {slowOnHover|true=and it settles to a stop when someone puts the mouse on it to read, then picks back up when they leave.|*=and it never stops.}{scrollBoost|true= Scrolling the page pushes it along: it speeds up with the scroll and runs backwards when scrolling up, then eases back to its cruising pace.|*=}",
+      trigger:
+        "It starts moving as soon as it's on screen and runs forever. The loop pauses while the strip is off screen (an IntersectionObserver) and resumes where it left off.",
+      states: [
+        "Content: the items in order, each followed by the separator ({separator}), {gap}px apart, with a trailing {gap}px gap so one group is exactly one loop. The group is cloned (aria-hidden) until the clones cover the strip's width plus one spare, re-counted on resize.",
+        "Motion: the track moves {direction|right=right|*=left} at {speed}px/s via `translate3d`, and the offset wraps into one group width, so the jump back is invisible.",
+        "{slowOnHover|true=Hover (mouse and pen only, not touch): the target speed drops to 0; leaving sets it back to {speed}px/s. The actual speed moves 10% of the way to the target per 60fps frame (`1 - 0.9^(dt / 16.67)`), so it glides to a stop in about half a second and glides back up.|*=No hover behaviour.}",
+        "{scrollBoost|true=Scroll boost: page scroll velocity (px/ms, blended 50% toward each new reading, decaying ×0.92 per frame) is added as |v| × 900 px/s, and its sign sets the direction: scrolling down runs the {direction|right=right|*=left}, up runs it the other way.|*=}",
+        "{fade|0=No edge fade.|*=Edges: a `mask-image` fades the strip out over the first and last {fade}% of its width.}",
+      ],
+      timing: [
+        "Continuous: {speed}px/s, linear, frame-rate independent (distance = speed × frame time; frame time is capped at 100ms so a stalled tab doesn't leap).",
+      ],
+      interruption:
+        "Hover and scroll only change the target speed, and the real speed always eases toward it, so any change mid-motion is smooth. Resizing re-measures the group and the clone count without resetting the offset.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` there's no loop: the clones are hidden and the strip becomes a still, horizontally scrollable line of the items.",
+      rules: [
+        "Drive it from one `requestAnimationFrame` loop that writes `transform: translate3d()` on the track, not a CSS keyframe: the eased hover stop and scroll boost need a speed that can change continuously.",
+        "Make one group's width exactly one loop (trailing gap included), clone it enough to always fill the strip, and wrap the offset with `((offset % loop) - loop) % loop`.",
+        "Only the first group is read by screen readers; clones and separators are `aria-hidden`.",
+        "Stop the loop when the strip is off screen, and clean up listeners, observers and the frame on unmount. Use a passive scroll listener.",
+      ],
+      checks: [
+        "It moves {direction|right=right|*=left} at a steady pace and the loop point can't be seen, even on a very wide window.",
+        "{slowOnHover|true=Mouse over it: it glides to a stop (not a freeze); move away: it glides back up. Tapping on a phone doesn't stop it.|*=Hovering doesn't change it.}",
+        "{scrollBoost|true=Scroll the page fast: it speeds up, and runs the other way when scrolling up, then settles.|*=Scrolling the page doesn't change it.}",
+        "Turn on reduced motion: the strip is still, with no duplicate text, and can be scrolled sideways.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "items", label: "Items (comma-separated)", default: "Design, Motion, Code", always: true },
+      { type: "text", name: "separator", label: "Separator", default: "✦" },
+      { type: "number", name: "speed", label: "Speed", default: 70, min: 10, max: 400, step: 5, unit: "px/s" },
+      {
+        type: "select",
+        name: "direction",
+        label: "Direction",
+        default: "left",
+        options: [
+          { label: "Left", value: "left" },
+          { label: "Right", value: "right" },
+        ],
+      },
+      { type: "boolean", name: "slowOnHover", label: "Slow down on hover", default: true },
+      { type: "boolean", name: "scrollBoost", label: "Scroll boost", default: false },
+      { type: "number", name: "gap", label: "Gap", default: 40, min: 0, max: 160, step: 4, unit: "px" },
+      { type: "number", name: "fade", label: "Edge fade", default: 8, min: 0, max: 30, step: 1, unit: "%" },
+    ],
+    promptNotes: [
+      "`items` takes an array of strings or nodes, or one comma-separated string. `separator` is any node (`null` for none); it follows every item, including the last, so the loop joins seamlessly.",
+      "This is a base component: it only handles the loop and the motion. Font, size, weight, colour and padding come from `className` on the strip (a full-width `div`).",
+      "In the original it's pattern 070 (Infinite Text Marquee) in the Weo Motion playground: `data-wm=\"marquee\"`, 70px/s, left, slowing on hover, with scroll velocity off. Deliberate changes: touch taps don't stop it (the original uses `pointerenter` for every pointer type, so a tap would halt it), and the loop pauses while off screen.",
+      "Original typography: DM Sans (Google Font) weight 800 at clamp(32px, 8vw, 64px) with -0.03em tracking, light text on a near-black stage, 2.5rem (40px) gaps. The demo matches it.",
+      "It's a Client Component (\"use client\").",
+    ],
+  },
+
+  {
+    slug: "blend-through-headline",
+    title: "Blend-through headline",
+    description:
+      "The headline picks up the colours of an animated background wherever it passes behind the text, and stays its normal colour everywhere else, used on Stripe website",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://stripe.com/",
+    componentName: "BlendThroughHeadline",
+    files: [
+      {
+        name: "blend-through-headline.tsx",
+        path: "src/registry/animations/text-effects/blend-through-headline.tsx",
+      },
+    ],
+    usageProps: ['as="h1"'],
+    usageChildren:
+      "<em>Financial infrastructure to grow your revenue.</em> Accept payments, handle business banking, and implement custom revenue models—from your first transaction to your billionth.",
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "The headline seems to sit inside the section's animated background: where the background passes behind a letter, the letter takes on its colour, and as the background moves the tint moves across the text. Everywhere else the headline is its normal colour ({color}, with {emphasisColor} for the `<em>` lead-in). The headline itself never moves. The effect is all in the colour.",
+      trigger:
+        "None of its own. It's continuous and driven by whatever moves in the background layer (a WebGL ribbon on Stripe). A still background gives a still tint.",
+      states: [
+        "Layer order inside the section's stacking context, bottom to top: (1) the real headline, `z-index: auto`; (2) the background layer, `z-index: 1`, transparent wherever it has nothing to draw; (3) an identical `inert`, `aria-hidden` copy of the headline, `z-index: 2`, `mix-blend-mode: hard-light`. Both copies share one grid cell so they line up exactly.",
+        "Top copy colour: {tint} at {tintOpacity} alpha (`<em>`: {emphasisTint} at {emphasisTintOpacity}). Over the background it hard-lights the background's colours. That's the tint you see.",
+        "Bottom copy colour: solved per channel so that the top copy blended over it gives exactly {color} (`<em>`: {emphasisColor}). Nobody sees it directly. With Stripe's colours it's yellow (#DDD600) and reads as slate grey.",
+        "Where the background covers the bottom copy, the bottom copy is hidden and only the tinted top copy shows.",
+      ],
+      timing: [
+        "No timing of its own. The tint follows the background frame by frame, with no lag, because it's the browser compositing the layers.",
+      ],
+      interruption: "Nothing to interrupt: it's a static blend over whatever is moving underneath.",
+      reducedMotion:
+        "Nothing changes in the headline. The background layer should hold still under `prefers-reduced-motion: reduce` (the library's shader backgrounds already do), which leaves a static tint that's still readable.",
+      responsive:
+        "Works at any size. The tint lands wherever the background happens to sit behind the text at that width, so check the headline at narrow widths where it wraps into the background.",
+      rules: [
+        "Nothing between the section and the two copies may create a stacking context (no `z-index` with position, `transform`, `filter`, `opacity < 1`, `isolation`, or `will-change` on wrappers). Otherwise the blend has no background to mix with and the effect quietly disappears.",
+        "The section itself does create one (`position: relative; isolation: isolate`), so the blend can't leak into the rest of the page.",
+        "The background layer: `position: absolute; inset: 0; z-index: 1; pointer-events: none`, and transparent where it doesn't draw. An opaque full-bleed background hides the bottom copy completely. The effect still works, but the {color} rest colour never shows.",
+        "Any other content that has to sit above the background (eyebrow, buttons) needs `position: relative; z-index: 2`.",
+        "Colour the top copy with a semi-transparent text colour, not `opacity`, because `opacity` would composite the copy on its own before blending.",
+        "Text selection and link clicks reach the real copy: the top copy is `inert`, and the background is `pointer-events: none`.",
+      ],
+      checks: [
+        "Where the background passes behind the headline, the letters show its colours tinted towards {tint}. Elsewhere they read as {color} ({emphasisColor} for the lead-in).",
+        "As the background moves, the tinted area slides through the letters with no lag or flicker.",
+        "The two copies line up exactly, with no doubled or blurry edges at any width.",
+        "A screen reader reads the headline once.",
+        "Select the headline text, and tab through any links in it: each link is reached once.",
+      ],
+    },
+    controls: [
+      { type: "color", name: "color", label: "Text colour", default: "#6E7780" },
+      { type: "color", name: "tint", label: "Tint", default: "#000EFF" },
+      { type: "number", name: "tintOpacity", label: "Tint strength", default: 0.5, min: 0, max: 1, step: 0.05 },
+      { type: "color", name: "emphasisColor", label: "Lead-in colour", default: "#020826" },
+      { type: "color", name: "emphasisTint", label: "Lead-in tint", default: "#2D2564" },
+      { type: "number", name: "emphasisTintOpacity", label: "Lead-in tint strength", default: 1, min: 0, max: 1, step: 0.05 },
+    ],
+    promptNotes: [
+      "`children` is any ReactNode (nothing is split), so marks, `<sup>` and links survive. Wrap a lead-in in `<em>` to give it the emphasis colours. The component makes `em` non-italic, as on Stripe.",
+      "It renders a plain `display: grid` wrapper holding two `as` elements (`h1` by default), as Stripe does, so site-wide `h1` styles hit both copies equally. `className` and `style` go on both copies (typography, width). Other props go on the real one only.",
+      "Colours must be hex. `blendThroughBase(color, tint, opacity)` is exported and returns the solved bottom colour. If a rest colour can't be reached with that tint (a dark tint can't produce a light grey, for example), it clamps to the nearest colour and warns in development.",
+      "The component has no background of its own. Pair it with any animated layer: a shader background from this library, a video, or a CSS gradient. The demo uses this library's Ribbon wave shader (a transparent canvas at `z-index: 1`), which isn't part of this component.",
+      "Original typography: Söhne (licensed) weight 300, `font-feature-settings: \"ss01\"`, line-height 1.03, -0.01em tracking, 34px on mobile up to about 56px on desktop. The demo uses Inter Tight as the closest Google Font, set a little heavier (400) and smaller (30–48px).",
+      "Works as a Server Component: no hooks, no \"use client\".",
+    ],
+  },
   {
     slug: "count-up",
     title: "Count up",
@@ -1337,6 +1821,15 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "logoHeight", label: "Logo height", default: 80, min: 32, max: 120, step: 2, unit: "px" },
       { type: "color", name: "background", label: "Background", default: "#EDF2F9" },
     ],
+    assets: [
+      {
+        prop: "logos[].src",
+        label: "Client logo",
+        fit: "Shown at a fixed height (`logoHeight`, 80px from 1024px) and its natural width",
+        placeholder: "400x160",
+        notes: "SVG preferred, trimmed with no padding baked in, all in one colour treatment so the strip reads evenly. A placeholder's ratio becomes the logo's width, so give real logos their own shape.",
+      },
+    ],
     promptNotes: [
       "`logos` is an array of `{ src, alt, href?, newTab? }`. Logos are shown at a fixed height and their natural width, so export them trimmed, with no padding baked in. Logos with an `href` become links that grow and pause the strip on hover; the rest are plain images.",
       "`heading` (optional) renders centred above the strip, 40px above it, max 310px wide on phones. The original's is Lexend Exa 24px weight 300 in #0A143A; the Sophos homepage instance has none.",
@@ -1420,12 +1913,124 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "hoverDuration", label: "Hover", default: 300, min: 0, max: 800, step: 10, unit: "ms" },
       { type: "color", name: "hoverBorder", label: "Hover border", default: "#D9CCDC" },
     ],
+    assets: [
+      {
+        prop: "items[].icon",
+        label: "Card icon",
+        fit: "A 32px line icon above the title",
+        placeholder: "64x64",
+        notes: "An inline SVG or an icon from the site's icon set works too.",
+        optional: true,
+      },
+    ],
     promptNotes: [
       "`items` is an array of `{ icon?, title, description?, href? }`. `title` and `description` are nodes so the site's heading and paragraph styles apply; the title is clamped to 3 lines. With `href` the card is a link; without it the card is still focusable so keyboard users can open it.",
       "The section heading and intro above the row are not part of this component - render them separately. The original section is white with 197px / 162px padding from 992px (80px below), and 83px between the intro and the row.",
       "Original typography: heading Cabinet Grotesk (licensed) 36px / 1.2, weight 400, -0.56px tracking, #410051 from 992px; 22px bold below. Copy 16px / 1.5 #0B0623 (14px on phones). Icons are 32px pink line icons. The demo uses Bricolage Grotesque for the heading.",
       "Motion matches the original: a CSS keyframe marquee at about 77px/s (7500px every 97.8s), and on hover the card goes from 324px to 382px tall, rgb(163 9 187 / 0.05) to white, with a #D9CCDC border and `0 8px 28px rgb(11 6 35 / 0.12)` shadow over 300ms `ease`. Deliberate changes: the original's copy pops in with `display: none → block` and its card grows only as tall as the row allows; here the copy opens smoothly with the grow, the card grows evenly about its centre, and the row pauses on hover so the open card stays under the pointer.",
       "It is a Client Component (\"use client\") because it measures its width with a ResizeObserver. The keyframes and pause rules ship inside the component in a React 19 `<style href precedence>` tag; on React 18, move them into the global CSS.",
+    ],
+  },
+  {
+    slug: "expanding-bento",
+    title: "Expanding bento",
+    description:
+      "Two rows of colour cards with their names drifting across them as giant marquees; the hovered card widens and fades in a white detail card, used on Hatch website",
+    category: "animations",
+    group: "carousels",
+    level: "section",
+    source: "https://www.hatch.lk/",
+    recreated: "Framer",
+    componentName: "ExpandingBento",
+    files: [
+      {
+        name: "expanding-bento.tsx",
+        path: "src/registry/animations/carousels/expanding-bento.tsx",
+      },
+    ],
+    usageProps: ["panels={panels}", "strips={strips}"],
+    defaultTheme: "light",
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A bento of solid colour cards in two rows, each with its name drifting across it as a giant marquee, so the section feels alive even at rest. Pointing at a card widens it and fades in a white detail card (heading, image, copy, CTA) while the other cards in its row narrow to make room. It should feel like one smooth push of the row, never a jump.",
+      trigger:
+        "Marquees run from mount, continuously. The expansion: pointer hover on a card in either row (mouse or pen, not touch), or keyboard focus inside it. Each row tracks its own open card. Leaving a row (or tabbing out of it) closes its card again, so at rest every card in a row is the same width. On touch, tapping a card opens it.",
+      states: [
+        "Closed card: `flex: 1 1 0` (all equal), filled with its colour; a 30px white/40% leaf-shaped badge at the top right, a 12px white label at the bottom left, and the marquee centred vertically.",
+        "Open card: `flex-grow: {expand}`, so it ends {expand}\u00d7 as wide as each closed card (410px vs 295px in a 1320px row). The others shrink together to make room; the row's total width never changes.",
+        "Open strip: `flex-grow: {stripExpand}` (784px vs 528px in a 1320px row), the same way.",
+        "Detail card: a white layer over the closed face, `opacity: 0 \u2192 1`. It's laid out at the open card's final width from the start, so its text never reflows while the card grows; the card clips it instead. Panels stack heading, image (100px 100px 30px 30px arch), copy and CTA top to bottom. Strips put the image (30% wide, full height, 80px 80px 16px 16px arch) on the left and heading (24px, black), copy (14px) and CTA in a column beside it, centred vertically.",
+        "Marquee: `before \u00b7 thumb \u00b7 after` (\"Hot [image] Desks\") repeating, moving left with `translateX`. Words are 7.67cqw (101px in a 1320px row), weight 400, -0.04em tracking, white; the thumb is 0.79em tall with the card's leaf shape. Strips use 36px words and a 1.36em thumb.",
+      ],
+      timing: [
+        "Width (`flex-grow`) and the detail card's fade: {duration}ms, `cubic-bezier(0.12, 0.23, 0.5, 1)`, together (Framer's tween in the original).",
+        "Marquee: linear, {speed}px per second, endless.",
+      ],
+      interruption:
+        "Both are CSS transitions, so moving to another card mid-way retargets from the current widths and opacities, with no snap. Only one card is open at a time. The marquee never pauses or restarts.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, the marquees stand still (showing the start of the line) and cards open and close instantly, with no width or fade transition.",
+      responsive:
+        "From 900px of container width: the top row is {height}px tall and the strips {stripHeight}px, side by side. Below 900px each row becomes a horizontal scroll-snap row of open (white) cards, min(85%, 360px) wide and at least 480px tall (growing to fit the copy, images at least 180px), with no marquee; strips then stack their image under the heading like panels.",
+      rules: [
+        "Animate width with `flex-grow` on flex items, not pixel widths set from JS: one transition sizes every card and it scales with the row. Only the open index is state.",
+        "Size the detail card with a container-relative calc of the open width: `(100cqw - (n - 1) \u00d7 gap) \u00d7 expand / (n - 1 + expand)`.",
+        "Marquee: two identical halves moving by -50% on a CSS keyframe, with enough units in each half to cover the whole component's width. Set the duration from the measured unit width so the speed is in px/s, and count units against the component (not the card), so the count doesn't change, and the loop doesn't jump, while a card grows.",
+        "The marquee and badge are decorative (`aria-hidden`); each card is named by its title, and the detail card's copy and CTA stay in the accessibility tree.",
+      ],
+      checks: [
+        "At rest: four equal cards, each marquee drifting left at {speed}px/s with no visible seam when it loops.",
+        "Hover the second card: over {duration}ms it widens to {expand}\u00d7 a closed card, the white detail card fades in, and the text inside doesn't reflow.",
+        "Hover a bottom strip: it widens to {stripExpand}\u00d7 the other strip and shows its image beside its copy.",
+        "Sweep across the row: the open card follows the pointer smoothly; leave the row and all four return to equal widths.",
+        "Tab to a card's CTA: that card opens.",
+        "Below 900px: two swipeable rows of white cards.",
+        "Turn on reduced motion: the marquees stop and cards switch instantly.",
+      ],
+    },
+    controls: [
+      { type: "number", name: "height", label: "Row height", default: 569, min: 400, max: 720, step: 1, unit: "px" },
+      { type: "number", name: "stripHeight", label: "Strip height", default: 200, min: 120, max: 320, step: 2, unit: "px" },
+      { type: "number", name: "expand", label: "Open width", default: 1.39, min: 1.1, max: 2.5, step: 0.01 },
+      { type: "number", name: "stripExpand", label: "Open strip width", default: 1.49, min: 1.1, max: 2.5, step: 0.01 },
+      { type: "number", name: "duration", label: "Expand", default: 400, min: 150, max: 1000, step: 10, unit: "ms" },
+      { type: "number", name: "speed", label: "Marquee speed", default: 100, min: 20, max: 300, step: 5, unit: "px/s" },
+      { type: "number", name: "gap", label: "Gap", default: 8, min: 0, max: 32, step: 1, unit: "px" },
+      { type: "number", name: "radius", label: "Radius", default: 0, min: 0, max: 32, step: 1, unit: "px" },
+    ],
+    assets: [
+      {
+        prop: "panels[].thumb",
+        label: "Marquee thumbnail",
+        fit: "A small square image inside the scrolling title, about the height of a lowercase letter, clipped to `shape`, object-cover",
+        placeholder: "400x400",
+        optional: true,
+      },
+      {
+        prop: "panels[].image",
+        label: "Detail image",
+        fit: "Fills the rest of the white detail card under its heading, with a 100px 100px 30px 30px arch, object-cover. Defaults to `thumb`",
+        placeholder: "800x800",
+        optional: true,
+      },
+      {
+        prop: "strips[].image",
+        label: "Strip image",
+        fit: "Sits beside the copy on an expanded strip, at least 180px tall, object-cover. Defaults to the strip's `thumb`",
+        placeholder: "800x480",
+        optional: true,
+      },
+    ],
+    promptNotes: [
+      "`panels` is an array of `{ title, color, thumb?, image?, alt?, description?, ctaLabel?, href?, label?, accent?, marquee?, shape? }`. `thumb` is the small image in the marquee; `image` (defaults to `thumb`) is the big image on the detail card, with a 100px 100px 30px 30px arch. `marquee` is `[before, after]` around the thumb, defaulting to the title split at its first space. `accent` colours the detail heading (defaults to `color`; use it when the card colour is too pale on white). The CTA shows when both `ctaLabel` and `href` are set.",
+      "`strips` (optional) are the short row under the panels and take the same fields. They expand the same way (`stripExpand`, 1.49) with the image beside the copy; their heading is black unless `accent` is set, and their marquee puts the whole title before the thumb unless `marquee` is set.",
+      "`shape` is a CSS border-radius for the badge and thumb; cards without one cycle through Hatch's leaf shapes.",
+      "Panel detail card: 20px padding, heading 28px / 1.2 weight 500 with -0.04em tracking, image fills the rest, copy 16px #717171, CTA 14px weight 600 with a 17px #FF562F arrow square (`ctaColor`).",
+      "It renders plain <img> tags. If the site has its own Image component, swap it in with object-cover and keep the classes.",
+      "It's a Client Component (\"use client\") for the open index and the marquee measuring. The keyframes ship in a React 19 `<style href precedence>` tag; on React 18, move them into the global CSS.",
+      "Original typography: Montserrat (Google Font) for the marquee, headings and labels, Inter for the copy. The component inherits the site's font; the demo uses Montserrat.",
     ],
   },
   {
@@ -1495,6 +2100,23 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "duration", label: "Expand", default: 400, min: 150, max: 1000, step: 10, unit: "ms" },
       { type: "number", name: "contentDuration", label: "Content reveal", default: 800, min: 200, max: 1400, step: 10, unit: "ms" },
       { type: "boolean", name: "overlay", label: "Dark overlay", default: true },
+    ],
+    assets: [
+      {
+        prop: "items[].media",
+        label: "Card background",
+        fit: "Fills the card behind everything ({height}px tall from the expand breakpoint, 480px below), object-cover. An image or a muted looping video",
+        placeholder: "1800x1242",
+        notes: "The quote sits bottom left over a dark gradient, so keep the subject towards the top right.",
+      },
+      {
+        prop: "items[].content",
+        label: "Customer logo",
+        fit: "The logo inside `content`, 50px tall above the quote",
+        placeholder: "300x100",
+        notes: "White, trimmed, transparent background.",
+        optional: true,
+      },
     ],
     promptNotes: [
       "`items` is an array of `{ media, content, label }`. `media` fills the card behind everything (an image with `object-cover`, a video or a gradient; the component sizes it to the card). `content` is the testimonial block - logo, quote, CTA - and sits at the bottom left. `label` names the card for screen readers.",
@@ -1587,6 +2209,38 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "showDots", label: "Dots", default: true },
       { type: "boolean", name: "loop", label: "Loop", default: false },
     ],
+    assets: [
+      {
+        prop: "<SpotlightSlide media>",
+        label: "Slide photo",
+        fit: "From an 800px-wide card it fills the right side (868px wide, full card height, at least 460px); below that it's full width under the text, 212px tall (349px from 600px). object-cover",
+        placeholder: "1736x920",
+        notes: "The left edge fades into the black card, so keep the subject to the right.",
+      },
+      {
+        prop: "<SpotlightSlide logo>",
+        label: "Customer logo",
+        fit: "Top of the text column, at most 180×38px",
+        placeholder: "360x76",
+        notes: "White, trimmed, transparent background.",
+      },
+      {
+        prop: "items[].tab",
+        label: "Tab logo",
+        fit: "A logo in the tab row under the slider (1024px+); the inactive ones are greyed out",
+        placeholder: "280x70",
+        notes: "Pass the colour version.",
+        optional: true,
+      },
+      {
+        prop: "<SpotlightSlide pattern>",
+        label: "Card pattern",
+        fit: "Decoration over the card's right side: `wide` is 1012×569, `narrow` is 327px wide",
+        placeholder: "1012x569 (wide) and 327x578 (narrow)",
+        notes: "Leave it out rather than use a placeholder: it's decoration.",
+        optional: true,
+      },
+    ],
     promptNotes: [
       "The file exports two components: `SpotlightSlider` (the carousel: track, peeking neighbours, autoplay, arrows, logo tabs, dots) and `SpotlightSlide` (the Sophos testimonial card layout). Any content can go in a slide; `SpotlightSlide` is the usual one.",
       "`items` is an array of `{ content, label, tab }`. `label` names the slide for screen readers and the tab buttons. `tab` is the logo in the row under the slider (1024px+); pass the colour logo, the slider greys out the inactive ones. Leave `tab` out on every item, or pass `showTabs={false}`, to hide the tabs; the dots then show at every width. `showDots={false}` hides the dots.",
@@ -1664,6 +2318,15 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "glowTop", label: "Top glow", default: "#E3308C" },
       { type: "color", name: "glowBottom", label: "Bottom glow", default: "#A309BB" },
       { type: "color", name: "color", label: "Text", default: "#410051" },
+    ],
+    assets: [
+      {
+        prop: "items[].image",
+        label: "Award badge",
+        fit: "Fitted (contain) into a 220×100 box centred in the glowing card",
+        placeholder: "440x200",
+        notes: "SVG or a transparent PNG, trimmed.",
+      },
     ],
     promptNotes: [
       "`items` is an array of `{ image, title, label?, href? }`. `image` is the award badge (an <img> or SVG); it is fitted into a 220×100 box centred in the glowing card. `title` is the award name under the card. `href` makes the whole card a link. `label` names the slide for screen readers when `title` isn't plain text.",
@@ -1835,6 +2498,15 @@ export const registry: RegistryEntry[] = [
         ],
       },
     ],
+    assets: [
+      {
+        prop: "items[].media",
+        label: "Feature visual",
+        fit: "Full column width at its natural height (object-fit: contain)",
+        placeholder: "1200x900",
+        notes: "Its ratio sets the height of the step, so the real visual should keep the same ratio across items.",
+      },
+    ],
     promptNotes: [
       "`items` is an array of `{ media, content, action }` React nodes. `media` is the visual (usually an `<img>` with real alt text; it's shown at full column width, natural height, `object-fit: contain`). `content` is the text block (title and copy), styled with the site's typography. `action` is an optional link or button: 43px under the text in the pinned layout, pinned to the bottom of the card on phones.",
       "Both layouts are in the DOM and a container query shows one, so `media` and `content` render twice. Keep ids out of them.",
@@ -1912,6 +2584,15 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "radius", label: "Art radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
       { type: "color", name: "background", label: "Row background", default: "#FFFFFF" },
       { type: "color", name: "borderColor", label: "Divider", default: "#F4F1ED" },
+    ],
+    assets: [
+      {
+        prop: "items[].media",
+        label: "Row art",
+        fit: "Fills the row's art window, top-aligned, object-cover. An image or a video",
+        placeholder: "1600x900",
+        notes: "The window closes from the bottom as the row collapses, so keep the subject near the top.",
+      },
     ],
     promptNotes: [
       "This is the animated list only. The section intro above it (eyebrow, heading, paragraph, 100px above the list from 992px) and the section padding aren't part of the component; render them around it. Headings, copy and art come in through `items` as nodes, so typography is the site's own.",
@@ -1994,6 +2675,15 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "revealBackground", label: "Plate background", default: "#290044" },
       { type: "color", name: "revealColor", label: "Plate text", default: "#FFFFFF" },
     ],
+    assets: [
+      {
+        prop: "items[].image",
+        label: "Card photo",
+        fit: "Fills the card behind the copy, object-cover",
+        placeholder: "1200x800",
+        notes: "Use the raw photo: the component lays its own scrim over it, and a photo with a scrim baked in comes out about 40% too dark.",
+      },
+    ],
     promptNotes: [
       "`items` is an array of `{ title, description?, image, imageAlt?, href?, linkLabel? }`, one per card and tab. `title` is the tab label and the small title at the top of the card; `description` is the large copy at the bottom (clamped to 5 lines); `href` adds the plus link (no href, no plus, but the slot is kept so copy wraps the same on every card).",
       "Use the raw photo for `image`: the component lays the original's scrim over it (a corner shade, a shade up from the bottom left and a flat 20% black) so white copy reads on any photo. An image with the scrim already baked in comes out about 40% too dark.",
@@ -2075,6 +2765,14 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "labelColor", label: "Label", default: "#410051" },
       { type: "color", name: "trayTint", label: "Tab bar tint", default: "#A309BB" },
     ],
+    assets: [
+      {
+        prop: "items[].media",
+        label: "Tab media",
+        fit: "Fills the rounded media box: full width, 300px tall (400px from 768px, 500px from 992px, `mediaHeight` from 1200px). object-cover; an image or a video",
+        placeholder: "2000x1120",
+      },
+    ],
     promptNotes: [
       "`items` is an array of `{ label, media, content }`. `label` is the tab text (the original uses `/context`, `/strategy`, ...). `media` fills the rounded media box and is sized to it (an image with `object-cover`, or a video). `content` is optional and renders under the box (title, copy, CTA), styled with the site's typography.",
       "The section heading and intro above the tabs are not part of this component - render them separately in the section.",
@@ -2085,6 +2783,95 @@ export const registry: RegistryEntry[] = [
       "Accessibility: WAI-ARIA tabs (role tablist/tab/tabpanel, roving tabindex, arrow keys, Home, End); inactive panels are `inert`. Give images real alt text. For WCAG 2.2.2, a 45px pause / play button sits at the end of the tab bar while autoplay is on (`pauseButton`, default true; keep it unless the site has another way to stop the motion), and autoplay also holds while keyboard focus is inside the component.",
       "Below 640px the tab row becomes a horizontal scroll that keeps the active tab centred (the original switches to a stacked, sticky scroll-spy layout there, which is a separate pattern).",
       "It is a Client Component (\"use client\"). Only the active tab is state; the fill and slide are CSS. Reduced motion: no autoplay or fill, and panels switch instantly.",
+    ],
+  },
+  {
+    slug: "accordion-tabs",
+    title: "Accordion tabs",
+    description:
+      "A list of feature titles beside a media panel; the open one expands on a tinted card while a thin bar fills along its edge, then the next opens and the media fades over, used on PandaDoc website",
+    category: "animations",
+    group: "tabs",
+    level: "section",
+    source: "https://www.pandadoc.com/",
+    componentName: "AccordionTabs",
+    files: [
+      {
+        name: "accordion-tabs.tsx",
+        path: "src/registry/animations/tabs/accordion-tabs.tsx",
+      },
+    ],
+    usageProps: [
+      "items={features.map((feature) => ({\n    title: feature.title,\n    body: feature.body,\n    links: feature.links,\n    media: <video src={feature.video} autoPlay muted loop playsInline className=\"object-cover\" />,\n  }))}",
+    ],
+    defaultTheme: "light",
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A vertical list of feature titles beside a large media panel that walks through itself: the open title expands on a tinted card to show its copy, a thin bar fills along the card's bottom edge, then it collapses as the next one opens and the media fades over. It should read as a calm, unhurried tour the reader can take over at any time.",
+      trigger:
+        "{autoplay|true=From 960px wide, each tab stays open for {interval}ms while at least 20% of the component is on screen and the browser tab is visible; it waits while keyboard focus is inside{pauseOnHover|true= or the pointer is over it|*=}. |*=}Clicking a title, or Arrow Up / Down, Home and End on the titles, opens that tab{autoplay|true= and restarts the timer from zero|*=}. Below 960px titles toggle like an accordion and nothing autoplays.",
+      states: [
+        "Open tab: background `{activeBackground}`, title in `{textColor}`; the panel opens from 0 to its natural height (grid rows `0fr → 1fr`) to show the copy at 70% and link chips. The copy is visible at full opacity the moment it opens and hidden the moment it closes (no opacity fade, as in the original).",
+        "Closed tabs: title at 55% of `{textColor}`, turning `{hoverColor}` on hover. No background.",
+        "{autoplay|true=Progress bar: a 2px track (10% of `{textColor}`) along the open card's bottom edge, with a `{textColor}` fill scaling `scaleX(0 → 1)` from the left.|*=}",
+        "Media panel: one stacked panel per tab; the open tab's panel fades in from 0 to 1 over the previous one, which is hidden once covered.",
+        "Link chips: white with a transparent 1px border; on hover the border and text turn `{textColor}`.",
+      ],
+      timing: [
+        "{autoplay|true=Progress fill: {interval}ms, `linear`. The tab changes exactly when it completes.|*=}",
+        "Panel open / close: {duration}ms from 960px ({duration}ms halved below), `cubic-bezier(0.3, 0.52, 0.49, 0.9)`. The closing and opening tabs move together.",
+        "Media fade: {fade}ms, `cubic-bezier(0.25, 1, 0.5, 1)`.",
+        "Chip hover: 150ms colour transition. Mobile chevron turn: 300ms `ease-out`.",
+      ],
+      interruption:
+        "Clicking another title mid-transition retargets both panels from where they are, and the new media fades in over whatever is showing.{autoplay|true= Pausing (focus, off-screen, hidden browser tab{pauseOnHover|true=, hover|*=}) freezes the fill where it is and resumes from there; the fill is the timer, so it can't drift.|*=}",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce`, there's no autoplay and no progress bar; panels open and media swaps instantly. Tabs still work.",
+      responsive:
+        "From 960px: titles take 31.25% of the width, a 3.125% gap, and the media 65.625%, sticky {stickyTop}px from the top at a {mediaAspect} aspect ratio. Below 960px it's a single-column accordion with dividers; each tab's media sits inside its panel, the open tab can be closed, and there's no autoplay or progress bar.",
+      rules: [
+        "Make the fill's CSS animation the timer: advance on its `animationend`, so pausing it with `animation-play-state` pauses autoplay exactly. Animate `transform: scaleX`, not width.",
+        "Open panels with a grid `grid-template-rows: 0fr → 1fr` transition, so nothing has to be measured.",
+        "Stack the media panels in one grid cell. Fade the incoming one in on top and hide the outgoing one only after the fade (transition-delay), so the background never flashes through.",
+        "Make closed panels `inert` and give each title `aria-expanded` / `aria-controls`.",
+      ],
+      checks: [
+        "{autoplay|true=Wait at 960px or wider: the bar fills over {interval}ms, then the tab collapses as the next opens over {duration}ms and its media fades in over {fade}ms. After the last tab it goes back to the first.|*=Nothing moves until you pick a title.}",
+        "Click another title mid-fill: it opens, the media fades over{autoplay|true=, and the bar starts from zero|*=}.",
+        "{autoplay|true=Scroll the component mostly off screen, or switch browser tabs: the bar stops and resumes where it was.|*=}",
+        "Narrow the window below 960px: titles stack with dividers, each tab shows its media inside, the open one closes when tapped, and nothing autoplays.",
+        "Turn on reduced motion: no autoplay or bar, panels and media switch instantly.",
+      ],
+    },
+    controls: [
+      { type: "boolean", name: "autoplay", label: "Autoplay", default: true },
+      { type: "number", name: "interval", label: "Interval", default: 12000, min: 3000, max: 20000, step: 500, unit: "ms" },
+      { type: "number", name: "duration", label: "Expand", default: 400, min: 0, max: 1000, step: 10, unit: "ms" },
+      { type: "number", name: "fade", label: "Media fade", default: 600, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "boolean", name: "pauseOnHover", label: "Pause on hover", default: false },
+      { type: "number", name: "radius", label: "Radius", default: 12, min: 0, max: 32, step: 1, unit: "px" },
+      { type: "color", name: "activeBackground", label: "Open tab", default: "#F8F5F3" },
+      { type: "color", name: "textColor", label: "Text", default: "#242424" },
+      { type: "color", name: "hoverColor", label: "Hover", default: "#248567" },
+    ],
+    assets: [
+      {
+        prop: "items[].media",
+        label: "Tab media",
+        fit: "Fills the media panel (aspect ratio `mediaAspect`, 1.52, from 960px), object-cover. A muted looping video or an image",
+        placeholder: "1520x1000",
+      },
+    ],
+    promptNotes: [
+      "`items` is an array of `{ title, body?, links?, media, mediaBackground? }`. `body` is the copy under the open title; `links` render as small chips (`{ label, href }`). `media` fills the media panel and is sized to it (a muted looping video or an image with `object-cover`). `mediaBackground` shows behind that tab's media (defaults to `mediaBackground`, #F8F5F3).",
+      "The section heading, intro and CTA above the tabs are not part of this component - render them separately in the section.",
+      "Ported from PandaDoc's BenefitsTabs (Next.js + Contentful). Values match it: 12000ms per tab, 400ms panel (200ms below 960px) on `cubic-bezier(0.3, 0.52, 0.49, 0.9)`, sand #F8F5F3 open card, #242424 text, #248567 hover, 2px progress bar, 31.25% / 65.625% columns, media sticky at 80px. Keep these unless asked.",
+      "Two deliberate changes from the original: the progress fill is the timer (the original runs a separate setTimeout next to a `width` animation), and the media crossfades over 600ms. The original's Splide slider is configured to fade over 600ms, but its CSS sets `transition: none !important` on the slides, so the live site swaps media instantly; set `fade={0}` to match that.",
+      "Titles default to `text-[20px] sm:text-[28px] font-bold`; the original uses Graphik (licensed) - use the site's font, or a close Google Font such as Inter. Pass `titleClassName` to change them.",
+      "Accessibility: each title is a button with `aria-expanded` / `aria-controls`, Arrow Up / Down, Home and End move between titles (roving tabindex), and closed panels are `inert`. Autoplay holds while keyboard focus is inside, and clicking a title restarts the timer. For WCAG 2.2.2 (motion over 5s needs a way to stop it), consider `pauseOnHover` or turning `autoplay` off if the site has no other pause control.",
+      "It is a Client Component (\"use client\"). It reads `(min-width: 960px)` with matchMedia, so on the server it renders the mobile accordion and switches to the two-column layout after hydration.",
     ],
   },
   {
@@ -2151,6 +2938,22 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "accentTo", label: "Accent to", default: "#E3308C" },
       { type: "color", name: "connectorFrom", label: "Line start", default: "#A309BB" },
       { type: "color", name: "labelColor", label: "Label", default: "#410051" },
+    ],
+    assets: [
+      {
+        prop: "items[].media",
+        label: "Step image",
+        fit: "Fills a 730 / 460 rounded box in the right column, object-cover",
+        placeholder: "1460x920",
+      },
+      {
+        prop: "items[].icon",
+        label: "Pill icon",
+        fit: "About 26px, before the pill label",
+        placeholder: "52x52",
+        notes: "An `img` is turned white on the active pill; an `svg` using `currentColor` follows the label colour.",
+        optional: true,
+      },
     ],
     promptNotes: [
       "`items` is an array of `{ label, icon?, content, media }`. `label` is the pill text; `icon` is a ~26px `img` or `svg` before it (an `img` turns white on the active pill via `brightness(0) invert(1)`; an `svg` using `currentColor` follows the label). `content` is the left column (heading + copy, styled with the site's typography); `media` is the right column, sized to a 730 / 460 rounded box with `object-cover`.",
@@ -2356,6 +3159,246 @@ export const registry: RegistryEntry[] = [
       "It's a named export: `import { Curtain } from \"@/components/animations/curtain\"`.",
       "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
       "Raw WebGL2, a single full-screen pass. The layer shapes come from a fitted field and per-layer shading measured from reference footage. For the fallback background, use a dark colour such as the top colour or black.",
+    ],
+  },
+  {
+    slug: "ribbon-wave",
+    title: "Ribbon wave",
+    description:
+      "A folded silk ribbon, rendered as a real 3D mesh that curls along its length and only breathes, on a transparent WebGL canvas, from Stripe's website",
+    category: "shaders",
+    group: "backgrounds",
+    level: "atom",
+    source: "https://stripe.com/",
+    componentName: "RibbonWave",
+    files: [
+      {
+        name: "ribbon-wave.tsx",
+        path: "src/registry/shaders/backgrounds/ribbon-wave.tsx",
+      },
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    usageProps: ['className="pointer-events-none absolute inset-0 z-[1]"'],
+    motion: {
+      implementation: "required",
+      intent:
+        "A full-bleed background for a light hero: a sheet of silk folded in half, curling and corkscrewing along its length, sweeping across the section in soft painterly colour with fine fibre streaks and a sheen where it curls away. It holds its shape and only breathes, so slowly you notice it's alive rather than see it move.",
+      trigger: shader.trigger,
+      states: [
+        "Geometry: a 400×400 plane subdivided 128×256, folded in half like paper: two layers a few units apart, joined by a tight half-cylinder. Built once on the CPU.",
+        "Curl: three rotations in the vertex shader, each fading along the sheet with `expStep(x, n) = 2^(−2^n·x^n)`: {twistX} rad along the length (fade {twistPowerX}), {twistY} rad across (fade {twistPowerY}) and {twistZ} rad along the length (fade {twistPowerZ}). Because the angles fade, the sheet curls progressively, which is what makes it read as fabric.",
+        "Placement: scaled ×{scale} (on a 9 × 8 × 5 base), rotated ({rotationX}°, {rotationY}°, {rotationZ}°), at ({positionX}, {positionY}) px for a 761px-tall section, scaling with the section height. Orthographic camera, no perspective; a depth buffer sorts the two layers.",
+        "Colour: a soft painterly 2D palette (blurred blobs of {color1}, {color2}, {color3}, {color4} and {color5}, with a pale streak along the fold) sampled by position on the sheet, so colour changes along the ribbon as well as across it. Saturation {saturation}.",
+        "Fibres: simplex noise very fine across the sheet (frequency 600) and long along it, faded towards the long edges and stronger on warm colours, strength ×{fibres}.",
+        "Sheen: brightness from how stretched the surface is on screen (`dFdy(uv)` × {glow}), so curls and folds catch light without any lights. Film grain {grain}.",
+        "Everywhere else the canvas is transparent.",
+      ],
+      timing: [
+        "The only motion: the main curl wobbles ±0.1 rad and the sheet drifts by noise, advancing {speed} × 0.04 units per second (Stripe's pace). It reads as nearly still.",
+        "Each frame advances time by at most 0.1s, so coming back to a background tab doesn't jump the shape.",
+        "{paused|true=`paused` is on: it renders one still frame and the loop stays idle.|*=}",
+      ],
+      interruption: shader.interruption,
+      reducedMotion: shader.reducedMotion,
+      responsive:
+        "Positions and sizes are in px at a 761px-tall section and scale with the section height, so the composition holds as the hero grows or shrinks. On phones, move it with `positionX` / `positionY` or shrink it with `scale` if it covers the copy. Rendering resolution is capped at {maxPixelRatio}× device pixels.",
+      rules: [
+        ...shader.rules,
+        "Don't speed it up to make it livelier: the stillness is the point.",
+        "It's transparent, so it doesn't replace the section's background colour: keep that on the section.",
+        "Keep the defaults (`RIBBON_WAVE_DEFAULTS`) for anything I haven't set. The twist values are a set: change them together and check the shape.",
+      ],
+      checks: [
+        "A folded ribbon curls across the section with soft, patchy colour, fine fibre streaks and a sheen on its curls, and the rest of the section stays its own background colour.",
+        "Over 10 seconds it shifts only slightly. Its edges are clean, the two layers of the fold never poke through each other, and nothing shimmers.",
+        ...shader.checks,
+      ],
+      apply: [
+        "Add the component file below as written, then render it as the background of the section I name (the hero if I don't name one). Keep that section's content, layout and text as they are.",
+        "The section gets `position: relative`, `overflow: hidden` and `isolation: isolate`. The component goes in as its first child with `className=\"pointer-events-none absolute inset-0 z-[1]\"`, and the content gets `position: relative; z-index: 2`. If the headline should blend through it, use the Blend-through headline, which slots its two copies around `z-index: 1`.",
+        "The canvas is transparent, so the section keeps its own background colour (white in the original). That's also the fallback when WebGL2 is missing.",
+      ],
+    },
+    controls: [
+      { type: "color", name: "color1", label: "Pale light", default: "#C9DAFF" },
+      { type: "color", name: "color2", label: "Violet", default: "#9A6BFF" },
+      { type: "color", name: "color3", label: "Pink", default: "#FF78C8" },
+      { type: "color", name: "color4", label: "Orange", default: "#FF9F1A" },
+      { type: "color", name: "color5", label: "Highlight", default: "#FFD9A8" },
+      { type: "number", name: "speed", label: "Speed", default: 1, min: 0, max: 20, step: 0.5 },
+      { type: "number", name: "twistX", label: "Curl", default: -0.65, min: -3, max: 3, step: 0.01 },
+      { type: "number", name: "twistZ", label: "Second curl", default: -0.58, min: -3, max: 3, step: 0.01 },
+      { type: "number", name: "twistY", label: "Cross twist", default: 0.41, min: -2, max: 2, step: 0.01 },
+      { type: "number", name: "twistPowerX", label: "Curl fade", default: 3.63, min: 0.2, max: 8, step: 0.01 },
+      { type: "number", name: "twistPowerZ", label: "Second curl fade", default: 3.95, min: 0.2, max: 8, step: 0.01 },
+      { type: "number", name: "twistPowerY", label: "Cross twist fade", default: 0.7, min: 0.2, max: 8, step: 0.01 },
+      { type: "number", name: "rotationX", label: "Rotation X", default: -25.76, min: -180, max: 180, step: 0.1, unit: "°" },
+      { type: "number", name: "rotationY", label: "Rotation Y", default: -6.74, min: -180, max: 180, step: 0.1, unit: "°" },
+      { type: "number", name: "rotationZ", label: "Rotation Z", default: 107.4, min: -180, max: 180, step: 0.1, unit: "°" },
+      { type: "number", name: "positionX", label: "Position X", default: 593, min: -1200, max: 1200, step: 1, unit: "px" },
+      { type: "number", name: "positionY", label: "Position Y", default: -302, min: -1200, max: 1200, step: 1, unit: "px" },
+      { type: "number", name: "scale", label: "Scale", default: 1, min: 0.2, max: 3, step: 0.01 },
+      { type: "number", name: "fibres", label: "Fibres", default: 1, min: 0, max: 3, step: 0.05 },
+      { type: "number", name: "glow", label: "Sheen", default: 1.98, min: 0, max: 5, step: 0.05 },
+      { type: "number", name: "saturation", label: "Saturation", default: 1, min: 0, max: 2, step: 0.01 },
+      { type: "number", name: "grain", label: "Grain", default: 1.1, min: 0, max: 2, step: 0.01 },
+      { type: "number", name: "maxPixelRatio", label: "Max pixel ratio", default: 2, min: 0.5, max: 3, step: 0.5 },
+      { type: "boolean", name: "paused", label: "Paused", default: false },
+    ],
+    promptNotes: [
+      "It's a named export: `import { RibbonWave } from \"@/components/animations/ribbon-wave\"`.",
+      "It renders a bare, transparent `<canvas>` (aria-hidden) that fills its parent.",
+      "Raw WebGL2, no three.js: one indexed mesh (about 33k vertices) drawn once per frame with a depth buffer and MSAA. The palette is generated on a 2D canvas from the five colours; pass `paletteSrc` (a CORS-enabled image) to use your own.",
+      "The technique follows Stripe's homepage hero (a folded plane, fading twist rotations, orthographic camera, palette texture, noise fibres, derivative sheen, a speed of 4e-5 per ms); the defaults are its homepage settings. The code and palette are our own.",
+    ],
+  },
+  {
+    slug: "prism-flow",
+    title: "Prism flow",
+    description:
+      "A soft stream of light sweeps across a deep navy field, splitting into cycling rainbow layers along its edge and melting into haze, a WebGL shader background",
+    category: "shaders",
+    group: "backgrounds",
+    level: "atom",
+    componentName: "PrismFlow",
+    files: [
+      {
+        name: "prism-flow.tsx",
+        path: "src/registry/shaders/backgrounds/prism-flow.tsx",
+      },
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    usageProps: ['className="absolute inset-0 -z-10"'],
+    motion: {
+      implementation: "required",
+      intent:
+        "A full-bleed animated background for a dark hero: a broad, blurred stream of light sweeps diagonally across a deep navy field. Along its edge the light splits into soft rainbow layers that keep flowing along the stream, and further in it melts into a pale haze and then electric blue. Everything is soft-focus with no hard lines: it should feel like light through a prism, lively but calm behind the copy.",
+      trigger: shader.trigger,
+      states: [
+        "Field: {colorDeep} outside the stream, lifting slightly towards it.",
+        "Stream: a diagonal band at {angle}° whose edge crosses the middle {offset} section-heights up and undulates slowly. The edge is {softness} section-heights soft.",
+        "Spectrum: {spectrum1} → {spectrum2} → {spectrum3} → {spectrum4} → {spectrum5}, looped and softened slightly towards {colorHaze}, in {spread} layers parallel to the edge, broken up by noise and cycling along the stream. It only lives in a narrow band at the edge (fading as e^(−2.4 × depth)). A soft glow follows the edge in its own colour.",
+        "Depth: over {width} section-heights the spectrum melts into {colorHaze}, then settles into {colorBase} on the far side.",
+        "The whole field is domain-warped by slow noise ({warp}), so every line bends softly. Fine grain ({grain}) stops the gradients banding.",
+      ],
+      timing: [
+        "Shape: the warp and the edge's undulation drift slowly (speed {speed}).",
+        "Colour: the spectrum cycles {cycle} times per second along the stream at speed {speed}, the most visible motion.",
+        "Each frame advances time by at most 0.1s, so coming back to a background tab doesn't jump.",
+        "{paused|true=`paused` is on: it renders one still frame and the loop stays idle.|*=}",
+      ],
+      interruption: shader.interruption,
+      reducedMotion: shader.reducedMotion,
+      responsive:
+        "Sizes are in section heights, so the stream keeps its shape at any height and extends further on wide sections. It's soft, so rendering is capped at {maxPixelRatio}× device pixels without visible loss.",
+      rules: [...shader.rules, "Keep the defaults (`PRISM_FLOW_DEFAULTS`) for anything I haven't set."],
+      checks: [
+        "A soft rainbow-edged stream sweeps diagonally across a navy field, its colours flowing along it, with no hard lines and no banding in the gradients.",
+        "White text over it stays readable, especially over the haze.",
+        ...shader.checks,
+      ],
+      apply: shader.apply,
+    },
+    controls: [
+      { type: "color", name: "colorDeep", label: "Deep", default: "#03055C" },
+      { type: "color", name: "colorBase", label: "Base blue", default: "#2A2CE0" },
+      { type: "color", name: "colorHaze", label: "Haze", default: "#A9B9F2" },
+      { type: "color", name: "spectrum1", label: "Spectrum 1", default: "#FF5E62" },
+      { type: "color", name: "spectrum2", label: "Spectrum 2", default: "#F4D35E" },
+      { type: "color", name: "spectrum3", label: "Spectrum 3", default: "#5CD38E" },
+      { type: "color", name: "spectrum4", label: "Spectrum 4", default: "#6FC8F5" },
+      { type: "color", name: "spectrum5", label: "Spectrum 5", default: "#E68BE3" },
+      { type: "number", name: "speed", label: "Speed", default: 1, min: 0, max: 4, step: 0.1 },
+      { type: "number", name: "cycle", label: "Colour cycle", default: 0.05, min: 0, max: 0.4, step: 0.01 },
+      { type: "number", name: "spread", label: "Spectrum layers", default: 1, min: 0.2, max: 4, step: 0.05 },
+      { type: "number", name: "angle", label: "Angle", default: -20, min: -90, max: 90, step: 1, unit: "°" },
+      { type: "number", name: "offset", label: "Edge position", default: 0.14, min: -0.6, max: 0.6, step: 0.01 },
+      { type: "number", name: "width", label: "Band depth", default: 0.8, min: 0.1, max: 1.5, step: 0.01 },
+      { type: "number", name: "softness", label: "Edge softness", default: 0.14, min: 0.01, max: 0.5, step: 0.01 },
+      { type: "number", name: "warp", label: "Warp", default: 0.22, min: 0, max: 0.6, step: 0.01 },
+      { type: "number", name: "grain", label: "Grain", default: 1, min: 0, max: 2, step: 0.1 },
+      { type: "number", name: "maxPixelRatio", label: "Max pixel ratio", default: 1, min: 0.5, max: 2, step: 0.5 },
+      { type: "boolean", name: "paused", label: "Paused", default: false },
+    ],
+    promptNotes: [
+      "It's a named export: `import { PrismFlow } from \"@/components/animations/prism-flow\"`.",
+      "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
+      "Raw WebGL2, one fullscreen pass: a rotated frame for the stream, four-octave value-noise warp, an undulating edge, a looping five-colour spectrum, and a haze/base falloff. Use the deep colour as the section's fallback background.",
+    ],
+  },
+  {
+    slug: "neon-marble",
+    title: "Neon marble",
+    description:
+      "Saturated neon liquid in violet, magenta, orange, lime and teal, folding into long marbled streaks under a film grain, a WebGL shader background",
+    category: "shaders",
+    group: "backgrounds",
+    level: "atom",
+    componentName: "NeonMarble",
+    files: [
+      {
+        name: "neon-marble.tsx",
+        path: "src/registry/shaders/backgrounds/neon-marble.tsx",
+      },
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    usageProps: ['className="absolute inset-0 -z-10"'],
+    motion: {
+      implementation: "required",
+      intent:
+        "A full-bleed animated background for a bold hero: the whole section is a flowing neon liquid, folded and marbled into long diagonal streaks, with darker pockets for depth and a visible film grain. It should feel vivid and alive, with colour travelling through the folds, while staying soft enough to put white type over.",
+      trigger: shader.trigger,
+      states: [
+        "Liquid: layered domain warping. Noise bends the coordinates of noise, which bend the coordinates of noise again (fold strength {warp}), at feature size {scale}.",
+        "Streaks: the field is drawn out {stretch}× along {angle}°, so the folds become long diagonal streaks.",
+        "Colour: {color1} → {color2} → {color3} → {color4} → {color5}, looped, picked by where the liquid ended up ({spread} bands per fold), so colour follows the folds.",
+        "Depth: pockets where the second warp layer runs low sink towards {colorShadow} (strength {shadow}).",
+        "Film grain ({grain}) over everything.",
+      ],
+      timing: [
+        "The liquid evolves continuously at speed {speed}: within a few seconds the folds have visibly moved.",
+        "The palette travels through the folds at {cycle} cycles per second (at speed {speed}).",
+        "Each frame advances time by at most 0.1s, so coming back to a background tab doesn't jump.",
+        "{paused|true=`paused` is on: it renders one still frame and the loop stays idle.|*=}",
+      ],
+      interruption: shader.interruption,
+      reducedMotion: shader.reducedMotion,
+      responsive:
+        "Sizes are in section heights, so the folds keep their size relative to the section at any height. It's soft, so rendering is capped at {maxPixelRatio}× device pixels without visible loss (the grain is drawn per pixel at that resolution).",
+      rules: [...shader.rules, "Keep the defaults (`NEON_MARBLE_DEFAULTS`) for anything I haven't set."],
+      checks: [
+        "The whole section is a flowing neon liquid in long diagonal streaks with darker pockets and a fine grain, and it keeps moving smoothly with no flicker.",
+        "White text over it stays readable. If not, raise `shadow` or darken the palette rather than adding an overlay.",
+        ...shader.checks,
+      ],
+      apply: shader.apply,
+    },
+    controls: [
+      { type: "color", name: "color1", label: "Colour 1", default: "#6E4BF2" },
+      { type: "color", name: "color2", label: "Colour 2", default: "#E24FB6" },
+      { type: "color", name: "color3", label: "Colour 3", default: "#FF7A2E" },
+      { type: "color", name: "color4", label: "Colour 4", default: "#B8EE4C" },
+      { type: "color", name: "color5", label: "Colour 5", default: "#5FA7A0" },
+      { type: "color", name: "colorShadow", label: "Shadow", default: "#3A1468" },
+      { type: "number", name: "speed", label: "Speed", default: 1, min: 0, max: 4, step: 0.1 },
+      { type: "number", name: "cycle", label: "Colour cycle", default: 0.03, min: 0, max: 0.3, step: 0.01 },
+      { type: "number", name: "scale", label: "Scale", default: 0.5, min: 0.3, max: 3, step: 0.05 },
+      { type: "number", name: "warp", label: "Fold strength", default: 0.85, min: 0, max: 2, step: 0.05 },
+      { type: "number", name: "stretch", label: "Streak length", default: 2.2, min: 1, max: 5, step: 0.1 },
+      { type: "number", name: "angle", label: "Angle", default: -28, min: -90, max: 90, step: 1, unit: "°" },
+      { type: "number", name: "spread", label: "Colour bands", default: 0.8, min: 0.3, max: 4, step: 0.05 },
+      { type: "number", name: "shadow", label: "Shadow depth", default: 0.55, min: 0, max: 1, step: 0.05 },
+      { type: "number", name: "grain", label: "Grain", default: 1, min: 0, max: 2, step: 0.1 },
+      { type: "number", name: "maxPixelRatio", label: "Max pixel ratio", default: 1, min: 0.5, max: 2, step: 0.5 },
+      { type: "boolean", name: "paused", label: "Paused", default: false },
+    ],
+    promptNotes: [
+      "It's a named export: `import { NeonMarble } from \"@/components/animations/neon-marble\"`.",
+      "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
+      "Raw WebGL2, one fullscreen pass: a rotated, stretched frame, three layers of three-octave value-noise domain warping, a looping five-colour palette and a shadow mix. Use the shadow colour as the section's fallback background.",
     ],
   },
 ];

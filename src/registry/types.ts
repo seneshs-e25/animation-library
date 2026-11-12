@@ -107,6 +107,26 @@ export type MotionSpec = {
   apply?: string[];
 };
 
+/**
+ * An image or media slot the component expects the site to fill. No asset
+ * files ship with the prompt, so these tell the agent what each slot needs
+ * and what placeholder to use until the real asset exists. Strings can use
+ * `{controlName}` tokens like the motion spec.
+ */
+export type AssetSlot = {
+  /** Where it goes: a prop or array field, e.g. `src`, `tiles[].image`. */
+  prop: string;
+  /** What it shows, e.g. "Customer photo". Also labels the placeholder. */
+  label: string;
+  /** How the slot displays it, e.g. "fills a 301 / 360 frame (object-cover)". */
+  fit: string;
+  /** Placeholder size in px, about 2x the displayed size, e.g. "602x720". */
+  placeholder: string;
+  /** How to prepare the real asset: trimmed, white, transparent, raw photo... */
+  notes?: string;
+  optional?: boolean;
+};
+
 export type RegistryEntry = {
   slug: string;
   title: string;
@@ -143,6 +163,8 @@ export type RegistryEntry = {
    * Motion details belong in `motion`.
    */
   promptNotes?: string[];
+  /** Image and media slots; the prompt turns them into an "Images and media" section. */
+  assets?: AssetSlot[];
   dependencies?: string[];
   /**
    * Show the light/dark background toggle in the preview. Defaults to true;

@@ -64,7 +64,7 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 pt-6 pb-16 md:px-10 md:pt-8">
+    <main className="mx-auto w-full max-w-6xl px-6 pt-6 pb-16 transition-[max-width] duration-200 ease-linear md:px-10 md:pt-8 [.peer[data-state=collapsed]~[data-slot=sidebar-inset]_&]:max-w-[calc(72rem+var(--sidebar-width))]">
       <div className="flex items-start justify-between gap-6">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -144,28 +144,33 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
               {Preview ? <Preview values={values} /> : <p className="text-muted-foreground">No preview</p>}
             </PreviewStage>
             {customizing && (
-              <aside className="border-t p-5 md:border-t-0 md:border-l">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-sm font-medium">Props</h2>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Reset props"
-                        onClick={() => setValues(getDefaultValues(entry))}
-                      >
-                        <RotateCcw />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Reset</TooltipContent>
-                  </Tooltip>
+              // On desktop the panel's content is absolutely positioned and
+              // scrolls inside the aside, so the preview alone sets the row
+              // height and a long list of props never stretches the stage.
+              <aside className="border-t md:relative md:border-t-0 md:border-l">
+                <div className="p-5 md:absolute md:inset-0 md:overflow-y-auto md:overscroll-contain">
+                  <div className="mb-5 flex items-center justify-between">
+                    <h2 className="text-sm font-medium">Props</h2>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Reset props"
+                          onClick={() => setValues(getDefaultValues(entry))}
+                        >
+                          <RotateCcw />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Reset</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <ControlsPanel
+                    controls={entry.controls}
+                    values={values}
+                    onChange={(name, value) => setValues((v) => ({ ...v, [name]: value }))}
+                  />
                 </div>
-                <ControlsPanel
-                  controls={entry.controls}
-                  values={values}
-                  onChange={(name, value) => setValues((v) => ({ ...v, [name]: value }))}
-                />
               </aside>
             )}
           </div>

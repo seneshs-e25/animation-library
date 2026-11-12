@@ -1,4 +1,4 @@
-import type { Control, ControlValues, RegistryEntry } from "@/registry/types";
+import type { AssetSlot, Control, ControlValues, RegistryEntry } from "@/registry/types";
 
 function formatProp(control: Control, value: ControlValues[string]) {
   if (typeof value === "string") return `${control.name}="${value}"`;
@@ -101,6 +101,49 @@ function fillTokens(text: string, entry: RegistryEntry, values: ControlValues) {
       return options[value] ?? options["*"] ?? value;
     }
   );
+}
+
+const kebab = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+/**
+ * No asset files ship with the prompt, so this tells the agent to use the
+ * site's own images where they fit and labelled placeholders everywhere
+ * else, then report what's still missing.
+ */
+function assetSection(entry: RegistryEntry, values: ControlValues) {
+  if (!entry.assets?.length) return "";
+  const f = (text: string) => fillValues(text, entry, values);
+
+  const slot = (a: AssetSlot) => {
+    const file = `placeholders/${entry.slug}-${kebab(a.label)}.svg`;
+    return [
+      `\`${a.prop}\`: ${a.label}${a.optional ? " (optional)" : ""}. ${f(a.fit)}.`,
+      a.notes ? ` ${f(a.notes)}` : "",
+      ` Placeholder: \`${file}\` at ${a.placeholder}.`,
+    ].join("");
+  };
+
+  return `## Images and media
+
+No image or video files come with this prompt. The component takes them as props, and any paths in the usage example are examples only: they don't exist in this project.
+
+- **Use the site's own assets where they fit the role.** Look in its static folder, CMS content and existing components for the same kind of content (customer photos, logos, product screenshots, award badges). Don't fill a slot with an unrelated image, and don't download images from the animation library or the source site.
+- **Where the site has nothing suitable, use a placeholder** so the layout and motion can be checked with real proportions. Create one SVG per slot in the site's static assets folder (e.g. \`public/placeholders/\`), at the size listed below, using this template (W and H are the size; the font size is about a tenth of the smaller side):
+
+  \`\`\`svg
+  <svg xmlns="http://www.w3.org/2000/svg" width="W" height="H" viewBox="0 0 W H"><rect width="W" height="H" fill="#E5E7EB"/><text x="50%" y="50%" fill="#6B7280" font-family="system-ui, sans-serif" font-size="FONT" text-anchor="middle" dominant-baseline="middle">Label · W×H</text></svg>
+  \`\`\`
+
+  Reuse one placeholder for every item in a list. Give it the alt text the real image will need (or \`alt=""\` if it's decorative), and put a \`TODO(assets): replace placeholder\` comment where it's passed, so they're easy to find. For a video slot, a placeholder image is fine.
+- **When you're done, list every placeholder you used** (file, prop and the size the real asset should be), so I know which assets to supply.
+
+Slots:
+
+${bullets(entry.assets.map(slot))}`;
 }
 
 /**
@@ -220,12 +263,17 @@ ${buildUsage(entry, values)}
 \`\`\`
 
 ${bullets(setupNotes(entry, sources))}
-
+${entry.assets?.length ? `\n${assetSection(entry, values)}\n` : ""}
 ## Check it
 
 When it's in, confirm each of these:
 
-${bullets(m.checks.map(f))}
+${bullets([
+  ...m.checks.map(f),
+  ...(entry.assets?.length
+    ? ["No broken images: every image slot shows either one of the site's assets or a labelled placeholder."]
+    : []),
+])}
 `;
 }
 
@@ -257,5 +305,5 @@ ${buildUsage(entry, values)}
 
 Notes:
 ${bullets(notes)}
-`;
+${entry.assets?.length ? `\n${assetSection(entry, values)}\n` : ""}`;
 }

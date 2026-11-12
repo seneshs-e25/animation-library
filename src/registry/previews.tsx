@@ -12,12 +12,14 @@ import { ZoomImageCard } from "./interactions/image-hovers/zoom-image-card";
 import { RevealLinkCard } from "./interactions/image-hovers/reveal-link-card";
 import { RisingCopyCard } from "./interactions/image-hovers/rising-copy-card";
 import { BentoGrid, type BentoTile } from "./interactions/image-hovers/bento-grid";
+import { HoverCardList, HourglassIcon, ArmchairIcon, type HoverListGroup } from "./interactions/image-hovers/hover-card-list";
 import { LogoMarquee } from "./animations/carousels/logo-marquee";
 import { CardMarquee } from "./animations/carousels/card-marquee";
 import { StackingCards } from "./animations/pin-scrollers/stacking-cards";
 import { FocusScroll } from "./animations/pin-scrollers/focus-scroll";
 import { CollapsingStack } from "./animations/pin-scrollers/collapsing-stack";
 import { ExpandingCards } from "./animations/carousels/expanding-cards";
+import { ExpandingBento, type BentoPanel, type BentoStrip } from "./animations/carousels/expanding-bento";
 import { SpotlightSlider, SpotlightSlide } from "./animations/carousels/spotlight-slider";
 import { AwardsCarousel } from "./animations/carousels/awards-carousel";
 import { ScrollTextReveal } from "./animations/scroll-triggers/scroll-text-reveal";
@@ -25,14 +27,22 @@ import { CountUp } from "./animations/text-effects/count-up";
 import { ScrollShiftHeadline } from "./animations/scroll-triggers/scroll-shift-headline";
 import { RisingHeadline } from "./animations/text-effects/rising-headline";
 import { WaveHeadline } from "./animations/text-effects/wave-headline";
+import { BlendThroughHeadline } from "./animations/text-effects/blend-through-headline";
+import { LineMaskReveal } from "./animations/text-effects/line-mask-reveal";
+import { StretchHeadline } from "./animations/text-effects/stretch-headline";
+import { TextMarquee } from "./animations/text-effects/text-marquee";
 import { ScrollColorBackground } from "./animations/scroll-triggers/scroll-color-background";
 import { FaqAccordion } from "./animations/accordions/faq-accordion";
 import { ProgressTabs } from "./animations/tabs/progress-tabs";
 import { StepTabs } from "./animations/tabs/step-tabs";
+import { AccordionTabs } from "./animations/tabs/accordion-tabs";
 import { VerticalTabSlider } from "./animations/tabs/vertical-tab-slider";
-import { Bricolage_Grotesque, Hanken_Grotesk, Instrument_Sans, Inter_Tight, Lexend_Exa, Mona_Sans, Space_Mono } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans, Hanken_Grotesk, Instrument_Sans, Inter, Inter_Tight, Lexend_Exa, Mona_Sans, Montserrat, Space_Mono } from "next/font/google";
 import { Aurora } from "./shaders/backgrounds/aurora";
 import { Curtain } from "./shaders/backgrounds/curtain";
+import { RibbonWave } from "./shaders/backgrounds/ribbon-wave";
+import { PrismFlow } from "./shaders/backgrounds/prism-flow";
+import { NeonMarble } from "./shaders/backgrounds/neon-marble";
 
 /** The four "problem" cards from the Seemplicity homepage, with its live images and copy. */
 const seemplicityUpload = (path: string) => `https://seemplicity.ai/wp-content/uploads/${path}`;
@@ -146,6 +156,117 @@ const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 const hankenGrotesk = Hanken_Grotesk({ weight: ["200", "300", "400"], subsets: ["latin"] });
 const monaSans = Mona_Sans({ subsets: ["latin"] });
 const bricolage = Bricolage_Grotesque({ weight: ["300"], subsets: ["latin"] });
+const montserrat = Montserrat({ weight: ["400", "500", "600"], subsets: ["latin"] });
+const inter = Inter({ weight: ["400", "700"], subsets: ["latin"] });
+const dmSans = DM_Sans({ weight: ["600", "800"], subsets: ["latin"] });
+
+/** The six benefit tabs from the PandaDoc homepage, with its copy and video stills from Mux. */
+const pandadocMux = (id: string) => `https://image.mux.com/${id}/thumbnail.webp?width=1600&time=6`;
+const pandadocFeatures = [
+  { title: "Create", mux: "O2NQd2m101khSAVtDOv28ETFLpsgUusVwB6oOC1eGLSc", body: "Easily generate custom agreements tailored to your audience and workflow with our drag-and-drop editor.", links: ["Smart content"] },
+  { title: "Collaborate", mux: "f9ISrWiUZXWOzabnLX69qJrsB700juQ5tIb02l9Jw9mtE", body: "With PandaDoc, everyone\u2019s eyes are on the same document for real-time redlining, comments, approvals, and more.", links: ["Workspaces", "Rooms"] },
+  { title: "Automate", mux: "JeosgBmweHfGEvFhQfHulh1023JY4W00eLrpr4UbJWvpQ", body: "PandaDoc's CRM integrations, embeddable API, and automation features speed up your workflows while eliminating errors and repetitive tasks.", links: ["CRM integration", "API"] },
+  { title: "Sign", mux: "SuTI3Vv8oCpHgz75v79dSgNcFeSWVBztJDlKPlzAlXI", body: "Not only can you capture signatures, but decide signing order, verify the identity of recipients, set signing groups, and even notarize documents.", links: ["Signing order", "eSignature"] },
+  { title: "Analyze", mux: "d8lRBHkplQ4me9cAqISPvNOeXc14PVtciaRWTFFYkNg", body: "PandaDoc records an audit trail for every document, reports user activity, and tracks document metrics, too.", links: ["Document tracking", "Audit trail"] },
+  { title: "Get paid", mux: "pc8X00oxxutB5FHXVPAabJYvL6rGYZkRBM00aKSi01LyDM", body: "Easily embed trusted payment gateways directly into bills and invoices so customers can pay with just a few clicks.", links: ["Payments"] },
+];
+
+/** Hatch's workspace bento, with its live Framer images and copy. */
+const hatchImage = (id: string) => `https://framerusercontent.com/images/${id}`;
+const hatchPanels: BentoPanel[] = [
+  {
+    title: "Managed / Serviced Offices",
+    marquee: ["Managed", "Serviced Offices"],
+    color: "#50266A",
+    thumb: hatchImage("leHUQ4tJJnmgDWn7DfEULja37s8.png?width=320&height=316"),
+    description:
+      "Fully serviced offices for teams and enterprises - we run the space so you can run your business. Ideal for companies setting up or relocating their Colombo operations.",
+    ctaLabel: "Enquire about a space",
+    href: "#",
+  },
+  {
+    title: "Hot Desks",
+    color: "#2076AD",
+    thumb: hatchImage("Jj6GeGuP0BEC3XYDVf0ER9Py1xo.jpg?scale-down-to=512"),
+    description:
+      "A flexible seat in the shared space - come in, plug in, get to work. Best for solo founders and anyone who doesn\u2019t need the same desk twice.",
+    ctaLabel: "Enquire about a space",
+    href: "#",
+  },
+  {
+    title: "Private Offices",
+    color: "#56BAA4",
+    thumb: hatchImage("VqwBfkbb9FUk8hITDMKIxrtfs.png?scale-down-to=512"),
+    description: "A lockable office for your team inside the community - your own door, with the coworking floor just outside it.",
+    ctaLabel: "Enquire about a space",
+    href: "#",
+  },
+  {
+    title: "Dedicated Desks",
+    color: "#CDCEA6",
+    accent: "#8E8F5E",
+    thumb: hatchImage("PkqEqFxz1sVL5bIrUNo5efpgNY.png?scale-down-to=512"),
+    description: "Your own desk in the shared space, kept for you every day - leave your monitor, keep your spot.",
+    ctaLabel: "Enquire about a space",
+    href: "#",
+  },
+];
+/** Hatch's meeting rooms (HQ and Chatham), with the live Framer photos and details. */
+const hatchRoom = (name: string, image: string, capacity: string, bullets?: string[], duration = true) => ({
+  title: name,
+  thumb: hatchImage(`${image}?scale-down-to=512`),
+  tags: [
+    ...(duration ? [{ icon: <HourglassIcon />, label: "Duration: 1h (Minimum)" }] : []),
+    { icon: <ArmchairIcon />, label: `Capacity: ${capacity}` },
+  ],
+  bullets,
+});
+const hatchRooms: HoverListGroup[] = [
+  {
+    label: "HQ",
+    items: [
+      hatchRoom("Boardroom", "VUd1ZYESDd8zZURbQqAEFT3uXI.jpg", "10", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
+      hatchRoom("Cactus", "lQpLUdtGD8aHqQRfK7Ux8h6Ik.jpg", "08", ["HD TV including HDMI", "Air conditioning", "WIFI"]),
+      hatchRoom("Maze", "yU1NoqIN52raTECqqurlduiErwg.jpg", "06", ["Whiteboard", "HD TV including HDMI", "Air conditioning", "WIFI"]),
+      hatchRoom("Bermuda", "4JVDS7HYlTkBWMSHfqJUoQFg94.jpg", "08", ["Air conditioning", "WIFI"]),
+      hatchRoom("Pacific", "4BfHNqzCqRiHoE8Yg4q04U5t4FA.jpg", "08", ["HD TV including HDMI", "Air conditioning", "WIFI"]),
+      hatchRoom("Mustard Hill", "1uIaXj8JkG57CBnr7li6cAUE8NE.jpg", "08", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
+      hatchRoom("The Loft", "1ceZCMkF7bSK5v4S2rgUZ1LShV4.jpg", "07", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
+    ],
+  },
+  {
+    label: "Chatham",
+    items: [
+      hatchRoom("Boardroom", "IMR5rqGDkLeVAm1HnJrdDxKPiUA.jpg", "14", undefined, false),
+      hatchRoom("Mudroom", "lyEB5ChyxaToyMD2pqX1rdsShKM.jpg", "05", undefined, false),
+      hatchRoom("Lily Pad", "BrxwSvoKFwIusAkuCUQPguJcs0.jpg", "10", undefined, false),
+      hatchRoom("Booth-1", "d2hJ0MXm8epKEGe9S73ogc48E8.jpeg", "02", undefined, false),
+      hatchRoom("Booth-2", "IKDqSbdFXar3MFNioAwL2Cn5c4.jpeg", "02", undefined, false),
+    ],
+  },
+];
+const hatchStrips: BentoStrip[] = [
+  {
+    title: "Flexible Packages",
+    color: "#CF7A8C",
+    thumb: hatchImage("JKaDrr1Vk1Xf8qen2oHaU0FzdDo.jpg?scale-down-to=512"),
+    image: hatchImage("JKaDrr1Vk1Xf8qen2oHaU0FzdDo.jpg?scale-down-to=1024"),
+    description:
+      "Access to Hatch on your terms, the community, the events, and the space when you need it, without a fixed desk. Come in for the people and the moments that matter, with a set number of days a month in the shared space.",
+    ctaLabel: "Enquire about a space",
+    href: "#",
+  },
+  {
+    title: "Virtual Package",
+    color: "#D4674E",
+    thumb: hatchImage("mSA4N6BuHHTWNxTxKTebEqVA8.jpg?scale-down-to=512"),
+    image: hatchImage("mSA4N6BuHHTWNxTxKTebEqVA8.jpg?scale-down-to=1024"),
+    description:
+      "A business address at Hatch, without the desk, a professional address for correspondence and mail handling, so you can work from anywhere.",
+    ctaLabel: "Enquire about a space",
+    href: "#",
+  },
+];
 
 /** The seven award badges from Seemplicity's /why page (WordPress uploads). */
 const awards = [
@@ -544,6 +665,124 @@ function VerticalTabSliderDemo({ values }: { values: ControlValues }) {
   );
 }
 
+/**
+ * The Stripe hero: white section, a drifting ribbon on the right, and the
+ * headline blending through it. The ribbon is the library's Ribbon wave
+ * shader (not part of the component). It sits at z-index 1, between the
+ * headline's two copies.
+ */
+function BlendThroughHeadlineDemo({ values }: { values: ControlValues }) {
+  return (
+    <section
+      className={`${interTight.className} relative isolate flex min-h-[620px] w-full items-center overflow-hidden bg-white px-5 py-24 md:px-16`}
+    >
+      <RibbonWave className="pointer-events-none absolute inset-0 z-[1]" />
+      <div className="w-full max-w-[1080px]">
+        <BlendThroughHeadline
+          as="h2"
+          color={values.color as string}
+          tint={values.tint as string}
+          tintOpacity={values.tintOpacity as number}
+          emphasisColor={values.emphasisColor as string}
+          emphasisTint={values.emphasisTint as string}
+          emphasisTintOpacity={values.emphasisTintOpacity as number}
+          className="max-w-[820px] text-[30px] leading-[1.05] font-normal tracking-[-0.015em] [font-feature-settings:'ss01'] md:text-[40px] xl:text-[48px]"
+        >
+          <em>Financial infrastructure to grow your revenue.</em> Accept payments, handle business banking,
+          <sup className="text-[0.4em]">1</sup> and implement custom revenue models—from your first transaction to
+          your billionth.
+        </BlendThroughHeadline>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The Weo Motion playground stage: DM Sans lead copy on near-black. Into view
+ * gets a scroll area so re-entry can be tried; both get a Replay button.
+ */
+function LineMaskRevealDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  const inView = values.trigger === "view";
+  const reveal = (
+    <LineMaskReveal
+      key={run}
+      text={values.text as string}
+      trigger={values.trigger as "load" | "view"}
+      replay={values.replay as boolean}
+      stagger={values.stagger as number}
+      duration={values.duration as number}
+      ease={values.ease as string}
+      from={values.from as "start" | "center" | "end" | "random"}
+      className={`${dmSans.className} max-w-[24ch] text-[24px] leading-[1.5] font-semibold text-[#f2f2f2]`}
+    />
+  );
+  return (
+    <div className="relative w-full bg-[#0e0e0e]">
+      {inView ? (
+        <div className="h-[560px] overflow-y-auto overscroll-contain">
+          <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+          <div className="h-[420px]" />
+          <div className="grid min-h-[560px] place-items-center px-6">{reveal}</div>
+          <div className="h-[420px]" />
+        </div>
+      ) : (
+        <div className="grid min-h-[560px] place-items-center px-6">{reveal}</div>
+      )}
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm text-neutral-300 hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The Weo Motion playground stage for pattern 065: DM Sans 800 on near-black.
+ * Into view gets a scroll area so re-entry can be tried; both get a Replay button.
+ */
+function StretchHeadlineDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  const inView = values.trigger === "view";
+  const headline = (
+    <StretchHeadline
+      key={run}
+      text={values.text as string}
+      trigger={values.trigger as "view" | "load"}
+      replay={values.replay as boolean}
+      stagger={values.stagger as number}
+      duration={values.duration as number}
+      intensity={values.intensity as number}
+      from={values.from as "start" | "center" | "end" | "random"}
+      className={`${dmSans.className} m-0 text-center text-[clamp(28px,7vw,54px)] leading-[1.02] font-extrabold tracking-[-0.04em] text-[#f2f2f2]`}
+    />
+  );
+  return (
+    <div className="relative w-full bg-[#0e0e0e]">
+      {inView ? (
+        <div className="h-[560px] overflow-y-auto overscroll-contain">
+          <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+          <div className="h-[420px]" />
+          <div className="grid min-h-[560px] place-items-center px-6">{headline}</div>
+          <div className="h-[420px]" />
+        </div>
+      ) : (
+        <div className="grid min-h-[560px] place-items-center px-6">{headline}</div>
+      )}
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm text-neutral-300 hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
 /** The NetApp AI hero headline, with a Replay button since it plays once. */
 function WaveHeadlineDemo({ values }: { values: ControlValues }) {
   const [run, setRun] = useState(0);
@@ -774,6 +1013,29 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
   },
   "scroll-shift-headline": ({ values }) => <ScrollShiftHeadlineDemo values={values} />,
   "wave-headline": ({ values }) => <WaveHeadlineDemo values={values} />,
+  "blend-through-headline": ({ values }) => <BlendThroughHeadlineDemo values={values} />,
+  "line-mask-reveal": ({ values }) => <LineMaskRevealDemo values={values} />,
+  "stretch-headline": ({ values }) => <StretchHeadlineDemo values={values} />,
+  // The Weo Motion playground stage for pattern 070: DM Sans 800 on near-black.
+  // Scroll boost listens to the page, so scrolling the docs page drives it.
+  "text-marquee": ({ values }) => {
+    const strip = (
+      <TextMarquee
+        items={values.items as string}
+        separator={(values.separator as string) || null}
+        speed={values.speed as number}
+        direction={values.direction as "left" | "right"}
+        slowOnHover={values.slowOnHover as boolean}
+        scrollBoost={values.scrollBoost as boolean}
+        gap={values.gap as number}
+        fade={values.fade as number}
+        className={`${dmSans.className} w-full text-[clamp(32px,8vw,64px)] font-extrabold tracking-[-0.03em] text-[#f2f2f2]`}
+      />
+    );
+    return (
+      <div className="grid min-h-[560px] w-full place-items-center bg-[#0e0e0e] py-24">{strip}</div>
+    );
+  },
   "rising-headline": ({ values }) => <RisingHeadlineDemo values={values} />,
   "count-up": ({ values }) => <CountUpDemo values={values} />,
   "faq-accordion": ({ values }) => (
@@ -787,6 +1049,19 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         collapsible={values.collapsible as boolean}
         numbered={values.numbered as boolean}
         cardColor={values.cardColor as string}
+      />
+    </div>
+  ),
+  "hover-card-list": ({ values }) => (
+    <div className="min-w-0 bg-[#FAFAFA] py-12">
+      <HoverCardList
+        className={montserrat.className}
+        heading="Meeting Rooms"
+        groups={hatchRooms}
+        accent={values.accent as string}
+        duration={values.duration as number}
+        cardDuration={values.cardDuration as number}
+        numbered={values.numbered as boolean}
       />
     </div>
   ),
@@ -1114,6 +1389,23 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       />
     </div>
   ),
+  "expanding-bento": ({ values }) => (
+    <div className="min-w-0 bg-[#FAFAFA] px-4 py-12 md:px-10" onClickCapture={(e) => e.preventDefault()}>
+      <ExpandingBento
+        className={`${montserrat.className} mx-auto max-w-[1320px]`}
+        panels={hatchPanels}
+        strips={hatchStrips}
+        height={values.height as number}
+        stripHeight={values.stripHeight as number}
+        expand={values.expand as number}
+        stripExpand={values.stripExpand as number}
+        duration={values.duration as number}
+        speed={values.speed as number}
+        gap={values.gap as number}
+        radius={values.radius as number}
+      />
+    </div>
+  ),
   "expanding-cards": ({ values }) => (
     <div className="min-w-0 bg-[#F2F1EE] px-6 py-16 md:px-10">
       <ExpandingCards
@@ -1186,6 +1478,29 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       />
     </div>
   ),
+  "accordion-tabs": ({ values }) => (
+    <div className={`${inter.className} min-w-0 bg-white px-6 py-16 md:px-10`}>
+      <AccordionTabs
+        autoplay={values.autoplay as boolean}
+        interval={values.interval as number}
+        duration={values.duration as number}
+        fade={values.fade as number}
+        pauseOnHover={values.pauseOnHover as boolean}
+        radius={values.radius as number}
+        activeBackground={values.activeBackground as string}
+        textColor={values.textColor as string}
+        hoverColor={values.hoverColor as string}
+        stickyTop={24}
+        items={pandadocFeatures.map((f) => ({
+          title: f.title,
+          body: <p>{f.body}</p>,
+          links: f.links.map((label) => ({ label, href: "#" })),
+          // eslint-disable-next-line @next/next/no-img-element
+          media: <img src={pandadocMux(f.mux)} alt="" className="object-cover" />,
+        }))}
+      />
+    </div>
+  ),
   "step-tabs": ({ values }) => (
     <div className={`${monaSans.className} min-w-0 bg-[#F5F5F5] px-2 py-16 md:px-6`}>
       <StepTabs
@@ -1245,6 +1560,95 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
           Your data is ready for AI. We&apos;ll show you how.
         </h2>
       </div>
+    </section>
+  ),
+  "neon-marble": ({ values }) => (
+    <section className="relative isolate flex h-[640px] min-w-0 items-center overflow-hidden bg-[#3A1468] px-6 md:px-16">
+      <NeonMarble
+        className="absolute inset-0 -z-10"
+        color1={values.color1 as string}
+        color2={values.color2 as string}
+        color3={values.color3 as string}
+        color4={values.color4 as string}
+        color5={values.color5 as string}
+        colorShadow={values.colorShadow as string}
+        speed={values.speed as number}
+        cycle={values.cycle as number}
+        scale={values.scale as number}
+        warp={values.warp as number}
+        stretch={values.stretch as number}
+        angle={values.angle as number}
+        spread={values.spread as number}
+        shadow={values.shadow as number}
+        grain={values.grain as number}
+        maxPixelRatio={values.maxPixelRatio as number}
+        paused={values.paused as boolean}
+      />
+      <div className="flex max-w-[560px] flex-col gap-5 text-white">
+        <h2 className="text-4xl leading-[1.05] font-medium tracking-[-0.03em] md:text-6xl">Make something people remember.</h2>
+        <p className="text-base text-white/85 md:text-lg">Bold ideas deserve a stage that moves with them.</p>
+      </div>
+    </section>
+  ),
+  "prism-flow": ({ values }) => (
+    <section className="relative isolate flex h-[640px] min-w-0 items-center overflow-hidden bg-[#03055C] px-6 md:px-16">
+      <PrismFlow
+        className="absolute inset-0 -z-10"
+        colorDeep={values.colorDeep as string}
+        colorBase={values.colorBase as string}
+        colorHaze={values.colorHaze as string}
+        spectrum1={values.spectrum1 as string}
+        spectrum2={values.spectrum2 as string}
+        spectrum3={values.spectrum3 as string}
+        spectrum4={values.spectrum4 as string}
+        spectrum5={values.spectrum5 as string}
+        speed={values.speed as number}
+        cycle={values.cycle as number}
+        spread={values.spread as number}
+        angle={values.angle as number}
+        offset={values.offset as number}
+        width={values.width as number}
+        softness={values.softness as number}
+        warp={values.warp as number}
+        grain={values.grain as number}
+        maxPixelRatio={values.maxPixelRatio as number}
+        paused={values.paused as boolean}
+      />
+      <div className="flex max-w-[560px] flex-col gap-5 text-white">
+        <h2 className="text-4xl leading-[1.05] font-medium tracking-[-0.03em] md:text-6xl">Every idea, in one clear flow.</h2>
+        <p className="text-base text-white/80 md:text-lg">Bring plans, work and launches together so nothing ships without context.</p>
+      </div>
+    </section>
+  ),
+  "ribbon-wave": ({ values }) => (
+    <section className="relative isolate flex h-[640px] min-w-0 items-center overflow-hidden bg-white px-6 md:px-16">
+      <RibbonWave
+        className="pointer-events-none absolute inset-0 z-[1]"
+        color1={values.color1 as string}
+        color2={values.color2 as string}
+        color3={values.color3 as string}
+        color4={values.color4 as string}
+        color5={values.color5 as string}
+        speed={values.speed as number}
+        twistX={values.twistX as number}
+        twistY={values.twistY as number}
+        twistZ={values.twistZ as number}
+        twistPowerX={values.twistPowerX as number}
+        twistPowerY={values.twistPowerY as number}
+        twistPowerZ={values.twistPowerZ as number}
+        rotationX={values.rotationX as number}
+        rotationY={values.rotationY as number}
+        rotationZ={values.rotationZ as number}
+        positionX={values.positionX as number}
+        positionY={values.positionY as number}
+        scale={values.scale as number}
+        fibres={values.fibres as number}
+        glow={values.glow as number}
+        saturation={values.saturation as number}
+        grain={values.grain as number}
+        maxPixelRatio={values.maxPixelRatio as number}
+        paused={values.paused as boolean}
+      />
     </section>
   ),
   curtain: ({ values }) => (
