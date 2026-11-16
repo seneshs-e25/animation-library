@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
-import type { ControlValues } from "./types";
-import { FillSweepButton } from "./interactions/button-hovers/fill-sweep-button";
+import { formatPoints, parsePoints, type ControlValues } from "./types";
 import { CornerBloomButton } from "./interactions/button-hovers/corner-bloom-button";
 import { GhostFillButton } from "./interactions/button-hovers/ghost-fill-button";
 import { ColorSnapButton } from "./interactions/button-hovers/color-snap-button";
@@ -12,7 +11,7 @@ import { ZoomImageCard } from "./interactions/image-hovers/zoom-image-card";
 import { RevealLinkCard } from "./interactions/image-hovers/reveal-link-card";
 import { RisingCopyCard } from "./interactions/image-hovers/rising-copy-card";
 import { BentoGrid, type BentoTile } from "./interactions/image-hovers/bento-grid";
-import { HoverCardList, HourglassIcon, ArmchairIcon, type HoverListGroup } from "./interactions/image-hovers/hover-card-list";
+import { HoverCardList, HourglassIcon, ArmchairIcon, type HoverListItem } from "./interactions/image-hovers/hover-card-list";
 import { LogoMarquee } from "./animations/carousels/logo-marquee";
 import { CardMarquee } from "./animations/carousels/card-marquee";
 import { StackingCards } from "./animations/pin-scrollers/stacking-cards";
@@ -40,6 +39,7 @@ import { VerticalTabSlider } from "./animations/tabs/vertical-tab-slider";
 import { Bricolage_Grotesque, DM_Sans, Hanken_Grotesk, Instrument_Sans, Inter, Inter_Tight, Lexend_Exa, Mona_Sans, Montserrat, Space_Mono } from "next/font/google";
 import { Aurora } from "./shaders/backgrounds/aurora";
 import { Curtain } from "./shaders/backgrounds/curtain";
+import { LayerCascade } from "./shaders/backgrounds/layer-cascade";
 import { RibbonWave } from "./shaders/backgrounds/ribbon-wave";
 import { PrismFlow } from "./shaders/backgrounds/prism-flow";
 import { NeonMarble } from "./shaders/backgrounds/neon-marble";
@@ -211,7 +211,7 @@ const hatchPanels: BentoPanel[] = [
     href: "#",
   },
 ];
-/** Hatch's meeting rooms (HQ and Chatham), with the live Framer photos and details. */
+/** Hatch's meeting rooms, with the live Framer photos and details. */
 const hatchRoom = (name: string, image: string, capacity: string, bullets?: string[], duration = true) => ({
   title: name,
   thumb: hatchImage(`${image}?scale-down-to=512`),
@@ -221,29 +221,10 @@ const hatchRoom = (name: string, image: string, capacity: string, bullets?: stri
   ],
   bullets,
 });
-const hatchRooms: HoverListGroup[] = [
-  {
-    label: "HQ",
-    items: [
-      hatchRoom("Boardroom", "VUd1ZYESDd8zZURbQqAEFT3uXI.jpg", "10", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
-      hatchRoom("Cactus", "lQpLUdtGD8aHqQRfK7Ux8h6Ik.jpg", "08", ["HD TV including HDMI", "Air conditioning", "WIFI"]),
-      hatchRoom("Maze", "yU1NoqIN52raTECqqurlduiErwg.jpg", "06", ["Whiteboard", "HD TV including HDMI", "Air conditioning", "WIFI"]),
-      hatchRoom("Bermuda", "4JVDS7HYlTkBWMSHfqJUoQFg94.jpg", "08", ["Air conditioning", "WIFI"]),
-      hatchRoom("Pacific", "4BfHNqzCqRiHoE8Yg4q04U5t4FA.jpg", "08", ["HD TV including HDMI", "Air conditioning", "WIFI"]),
-      hatchRoom("Mustard Hill", "1uIaXj8JkG57CBnr7li6cAUE8NE.jpg", "08", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
-      hatchRoom("The Loft", "1ceZCMkF7bSK5v4S2rgUZ1LShV4.jpg", "07", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
-    ],
-  },
-  {
-    label: "Chatham",
-    items: [
-      hatchRoom("Boardroom", "IMR5rqGDkLeVAm1HnJrdDxKPiUA.jpg", "14", undefined, false),
-      hatchRoom("Mudroom", "lyEB5ChyxaToyMD2pqX1rdsShKM.jpg", "05", undefined, false),
-      hatchRoom("Lily Pad", "BrxwSvoKFwIusAkuCUQPguJcs0.jpg", "10", undefined, false),
-      hatchRoom("Booth-1", "d2hJ0MXm8epKEGe9S73ogc48E8.jpeg", "02", undefined, false),
-      hatchRoom("Booth-2", "IKDqSbdFXar3MFNioAwL2Cn5c4.jpeg", "02", undefined, false),
-    ],
-  },
+const hatchRooms: HoverListItem[] = [
+  hatchRoom("Boardroom", "VUd1ZYESDd8zZURbQqAEFT3uXI.jpg", "10", ["HD TV including HDMI", "Whiteboard", "Air conditioning", "WIFI"]),
+  hatchRoom("Cactus", "lQpLUdtGD8aHqQRfK7Ux8h6Ik.jpg", "08", ["HD TV including HDMI", "Air conditioning", "WIFI"]),
+  hatchRoom("Maze", "yU1NoqIN52raTECqqurlduiErwg.jpg", "06", ["Whiteboard", "HD TV including HDMI", "Air conditioning", "WIFI"]),
 ];
 const hatchStrips: BentoStrip[] = [
   {
@@ -520,7 +501,7 @@ function CountUpDemo({ values }: { values: ControlValues }) {
         prefix={(values.prefix as string) || undefined}
         suffix={(values.suffix as string) || undefined}
         duration={values.duration as number}
-        easing={values.easing as "linear" | "ease-out"}
+        easing={values.easing as string}
         threshold={values.threshold as number}
         className="text-[72px] leading-[0.9] font-extralight tracking-[-0.01em] text-[#221F23] md:text-[120px] group-data-[theme=dark]/stage:text-white"
       />
@@ -556,6 +537,7 @@ function RisingHeadlineDemo({ values }: { values: ControlValues }) {
             trigger={values.trigger as "load" | "view"}
             stagger={values.stagger as number}
             duration={values.duration as number}
+            ease={values.ease as string}
             distance={values.distance as number}
             className={`${hankenGrotesk.className} text-[52px] leading-[0.9] font-light tracking-[-2.12px] text-[#4E008E] xl:text-[120px] xl:tracking-[-3px]`}
           />
@@ -633,22 +615,24 @@ const eight25Services = [
 /** The services section, in a preview that scrolls inside itself so the plate can play. */
 function VerticalTabSliderDemo({ values }: { values: ControlValues }) {
   return (
-    <div className={`${instrumentSans.className} h-[760px] w-full overflow-y-auto overscroll-contain`} style={{ background: values.background as string }}>
-      <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
-      <div className="h-[300px]" />
+    // No scroll area: the demo is about the hover, so the list and card show
+    // straight away.
+    <div className={`${instrumentSans.className} w-full`} style={{ background: values.background as string }}>
       <VerticalTabSlider
-        key={String(values.reveal)}
         items={eight25Services}
         slideDuration={values.slideDuration as number}
+        slideEase={values.slideEase as string}
+        fadeDuration={values.fadeDuration as number}
+        fadeEase={values.fadeEase as string}
+        stepDuration={values.stepDuration as number}
+        stepEase={values.stepEase as string}
+        progressEase={values.progressEase as string}
         tabShift={values.tabShift as number}
         inactiveOpacity={values.inactiveOpacity as number}
         glow={values.glow as boolean}
-        reveal={values.reveal as boolean}
         background={values.background as string}
         color={values.color as string}
-        revealBackground={values.revealBackground as string}
-        revealColor={values.revealColor as string}
-        className="px-5 py-[100px] @min-[960px]:px-10 @min-[960px]:py-[200px] [&_[role=group]]:font-(family-name:--vts-tab-font)"
+        className="px-5 py-16 @min-[960px]:px-10 @min-[960px]:py-24 [&_[role=group]]:font-(family-name:--vts-tab-font)"
         style={{ "--vts-tab-font": hankenGrotesk.style.fontFamily } as CSSProperties}
       >
         {/* A stand-in for the original's faint white bars over the card column; decoration, not part of the component. */}
@@ -660,7 +644,6 @@ function VerticalTabSliderDemo({ values }: { values: ControlValues }) {
           What we do
         </h2>
       </VerticalTabSlider>
-      <div className="h-[520px]" />
     </div>
   );
 }
@@ -755,6 +738,7 @@ function StretchHeadlineDemo({ values }: { values: ControlValues }) {
       replay={values.replay as boolean}
       stagger={values.stagger as number}
       duration={values.duration as number}
+      easing={values.easing as string}
       intensity={values.intensity as number}
       from={values.from as "start" | "center" | "end" | "random"}
       className={`${dmSans.className} m-0 text-center text-[clamp(28px,7vw,54px)] leading-[1.02] font-extrabold tracking-[-0.04em] text-[#f2f2f2]`}
@@ -803,6 +787,7 @@ function WaveHeadlineDemo({ values }: { values: ControlValues }) {
         delay={values.delay as number}
         stagger={values.stagger as number}
         duration={values.duration as number}
+        easing={values.easing as string}
         rise={values.rise as number}
         overshoot={values.overshoot as number}
         blur={values.blur as number}
@@ -874,27 +859,77 @@ const netappBento: BentoTile[] = [
  * Live previews, keyed by registry slug. Each preview receives the current
  * values from the Customize panel.
  */
-export const previews: Record<string, ComponentType<{ values: ControlValues }>> = {
-  "fill-sweep": ({ values }) => (
-    <FillSweepButton
-      direction={values.direction as "left" | "bottom"}
-      duration={values.duration as number}
-      textColor={values.textColor as string}
-      fillColor={values.fillColor as string}
-      hoverTextColor={values.hoverTextColor as string}
-      href="#"
-    >
-      Get started
-    </FillSweepButton>
-  ),
+/**
+ * Draggable corner handles over a preview, for `points` controls. Positions
+ * are fractions of the parent element (which must be positioned). Arrow keys
+ * nudge a focused handle by 1% (10% with Shift).
+ */
+const CORNER_LABELS = ["Top left", "Top right", "Bottom right", "Bottom left"];
+function CornerHandles({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const points = parsePoints(value);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const clamp = (n: number) => Math.min(Math.max(n, -0.1), 1.1);
+  const move = (i: number, x: number, y: number) =>
+    onChange(formatPoints(points.map((p, j) => (j === i ? [clamp(x), clamp(y)] : p))));
+
+  return (
+    <div className="absolute inset-0 z-10" style={{ pointerEvents: "none" }}>
+      {points.map(([x, y], i) => (
+        <button
+          key={i}
+          type="button"
+          aria-label={`${CORNER_LABELS[i] ?? `Corner ${i + 1}`} corner, ${Math.round(x * 100)}%, ${Math.round(y * 100)}%`}
+          className="group/handle absolute flex size-8 -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full outline-none"
+          style={{ left: `${x * 100}%`, top: `${y * 100}%`, pointerEvents: "auto", cursor: dragging === i ? "grabbing" : "grab" }}
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            setDragging(i);
+          }}
+          onPointerMove={(e) => {
+            if (dragging !== i) return;
+            const rect = e.currentTarget.parentElement!.getBoundingClientRect();
+            move(i, (e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
+          }}
+          onPointerUp={() => setDragging(null)}
+          onPointerCancel={() => setDragging(null)}
+          onKeyDown={(e) => {
+            const step = e.shiftKey ? 0.1 : 0.01;
+            const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+            if (!d) return;
+            e.preventDefault();
+            move(i, x + d[0], y + d[1]);
+          }}
+        >
+          <span
+            className="block size-3.5 rounded-full border-2 border-white bg-white/25 shadow-[0_0_0_1px_rgba(0,0,0,0.35),0_2px_6px_rgba(0,0,0,0.4)] transition-transform duration-150 ease-out group-hover/handle:scale-125 group-focus-visible/handle:scale-125 group-focus-visible/handle:ring-2 group-focus-visible/handle:ring-white/60"
+            style={dragging === i ? { transform: "scale(1.25)", background: "#fff" } : undefined}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export const previews: Record<
+  string,
+  ComponentType<{ values: ControlValues; setValue?: (name: string, value: string | number | boolean) => void }>
+> = {
   "corner-bloom": ({ values }) => (
     <CornerBloomButton
       color={values.color as string}
       bloomColor={values.bloomColor as string}
       textColor={values.textColor as string}
       duration={values.duration as number}
+      ease={values.ease as string}
+      exitDuration={values.exitDuration as number}
+      exitEase={values.exitEase as string}
+      pressScale={values.pressScale as number}
+      pressDuration={values.pressDuration as number}
+      pressEase={values.pressEase as string}
+      reducedFade={values.reducedFade as number}
+      reducedFadeEase={values.reducedFadeEase as string}
       arrow={values.arrow as boolean}
-      href={values.href as string}
+      href="#"
     >
       Request Demo
     </CornerBloomButton>
@@ -905,7 +940,13 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       fillColor={values.fillColor as string}
       hoverTextColor={values.hoverTextColor as string}
       duration={values.duration as number}
-      href={values.href as string}
+      ease={values.ease as string}
+      exitDuration={values.exitDuration as number}
+      exitEase={values.exitEase as string}
+      pressScale={values.pressScale as number}
+      pressDuration={values.pressDuration as number}
+      pressEase={values.pressEase as string}
+      href="#"
     >
       Explore Sophos Fusion
     </GhostFillButton>
@@ -917,7 +958,13 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       activeColor={values.activeColor as string}
       textColor={values.textColor as string}
       duration={values.duration as number}
-      href={values.href as string}
+      ease={values.ease as string}
+      exitDuration={values.exitDuration as number}
+      exitEase={values.exitEase as string}
+      pressScale={values.pressScale as number}
+      pressDuration={values.pressDuration as number}
+      pressEase={values.pressEase as string}
+      href="#"
     >
       Learn about our model
     </ColorSnapButton>
@@ -929,7 +976,8 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       gradientTo={values.gradientTo as string}
       textColor={values.textColor as string}
       duration={values.duration as number}
-      href={values.href as string}
+      easing={values.easing as string}
+      href="#"
     >
       Explore More
     </CircleRevealButton>
@@ -941,31 +989,31 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       fillColor={values.fillColor as string}
       hoverTextColor={values.hoverTextColor as string}
       duration={values.duration as number}
-      href={values.href as string}
+      ease={values.ease as string}
+      exitDuration={values.exitDuration as number}
+      exitEase={values.exitEase as string}
+      pressScale={values.pressScale as number}
+      pressDuration={values.pressDuration as number}
+      pressEase={values.pressEase as string}
+      href="#"
     >
       Read our blog
     </OutlineSweepButton>
   ),
   "zoom-image-card": ({ values }) => (
     <ZoomImageCard
-      className={
-        // The default caption is black for light sites; flip it to white on
-        // the dark stage unless the user picked their own color.
-        values.titleColor === "#000000"
-          ? `${interTight.className} w-full max-w-[301px] group-data-[theme=dark]/stage:[&>span]:text-white`
-          : `${interTight.className} w-full max-w-[301px]`
-      }
+      className="w-full max-w-[301px]"
       src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltfbd08f588b3d02bd/6ab8e7e2442dc1839bab5a52/Frame_2029273449.webp?width=640&format=pjpg&disable=upscale"
       logo="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/blt62c331bb718721a2/6ab2229498a4e3ea4353ee80/Ducati_red_logo_1.svg"
       logoAlt="Ducati"
-      title={values.title as string}
       scale={values.scale as number}
       duration={values.duration as number}
+      easing={values.easing as string}
       radius={values.radius as number}
       aspectRatio={values.aspectRatio as string}
       scrim={values.scrim as boolean}
-      titleColor={values.titleColor as string}
-      href={values.href as string}
+      alt="Ducati MotoGP rider celebrating on his bike"
+      href="#"
       onClick={(e) => e.preventDefault()}
     />
   ),
@@ -977,7 +1025,10 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       color={values.color as string}
       textColor={values.textColor as string}
       lift={values.lift as boolean}
-      href={values.href as string}
+      duration={values.duration as number}
+      gradientFade={values.gradientFade as number}
+      easing={values.easing as string}
+      href="#"
       onClick={(e) => e.preventDefault()}
     />
   ),
@@ -996,6 +1047,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
           key={String(values.arriveAt)}
           arriveAt={values.arriveAt as number}
           duration={values.duration as number}
+          easing={values.easing as string}
           sections={colors.map((color, i) => ({
             color,
             textColor: ink(color),
@@ -1026,6 +1078,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         speed={values.speed as number}
         direction={values.direction as "left" | "right"}
         slowOnHover={values.slowOnHover as boolean}
+        hoverRamp={values.hoverRamp as number}
         scrollBoost={values.scrollBoost as boolean}
         gap={values.gap as number}
         fade={values.fade as number}
@@ -1046,6 +1099,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         items={novusFaqs}
         heading={(values.heading as string) || undefined}
         duration={values.duration as number}
+        easing={values.easing as string}
         collapsible={values.collapsible as boolean}
         numbered={values.numbered as boolean}
         cardColor={values.cardColor as string}
@@ -1053,14 +1107,17 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
     </div>
   ),
   "hover-card-list": ({ values }) => (
-    <div className="min-w-0 bg-[#FAFAFA] py-12">
+    // The floating card is centred on its row and overhangs it, so leave room
+    // above the first row and below the last one for it on desktop.
+    <div className="min-w-0 bg-[#FAFAFA] py-12 md:py-32">
       <HoverCardList
         className={montserrat.className}
-        heading="Meeting Rooms"
-        groups={hatchRooms}
+        items={hatchRooms}
         accent={values.accent as string}
         duration={values.duration as number}
+        easing={values.easing as string}
         cardDuration={values.cardDuration as number}
+        cardEase={values.cardEase as string}
         numbered={values.numbered as boolean}
       />
     </div>
@@ -1072,6 +1129,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         tiles={netappBento}
         scale={values.scale as number}
         duration={values.duration as number}
+        easing={values.easing as string}
         radius={values.radius as number}
       />
     </div>
@@ -1085,9 +1143,10 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       ctaLabel={values.ctaLabel as string}
       scale={values.scale as number}
       duration={values.duration as number}
+      easing={values.easing as string}
       tint={values.tint as string}
       height={Number(values.height)}
-      href={values.href as string}
+      href="#"
       onClick={(e) => e.preventDefault()}
     />
   ),
@@ -1098,6 +1157,8 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
       direction={values.direction as "left" | "right"}
       pauseOnHover={values.pauseOnHover as boolean}
       hoverScale={values.hoverScale as number}
+      hoverDuration={values.hoverDuration as number}
+      hoverEase={values.hoverEase as string}
       background={values.background as string}
       gap={values.gap as number}
       logoHeight={values.logoHeight as number}
@@ -1117,6 +1178,8 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         scale={values.scale as number}
         blur={values.blur as number}
         fade={values.fade as boolean}
+        smoothDuration={values.smoothDuration as number}
+        smoothEase={values.smoothEase as string}
         minWidth={0}
       >
         {seemplicityProblems.map((card) => (
@@ -1207,8 +1270,10 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
               gap={values.gap as number}
               mediaSide={values.mediaSide as "left" | "right"}
               duration={values.duration as number}
+              ease={values.ease as string}
               inactiveOpacity={values.inactiveOpacity as number}
               slideDuration={values.slideDuration as number}
+              slideEase={values.slideEase as string}
               theme={light ? "light" : "dark"}
               items={sophosFocusItems.map((item) => ({
                 // eslint-disable-next-line @next/next/no-img-element
@@ -1263,6 +1328,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
             rise={values.rise as boolean}
             riseDistance={values.riseDistance as number}
             riseDuration={values.riseDuration as number}
+            riseEasing={values.riseEasing as string}
             className={`${interTight.className} w-full max-w-[1060px] text-center text-[30px] leading-[1.1] font-light tracking-[-0.01em] text-black xl:text-[60px] xl:tracking-[-0.01em]`}
           />
         </div>
@@ -1282,7 +1348,13 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         interval={values.interval as number}
         slideWidth={values.slideWidth as number}
         duration={values.duration as number}
+        ease={values.ease as string}
         focusDuration={values.focusDuration as number}
+        focusEase={values.focusEase as string}
+        dotDuration={values.dotDuration as number}
+        arrowDuration={values.arrowDuration as number}
+        playDuration={values.playDuration as number}
+        controlEase={values.controlEase as string}
         inactiveOpacity={values.inactiveOpacity as number}
         inactiveBlur={values.inactiveBlur as number}
         inactiveScale={values.inactiveScale as number}
@@ -1328,6 +1400,11 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         mediaHeight={values.mediaHeight as number}
         radius={values.radius as number}
         duration={values.duration as number}
+        ease={values.ease as string}
+        dotDuration={values.dotDuration as number}
+        dotEase={values.dotEase as string}
+        arrowDuration={values.arrowDuration as number}
+        arrowEase={values.arrowEase as string}
         glowTop={values.glowTop as string}
         glowBottom={values.glowBottom as string}
         color={values.color as string}
@@ -1370,6 +1447,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         cardHeight={values.cardHeight as number}
         hoverGrow={values.hoverGrow as number}
         hoverDuration={values.hoverDuration as number}
+        hoverEase={values.hoverEase as string}
         hoverBorder={values.hoverBorder as string}
         label="Benefits"
         items={seemplicityBenefits.map((card) => ({
@@ -1400,6 +1478,7 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         expand={values.expand as number}
         stripExpand={values.stripExpand as number}
         duration={values.duration as number}
+        ease={values.ease as string}
         speed={values.speed as number}
         gap={values.gap as number}
         radius={values.radius as number}
@@ -1416,7 +1495,13 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         radius={values.radius as number}
         inactiveOpacity={values.inactiveOpacity as number}
         duration={values.duration as number}
+        ease={values.ease as string}
+        fadeDuration={values.fadeDuration as number}
+        fadeEase={values.fadeEase as string}
         contentDuration={values.contentDuration as number}
+        contentDelay={values.contentDelay as number}
+        contentExitDuration={values.contentExitDuration as number}
+        hoverDelay={values.hoverDelay as number}
         overlay={values.overlay as boolean}
         items={stories.map((story) => ({
           label: story.company,
@@ -1451,6 +1536,11 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         autoplay={values.autoplay as boolean}
         interval={values.interval as number}
         duration={values.duration as number}
+        ease={values.ease as string}
+        fillEase={values.fillEase as string}
+        tabDuration={values.tabDuration as number}
+        hoverDuration={values.hoverDuration as number}
+        tabEase={values.tabEase as string}
         progress={values.progress as boolean}
         pauseOnHover={values.pauseOnHover as boolean}
         pauseButton={values.pauseButton as boolean}
@@ -1484,7 +1574,14 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         autoplay={values.autoplay as boolean}
         interval={values.interval as number}
         duration={values.duration as number}
+        ease={values.ease as string}
         fade={values.fade as number}
+        fadeEase={values.fadeEase as string}
+        fillEase={values.fillEase as string}
+        iconDuration={values.iconDuration as number}
+        iconEase={values.iconEase as string}
+        chipDuration={values.chipDuration as number}
+        chipEase={values.chipEase as string}
         pauseOnHover={values.pauseOnHover as boolean}
         radius={values.radius as number}
         activeBackground={values.activeBackground as string}
@@ -1505,7 +1602,12 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
     <div className={`${monaSans.className} min-w-0 bg-[#F5F5F5] px-2 py-16 md:px-6`}>
       <StepTabs
         fadeDuration={values.fadeDuration as number}
+        fadeEase={values.fadeEase as string}
         slideDuration={values.slideDuration as number}
+        slideEase={values.slideEase as string}
+        tabDuration={values.tabDuration as number}
+        tabEase={values.tabEase as string}
+        iconEase={values.iconEase as string}
         slideOffset={values.slideOffset as number}
         connectors={values.connectors as boolean}
         accentFrom={values.accentFrom as string}
@@ -1649,6 +1751,37 @@ export const previews: Record<string, ComponentType<{ values: ControlValues }>> 
         maxPixelRatio={values.maxPixelRatio as number}
         paused={values.paused as boolean}
       />
+    </section>
+  ),
+  "layer-cascade": ({ values, setValue }) => (
+    <section className="relative isolate flex h-[640px] min-w-0 items-center justify-center overflow-hidden bg-[#1C00A3] px-6">
+      <LayerCascade
+        className="absolute inset-0 -z-10"
+        colorTop={values.colorTop as string}
+        colorMid={values.colorMid as string}
+        colorBottom={values.colorBottom as string}
+        background={values.background as string}
+        speed={values.speed as number}
+        flow={values.flow as number}
+        layers={values.layers as number}
+        spread={values.spread as number}
+        twist={values.twist as number}
+        falloff={values.falloff as number}
+        corners={parsePoints(values.corners as string)}
+        radius={values.radius as number}
+        shadow={values.shadow as number}
+        maxPixelRatio={values.maxPixelRatio as number}
+        paused={values.paused as boolean}
+      />
+      <div className="pointer-events-none flex max-w-[620px] flex-col items-center gap-4 text-center">
+        <p className="text-sm font-medium tracking-[0.12em] text-[#9FEFFF] uppercase">Built for what&apos;s next</p>
+        <h2 className="text-4xl leading-[1.05] font-light tracking-[-0.03em] text-white md:text-6xl">
+          Every layer of your stack, in view.
+        </h2>
+      </div>
+      {setValue && (
+        <CornerHandles value={values.corners as string} onChange={(v) => setValue("corners", v)} />
+      )}
     </section>
   ),
   curtain: ({ values }) => (

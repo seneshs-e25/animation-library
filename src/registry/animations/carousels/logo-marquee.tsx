@@ -25,6 +25,10 @@ type LogoMarqueeProps = Omit<React.ComponentProps<"section">, "children"> & {
   pauseOnHover?: boolean;
   /** Scale a linked logo grows to on hover (1024px+). 1 turns it off. */
   hoverScale?: number;
+  /** Hover scale duration, in ms (in and out). */
+  hoverDuration?: number;
+  /** Hover scale easing, any CSS timing function. */
+  hoverEase?: string;
   /** Section background. */
   background?: string;
   /** Logo height from 1024px wide, in px. Width follows each logo's shape. */
@@ -57,7 +61,9 @@ const MAX_DURATION = 200;
  * strip moves at `speed` px/s (30 by default) whatever the logos, clamped to
  * a 10-200s loop as in the original.
  *
- * Hovering a linked logo scales it to 1.1 (300ms) and pauses the strip.
+ * Hovering a linked logo scales it to `hoverScale` (1.1) over `hoverDuration`
+ * (300ms) on `hoverEase` (cubic-bezier(0.4, 0, 0.2, 1)) and pauses the strip.
+ * The strip itself is always `linear`: a marquee has no easing.
  * Reduced motion: the strip stops and becomes a horizontal scroll area.
  */
 export function LogoMarquee({
@@ -67,6 +73,8 @@ export function LogoMarquee({
   direction = "left",
   pauseOnHover = true,
   hoverScale = 1.1,
+  hoverDuration = 300,
+  hoverEase = "cubic-bezier(0.4, 0, 0.2, 1)",
   background = "#EDF2F9",
   logoHeight = 80,
   mobileLogoHeight = 60,
@@ -124,7 +132,7 @@ export function LogoMarquee({
           aria-hidden={hidden || undefined}
           data-marquee-link
           className={cn(
-            "block flex-none rounded-sm outline-offset-4 transition-transform duration-300 ease-[cubic-bezier(.4,0,.2,1)] [backface-visibility:hidden] min-[1024px]:[@media(hover:hover)]:hover:scale-(--marquee-hover-scale) motion-reduce:transition-none",
+            "block flex-none rounded-sm outline-offset-4 transition-transform duration-(--marquee-hover-duration) ease-(--marquee-hover-ease) [backface-visibility:hidden] min-[1024px]:[@media(hover:hover)]:hover:scale-(--marquee-hover-scale) motion-reduce:transition-none",
             // With reduced motion only the first copy shows, as a scroll area.
             hidden && "motion-reduce:hidden",
           )}
@@ -155,6 +163,8 @@ export function LogoMarquee({
           "--marquee-logo-h": `${logoHeight}px`,
           "--marquee-logo-h-sm": `${mobileLogoHeight}px`,
           "--marquee-hover-scale": hoverScale,
+          "--marquee-hover-duration": `${hoverDuration}ms`,
+          "--marquee-hover-ease": hoverEase,
           "--marquee-duration": `${duration}s`,
           ...style,
         } as React.CSSProperties

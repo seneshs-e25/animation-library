@@ -58,15 +58,62 @@ export type Control = (
       label: string;
       default: string;
     }
+  | {
+      /**
+       * A list of [x, y] points the developer drags in the preview (the
+       * preview gets `setValue` to write them back). Stored as a string,
+       * "x,y x,y ...", and emitted as an array literal in the usage snippet.
+       */
+      type: "points";
+      name: string;
+      label: string;
+      default: string;
+      /** Shown in the Customize panel in place of an input. */
+      hint?: string;
+    }
 ) & {
   /** Include in the usage snippet even when left at its default value. */
   always?: boolean;
+  /**
+   * Show in the Customize panel's Motion group (true) or with the other
+   * props (false). Left out, it's inferred from the unit and name; see
+   * `motionKind` in components/controls-panel.tsx.
+   */
+  motion?: boolean;
+  /**
+   * A small supporting timing rather than the main motion: a press dip, a
+   * hover tint, a dot changing colour. Shown in the Motion group under a
+   * "Micro-interactions" sub-heading, after the main motion.
+   */
+  secondary?: boolean;
 };
 
 export type ControlValues = Record<string, string | number | boolean>;
 
+/** Parses a `points` control value, "x,y x,y ...", into [x, y] pairs. */
+export function parsePoints(value: string): [number, number][] {
+  return value
+    .trim()
+    .split(/\s+/)
+    .map((pair) => pair.split(",").map(Number) as [number, number])
+    .filter((p) => p.length === 2 && p.every(Number.isFinite));
+}
+
+/** Formats [x, y] pairs as a `points` control value, rounded to 3 places. */
+export function formatPoints(points: readonly (readonly [number, number])[]): string {
+  const r = (n: number) => String(Math.round(n * 1000) / 1000);
+  return points.map(([x, y]) => `${r(x)},${r(y)}`).join(" ");
+}
+
+/** A `points` value as a JS array literal, e.g. `[[0.2, 0.2], [0.8, 0.2]]`. */
+export function pointsLiteral(value: string): string {
+  return `[${parsePoints(value)
+    .map(([x, y]) => `[${x}, ${y}]`)
+    .join(", ")}]`;
+}
+
 export type RegistryFile = {
-  /** File name the developer should create, e.g. `fill-sweep-button.tsx`. */
+  /** File name the developer should create, e.g. `corner-bloom-button.tsx`. */
   name: string;
   /** Path to the source file, relative to the project root. */
   path: string;
@@ -149,6 +196,12 @@ export type RegistryEntry = {
   files: RegistryFile[];
   /** Props exposed in the Customize panel. */
   controls: Control[];
+  /**
+   * Shown at the top of the Customize panel's Motion group when the motion
+   * has no duration or easing to tune, e.g. "Scroll-linked: the cards move
+   * with the scroll position, so there's no duration or easing."
+   */
+  motionNote?: string;
   /** Fixed props always shown first in the usage snippet, e.g. `logos={logos}`. */
   usageProps?: string[];
   /** Children / text rendered inside the component in the usage snippet. */

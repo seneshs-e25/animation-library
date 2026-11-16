@@ -16,7 +16,7 @@ export type BentoTile = {
 type BentoGridProps = React.ComponentProps<"div"> & {
   /** Five tiles fill one bento; more start another bento below it in the same pattern. */
   tiles: BentoTile[];
-  /** How far a linked card's art grows on hover (1.04 = 4%). */
+  /** How far a linked card's art grows on hover (1.07 = 7%). */
   scale?: number;
   /** Zoom duration in milliseconds. */
   duration?: number;
@@ -149,9 +149,9 @@ function Card({ tile, slot }: { tile: BentoTile; slot: (typeof SLOTS)[number] })
  */
 export function BentoGrid({
   tiles,
-  scale = 1.04,
-  duration = 500,
-  easing = "cubic-bezier(0, 0, 0.2, 1)",
+  scale = 1.07,
+  duration = 350,
+  easing = "cubic-bezier(0, 0, 0.58, 1)",
   radius = 20,
   chipFrom = "#0054D7",
   chipTo = "#00DDF4",

@@ -152,7 +152,7 @@ export function RisingCopyCard({
       <span aria-hidden className={cn("grow transition-[flex-grow]", motion, "group-hover:grow-0 group-focus-visible:grow-0")} />
 
       <div>
-        <Title className="m-0 text-[32px] leading-[1.1] font-light tracking-[-0.01em] text-balance @[240px]:text-[40px]">
+        <Title className="m-0 text-[32px] leading-[1.1] font-thin tracking-[-0.03em] @[240px]:text-[36px]">
           {title}
         </Title>
 
@@ -165,7 +165,7 @@ export function RisingCopyCard({
             <div className="min-h-0">
               <div
                 className={cn(
-                  "pt-[15px] text-base leading-[1.6] tracking-[0.02em] opacity-0 transition-opacity",
+                  "pt-[15px] text-base leading-[1.6] font-thin tracking-[0.02em] opacity-0 transition-opacity",
                   motion,
                   "group-hover:opacity-100 group-focus-visible:opacity-100"
                 )}
@@ -184,7 +184,7 @@ export function RisingCopyCard({
             aria-hidden
             className={cn("shrink-0 grow-0 basis-[30px] transition-[flex-grow]", motion, "group-hover:grow group-focus-visible:grow")}
           />
-          <span className="flex items-center gap-[15px] text-base leading-[1.6] font-light tracking-[0.02em]">
+          <span className="flex items-center gap-[15px] text-base leading-[1.6] font-thin tracking-[0.02em]">
             <span
               aria-hidden
               className="relative grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-[#2A2A2A] shadow-[inset_0_1px_6px_rgba(255,255,255,0.45)]"

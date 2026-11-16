@@ -16,6 +16,8 @@ type WaveHeadlineProps = Omit<React.HTMLAttributes<HTMLElement>, "children"> & {
   stagger?: number;
   /** How long each letter takes, in ms. */
   duration?: number;
+  /** Easing for each letter's keyframe run, as a CSS timing function. */
+  easing?: string;
   /** How far below its seat a letter starts, in em. */
   rise?: number;
   /** How far past its seat a letter overshoots before settling, in em. */
@@ -36,8 +38,8 @@ type WaveHeadlineProps = Omit<React.HTMLAttributes<HTMLElement>, "children"> & {
  *   unbreakable inline-block (so a narrow headline never breaks mid-word);
  *   spaces stay as text but keep a slot, so the ripple holds its rhythm
  *   across gaps. Screen readers get the headline once, from a hidden copy.
- * - Every letter runs one CSS keyframe with `animation-delay: delay + slot ×
- *   stagger` and `fill-mode: backwards`, so it's held hidden through its own
+ * - Every letter runs one CSS keyframe (`duration`, `easing`) with
+ *   `animation-delay: delay + slot × stagger` and `fill-mode: backwards`, so it's held hidden through its own
  *   delay. The animations are armed paused, and released together by a
  *   `data-in-view` stamp on the heading.
  * - Without scripting the animations are released outright; under reduced
@@ -50,6 +52,7 @@ export function WaveHeadline({
   delay = 470,
   stagger = 42,
   duration = 500,
+  easing = "cubic-bezier(0.22, 0.61, 0.36, 1)",
   rise = 0.42,
   overshoot = 0.06,
   blur = 14,
@@ -88,6 +91,7 @@ export function WaveHeadline({
           "--wh-delay": `${delay}ms`,
           "--wh-stagger": `${stagger}ms`,
           "--wh-duration": `${duration}ms`,
+          "--wh-ease": easing,
           "--wh-rise": `${rise}em`,
           "--wh-overshoot": `${-overshoot}em`,
           "--wh-blur": `${blur}px`,
@@ -99,7 +103,7 @@ export function WaveHeadline({
       <style>{`
 @keyframes wave-headline-char{0%{opacity:0;translate:0 var(--wh-rise);filter:blur(var(--wh-blur))}55%{opacity:1}70%{translate:0 var(--wh-overshoot);filter:blur(0)}100%{opacity:1;translate:0 0;filter:blur(0)}}
 @media (prefers-reduced-motion:no-preference){
-[data-wave-headline] [data-wave-char]{animation:wave-headline-char var(--wh-duration) cubic-bezier(.22,.61,.36,1) backwards;animation-delay:calc(var(--wh-delay) + var(--wh-slot) * var(--wh-stagger));animation-play-state:paused}
+[data-wave-headline] [data-wave-char]{animation:wave-headline-char var(--wh-duration) var(--wh-ease) backwards;animation-delay:calc(var(--wh-delay) + var(--wh-slot) * var(--wh-stagger));animation-play-state:paused}
 [data-wave-headline][data-in-view] [data-wave-char]{animation-play-state:running}
 }
 @media (scripting:none){[data-wave-headline] [data-wave-char]{animation-play-state:running}}`}</style>

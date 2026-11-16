@@ -50,6 +50,10 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
   const [values, setValues] = React.useState<ControlValues>(() => getDefaultValues(entry));
   const [customizing, setCustomizing] = React.useState(false);
   const hasControls = entry.controls.length > 0;
+  const setValue = React.useCallback(
+    (name: string, value: string | number | boolean) => setValues((v) => ({ ...v, [name]: value })),
+    []
+  );
   const usage = buildUsage(entry, values);
   const prompt = buildPrompt(entry, sources, values);
 
@@ -130,24 +134,23 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
 
         <TabsContent value="preview">
           <div
-            className={cn(
-              "grid min-h-[min(62vh,580px)] overflow-hidden rounded-3xl border bg-card",
-              customizing && "md:grid-cols-[1fr_300px]"
-            )}
+            className="relative grid min-h-[min(62vh,580px)] overflow-hidden rounded-3xl border bg-card"
           >
             <PreviewStage
               themeToggle={entry.themeToggle ?? true}
               fullBleed={entry.fullBleed}
               defaultTheme={entry.defaultTheme}
               clickNotice={entry.group === "button-hovers"}
+              panelOpen={customizing}
             >
-              {Preview ? <Preview values={values} /> : <p className="text-muted-foreground">No preview</p>}
+              {Preview ? <Preview values={values} setValue={setValue} /> : <p className="text-muted-foreground">No preview</p>}
             </PreviewStage>
             {customizing && (
-              // On desktop the panel's content is absolutely positioned and
-              // scrolls inside the aside, so the preview alone sets the row
-              // height and a long list of props never stretches the stage.
-              <aside className="border-t md:relative md:border-t-0 md:border-l">
+              // On desktop the panel floats over the stage's right edge instead of
+              // taking a column, so the preview keeps its full width. Its content
+              // scrolls inside it, so a long list of props never stretches the
+              // stage. On mobile it stacks under the preview.
+              <aside className="border-t bg-card md:absolute md:inset-y-0 md:right-0 md:z-20 md:w-[300px] md:border-t-0 md:border-l md:shadow-[-16px_0_40px_rgba(0,0,0,0.35)]">
                 <div className="p-5 md:absolute md:inset-0 md:overflow-y-auto md:overscroll-contain">
                   <div className="mb-5 flex items-center justify-between">
                     <h2 className="text-sm font-medium">Props</h2>
@@ -167,6 +170,7 @@ export function ComponentDetail({ slug, sources }: { slug: string; sources: Sour
                   </div>
                   <ControlsPanel
                     controls={entry.controls}
+                    motionNote={entry.motionNote}
                     values={values}
                     onChange={(name, value) => setValues((v) => ({ ...v, [name]: value }))}
                   />

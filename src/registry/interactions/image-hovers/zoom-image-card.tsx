@@ -4,15 +4,13 @@ import { cn } from "@/lib/utils";
 type ZoomImageCardProps = Omit<React.ComponentProps<"a">, "title"> & {
   /** Photo URL. It fills the frame (object-cover) and zooms on hover. */
   src: string;
-  /** Photo alt text. Defaults to "" since the title describes the card. */
+  /** Photo alt text. Describe the customer story, since the card has no caption. */
   alt?: string;
   /** Optional logo pinned to the frame's top-left corner. It doesn't zoom. */
   logo?: string;
   /** Logo alt text, e.g. the customer's name. */
   logoAlt?: string;
-  /** Caption under the frame. */
-  title?: React.ReactNode;
-  /** How far the photo grows on hover (1.04 = 4%). */
+  /** How far the photo grows on hover (1.07 = 7%). */
   scale?: number;
   /** Zoom duration in milliseconds. */
   duration?: number;
@@ -24,15 +22,13 @@ type ZoomImageCardProps = Omit<React.ComponentProps<"a">, "title"> & {
   aspectRatio?: string;
   /** Darken the top-left corner so a white logo reads over the photo. */
   scrim?: boolean;
-  /** Frame colour, seen under the photo while it loads. */
+  /** Frame colour, seen under the photo while it loads. Also the focus ring colour. */
   frameColor?: string;
-  /** Caption colour. Also the focus ring colour. */
-  titleColor?: string;
 };
 
 /**
  * Zoom image card — a linked customer tile: a photo in a rounded frame with a
- * logo in its corner and a caption below. Hovering anywhere on the card (or
+ * logo in its corner. Hovering the card (or
  * focusing it with the keyboard) slowly grows the photo inside the frame; the
  * frame, the corner scrim and the logo stay put.
  *
@@ -47,15 +43,13 @@ export function ZoomImageCard({
   alt = "",
   logo,
   logoAlt = "",
-  title,
-  scale = 1.04,
-  duration = 500,
-  easing = "cubic-bezier(0, 0, 0.2, 1)",
+  scale = 1.07,
+  duration = 350,
+  easing = "cubic-bezier(0, 0, 0.58, 1)",
   radius = 20,
   aspectRatio = "301 / 360",
   scrim = true,
   frameColor = "#0054D7",
-  titleColor = "#000000",
   className,
   style,
   ...props
@@ -63,8 +57,8 @@ export function ZoomImageCard({
   return (
     <a
       className={cn(
-        "group flex flex-col gap-5 no-underline outline-none",
-        "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--zoom-title) focus-visible:rounded-(--zoom-radius)",
+        "group block no-underline outline-none",
+        "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--zoom-frame) focus-visible:rounded-(--zoom-radius)",
         className
       )}
       style={
@@ -74,7 +68,6 @@ export function ZoomImageCard({
           "--zoom-ease": easing,
           "--zoom-radius": `${radius}px`,
           "--zoom-frame": frameColor,
-          "--zoom-title": titleColor,
           ...style,
         } as React.CSSProperties
       }
@@ -118,12 +111,6 @@ export function ZoomImageCard({
           />
         )}
       </div>
-
-      {title && (
-        <span className="text-base leading-[1.625] tracking-[0.01em] text-(--zoom-title) xl:text-xl xl:leading-[1.6]">
-          {title}
-        </span>
-      )}
     </a>
   );
 }

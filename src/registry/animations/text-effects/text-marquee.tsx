@@ -14,6 +14,12 @@ type TextMarqueeProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children"> &
   direction?: "left" | "right";
   /** Ease to a stop while a mouse is over it, and ease back up on leave. */
   slowOnHover?: boolean;
+  /**
+   * How long the speed takes to glide to a stop on hover (and back up on
+   * leave), in ms: the time to cover 95% of the change. The glide is an
+   * exponential ease-out, frame-rate independent.
+   */
+  hoverRamp?: number;
   /** Page scrolling speeds it up, and scrolling up runs it backwards. */
   scrollBoost?: boolean;
   /** Space between items (and separators), in px. */
@@ -22,8 +28,6 @@ type TextMarqueeProps = Omit<React.HTMLAttributes<HTMLDivElement>, "children"> &
   fade?: number;
 };
 
-/** Per-frame smoothing toward the target speed: 10% of the gap per 60fps frame. */
-const SMOOTHING = 0.9;
 /** px/ms of page scroll → px/s of extra marquee speed. */
 const SCROLL_GAIN = 900;
 
@@ -38,8 +42,9 @@ const SCROLL_GAIN = 900;
  *   ends with a trailing gap, so its width is exactly one loop.
  * - A requestAnimationFrame loop moves the track by `speed × dt` and wraps the
  *   offset into one group width, so the jump back is invisible. The current
- *   speed is smoothed toward a target each frame, which is what makes hover
- *   ease to a stop instead of freezing.
+ *   speed is smoothed toward a target each frame (95% of the way in
+ *   `hoverRamp` ms), which is what makes hover ease to a stop instead of
+ *   freezing.
  * - With `scrollBoost`, page scroll velocity is added to the speed and its
  *   sign picks the direction, decaying back to cruising when scrolling stops.
  * - The loop only runs while the strip is on screen.
@@ -53,6 +58,7 @@ export function TextMarquee({
   speed = 70,
   direction = "left",
   slowOnHover = true,
+  hoverRamp = 474,
   scrollBoost = false,
   gap = 40,
   fade = 8,
@@ -109,7 +115,8 @@ export function TextMarquee({
     const tick = (now: number) => {
       const dt = prev ? Math.min(now - prev, 100) : 16.67;
       prev = now;
-      current += (target - current) * (1 - Math.pow(SMOOTHING, dt / 16.67));
+      // 5% of the gap is left after hoverRamp ms (474ms = the original's 10% per 60fps frame).
+      current += (target - current) * (1 - Math.pow(0.05, dt / Math.max(1, hoverRamp)));
       let v = current;
       let d = dir;
       if (scrollBoost) {
@@ -158,7 +165,7 @@ export function TextMarquee({
       window.removeEventListener("scroll", onScroll);
       track.style.transform = "";
     };
-  }, [speed, direction, slowOnHover, scrollBoost, list.length]);
+  }, [speed, direction, slowOnHover, hoverRamp, scrollBoost, list.length]);
 
   const mask = fade > 0 ? `linear-gradient(90deg,transparent,#000 ${fade}%,#000 ${100 - fade}%,transparent)` : undefined;
 

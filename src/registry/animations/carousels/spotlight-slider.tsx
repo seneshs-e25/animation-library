@@ -22,8 +22,20 @@ type SpotlightSliderProps = Omit<React.ComponentProps<"div">, "children"> & {
   maxWidth?: number;
   /** Time the row takes to slide to the next card, in ms. */
   duration?: number;
+  /** Easing of the row slide, any CSS timing function. */
+  ease?: string;
   /** Time a card takes to blur, fade and shrink in or out, in ms. */
   focusDuration?: number;
+  /** Easing of the cards' blur, fade and shrink, any CSS timing function. */
+  focusEase?: string;
+  /** Time the active dot takes to widen, in ms. */
+  dotDuration?: number;
+  /** Time the arrows take to change colour on hover, in ms. */
+  arrowDuration?: number;
+  /** Time a `SpotlightSlide` play button takes to scale on hover, in ms. */
+  playDuration?: number;
+  /** Easing of the dots, arrow colours and play button hover, any CSS timing function. */
+  controlEase?: string;
   /** Opacity of the cards either side (1024px+; narrower, they only blur and shrink). */
   inactiveOpacity?: number;
   /** Blur on the cards either side, in px. */
@@ -80,13 +92,18 @@ const EDGE_FRICTION = 0.35;
  * - The track is a flex row of full-width slides inside a centred viewport
  *   with `overflow: visible`, so neighbours peek past its edges. The root
  *   clips them at the section edge. Changing slide moves the track with
- *   `translateX(-index * 100%)` over 500ms `ease` (Slick's default). Like
+ *   `translateX(-index * 100%)` over `duration` (700ms) on `ease` (a strong
+ *   ease-in-out by default; the original uses Slick's 500ms CSS `ease`). Like
  *   Slick's `waitForAnimate`, any move asked for while the row is still
  *   sliding (arrow, tab, dot, key, autoplay or swipe) is ignored.
  * - Cards that aren't in focus get `filter: blur(5px); scale: .9 .95`, and
- *   from 1024px also `opacity: .3; scale: .95`, transitioned over 150ms
- *   cubic-bezier(.4,0,.2,1), so the new card sharpens while the row is
- *   still moving.
+ *   from 1024px also `opacity: .3; scale: .95`, transitioned over
+ *   `focusDuration` (150ms) on `focusEase` (cubic-bezier(0.4, 0, 0.2, 1)),
+ *   so the new card sharpens while the row is still moving.
+ * - Small controls share `controlEase` (cubic-bezier(0.4, 0, 0.2, 1)): the
+ *   active dot widens over `dotDuration` (150ms), the arrows change colour
+ *   over `arrowDuration` (300ms) and a `SpotlightSlide` play button scales
+ *   over `playDuration` (200ms).
  * - Autoplay advances every 5s once 30% of the slider is in view, pauses
  *   while the pointer is over the slides, stops at the last slide (unless
  *   `loop`), and stops for good on any interaction.
@@ -108,8 +125,14 @@ export function SpotlightSlider({
   defaultIndex = 0,
   slideWidth = 1012,
   maxWidth = 1220,
-  duration = 500,
+  duration = 700,
+  ease = "cubic-bezier(0.77, 0, 0.175, 1)",
   focusDuration = 150,
+  focusEase = "cubic-bezier(0.4, 0, 0.2, 1)",
+  dotDuration = 150,
+  arrowDuration = 300,
+  playDuration = 200,
+  controlEase = "cubic-bezier(0.4, 0, 0.2, 1)",
   inactiveOpacity = 0.3,
   inactiveBlur = 5,
   inactiveScale = 0.95,
@@ -265,7 +288,6 @@ export function SpotlightSlider({
   const s = `[data-spotlight-slider="${id}"]`;
   const hasTabs = showTabs && items.some((item) => item.tab);
   const hasDots = showDots && count > 1;
-  const ease = "cubic-bezier(.4,0,.2,1)";
 
   return (
     <div
@@ -278,7 +300,13 @@ export function SpotlightSlider({
           "--ss-w": `${slideWidth}px`,
           "--ss-max": `${maxWidth}px`,
           "--ss-duration": `${duration}ms`,
+          "--ss-ease": ease,
           "--ss-focus-duration": `${focusDuration}ms`,
+          "--ss-focus-ease": focusEase,
+          "--ss-dot-duration": `${dotDuration}ms`,
+          "--ss-arrow-duration": `${arrowDuration}ms`,
+          "--ss-play-duration": `${playDuration}ms`,
+          "--ss-control-ease": controlEase,
           "--ss-dim": inactiveOpacity,
           "--ss-blur": `${inactiveBlur}px`,
           "--ss-scale": inactiveScale,
@@ -300,9 +328,9 @@ ${s} [data-viewport]{width:min(320px,100% - 40px)}
 @container (min-width:768px){${s} [data-viewport]{width:620px}}
 @container (min-width:1024px){${s} [data-viewport]{width:830px}}
 @container (min-width:1280px){${s} [data-viewport]{width:min(var(--ss-w),100% - 160px)}}
-${s} [data-track]{transition:transform var(--ss-duration) ease}
+${s} [data-track]{transition:transform var(--ss-duration) var(--ss-ease)}
 ${s} [data-track][data-dragging]{transition:none}
-${s} [data-card]{transition:opacity var(--ss-focus-duration) ${ease},filter var(--ss-focus-duration) ${ease},scale var(--ss-focus-duration) ${ease}}
+${s} [data-card]{transition:opacity var(--ss-focus-duration) var(--ss-focus-ease),filter var(--ss-focus-duration) var(--ss-focus-ease),scale var(--ss-focus-duration) var(--ss-focus-ease)}
 ${s} [data-slide]:not([data-active]) [data-card]{filter:blur(var(--ss-blur));scale:.9 .95}
 @container (min-width:1024px){${s} [data-slide]:not([data-active]) [data-card]{opacity:var(--ss-dim);scale:var(--ss-scale)}}
 @media (prefers-reduced-motion:reduce){${s} [data-track],${s} [data-card]{transition:none!important}}`}</style>
@@ -415,7 +443,7 @@ ${s} [data-slide]:not([data-active]) [data-card]{filter:blur(var(--ss-blur));sca
               aria-current={i === index ? "true" : undefined}
               onClick={() => goByUser(i)}
               className={cn(
-                "h-2.5 rounded-[5px] transition-[width] duration-150 ease-[cubic-bezier(.4,0,.2,1)]",
+                "h-2.5 rounded-[5px] transition-[width] duration-(--ss-dot-duration) ease-(--ss-control-ease)",
                 i === index ? "w-[30px] bg-(--ss-accent)" : "w-2.5 bg-(--ss-dot)",
               )}
             />
@@ -444,7 +472,7 @@ function ArrowButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "group absolute top-1/2 z-2 hidden size-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-white text-(--ss-accent) shadow-[0_34px_40px_rgba(0,26,71,0.1),0_5px_20px_rgba(0,26,71,0.05)] outline-none transition-colors duration-300 ease-[cubic-bezier(.4,0,.2,1)] @min-[768px]:flex",
+        "group absolute top-1/2 z-2 hidden size-[50px] -translate-y-1/2 items-center justify-center rounded-full bg-white text-(--ss-accent) shadow-[0_34px_40px_rgba(0,26,71,0.1),0_5px_20px_rgba(0,26,71,0.05)] outline-none transition-colors duration-(--ss-arrow-duration) ease-(--ss-control-ease) @min-[768px]:flex",
         "focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-(--ss-accent)",
         "enabled:[@media(hover:hover)]:hover:bg-(--ss-accent) enabled:[@media(hover:hover)]:hover:text-white disabled:cursor-default",
         className,
@@ -473,7 +501,10 @@ type SpotlightSlideProps = {
   role?: React.ReactNode;
   /** Photo, video still or `<video>`; fills the right of the card. */
   media?: React.ReactNode;
-  /** Shows a play button over the media when set. */
+  /**
+   * Shows a play button over the media when set. Its hover scale takes the
+   * slider's `playDuration` and `controlEase` (200ms, cubic-bezier(0.4, 0, 0.2, 1)).
+   */
   onPlay?: () => void;
   /** Replaces the default round play button's icon, e.g. an image of the site's own. */
   playIcon?: React.ReactNode;
@@ -535,7 +566,7 @@ export function SpotlightSlide({
                 onClick={onPlay}
                 className="group/play absolute inset-0 z-3 flex items-center justify-center outline-none"
               >
-                <span className="flex size-[60px] items-center justify-center rounded-full transition-transform duration-200 ease-[cubic-bezier(.4,0,.2,1)] group-focus-visible/play:ring-3 group-focus-visible/play:ring-white/70 @min-[800px]:size-[90px] @min-[800px]:[@media(hover:hover)]:group-hover/play:scale-110">
+                <span className="flex size-[60px] items-center justify-center rounded-full transition-transform duration-[var(--ss-play-duration,200ms)] ease-[var(--ss-control-ease,cubic-bezier(0.4,0,0.2,1))] group-focus-visible/play:ring-3 group-focus-visible/play:ring-white/70 @min-[800px]:size-[90px] @min-[800px]:[@media(hover:hover)]:group-hover/play:scale-110">
                   {playIcon ?? (
                     <span className="flex size-full items-center justify-center rounded-full bg-white drop-shadow-[0_54px_81px_rgba(0,26,71,0.5)]">
                       <svg aria-hidden viewBox="0 0 24 24" className="ml-1 size-6 @min-[800px]:size-9" fill={accent}>

@@ -23,27 +23,32 @@ type VerticalTabSliderProps = Omit<React.ComponentProps<"section">, "children"> 
   children?: React.ReactNode;
   /** Card track slide, in ms. */
   slideDuration?: number;
+  /** Card track easing, a CSS timing function. The original: cubic-bezier(0.23, 1, 0.32, 1). */
+  slideEase?: string;
+  /** Glow photo crossfade when the active card changes, in ms. */
+  fadeDuration?: number;
+  /** Easing for the glow crossfade. The original: cubic-bezier(0.23, 1, 0.32, 1). */
+  fadeEase?: string;
+  /** Small steps: the tab stepping left and brightening, its leader rule, the narrow card growing, the plus wipe and the progress fill, in ms. */
+  stepDuration?: number;
+  /** Easing for those small steps. The original: cubic-bezier(0.23, 1, 0.32, 1). */
+  stepEase?: string;
+  /** Easing for the narrow progress bar fill. The original: cubic-bezier(0.4, 0, 0.2, 1). */
+  progressEase?: string;
   /** How far the active tab steps left, in px. */
   tabShift?: number;
   /** Opacity of the tabs that aren't active. */
   inactiveOpacity?: number;
   /** Blurred copy of the active card's photo glowing behind the card column. */
   glow?: boolean;
-  /** Section background and text before it's scrolled into view (or always, with `reveal` off). */
+  /** Section background. */
   background?: string;
+  /** Section text colour (tab titles, leader rule, progress bar and anything in `children`). */
   color?: string;
-  /** Fade to the dark plate while the section is in view, and back when it leaves. */
-  reveal?: boolean;
-  revealBackground?: string;
-  revealColor?: string;
 };
 
 /** Card height (520) + track gap (10): how far the desktop track moves per card. */
 const SLIDE_STEP = 530;
-/** Plate flips once the section's top is a third of the way up the viewport... */
-const REVEAL_ENTRY_MARGIN = "0px 0px -66% 0px";
-/** ...and flips back once its bottom has risen above 30% of the viewport. */
-const REVEAL_EXIT_MARGIN = "-30% 0px 0px 0px";
 /** The original's dark scrim over each card photo: a corner shade, a shade up from the bottom left, and a flat 20% black. */
 const SCRIM =
   "linear-gradient(-14.432deg, rgb(0 0 0 / 0) 70.131%, rgb(0 0 0 / 0.6) 92.224%), linear-gradient(222.36deg, rgb(0 0 0 / 0) 24.396%, rgb(0 0 0 / 0.6) 86.192%), linear-gradient(rgb(0 0 0 / 0.2), rgb(0 0 0 / 0.2))";
@@ -52,60 +57,41 @@ const SCRIM =
  * Vertical tab slider: a 400×520 card window on the left and a column of tab
  * titles on the right. Hovering a title (or clicking it) slides the card track
  * to that card, steps the title left with a leader rule running into it from
- * behind the card, and crossfades a blurred glow of the card's photo. While the
- * section is in view its background fades to a dark plate. Ported from the
- * eight25 homepage's services section (`VerticalTabSlider`).
+ * behind the card, and crossfades a blurred glow of the card's photo. Ported
+ * from the eight25 homepage's services section (`VerticalTabSlider`), without
+ * its fade to a dark plate on scroll: the section simply uses the plate's
+ * colours.
  *
  * Below a 960px-wide container the same cards become a native scroll-snap
  * carousel with a progress bar and counter, and the active card is read back
  * out of the scroll position.
+ *
+ * Timing: the track slides over `slideDuration` (500ms) on `slideEase`; the
+ * glow crossfades over `fadeDuration` (700ms) on `fadeEase`; the tab step,
+ * leader rule, card grow and plus wipe take `stepDuration` (300ms) on
+ * `stepEase`, and the progress fill the same 300ms on `progressEase`.
  */
 export function VerticalTabSlider({
   items,
   children,
   slideDuration = 500,
+  slideEase = "cubic-bezier(0.23, 1, 0.32, 1)",
+  fadeDuration = 700,
+  fadeEase = "cubic-bezier(0.23, 1, 0.32, 1)",
+  stepDuration = 300,
+  stepEase = "cubic-bezier(0.23, 1, 0.32, 1)",
+  progressEase = "cubic-bezier(0.4, 0, 0.2, 1)",
   tabShift = 40,
   inactiveOpacity = 0.4,
   glow = true,
-  background = "#FFFFFF",
-  color = "#4E008E",
-  reveal = true,
-  revealBackground = "#290044",
-  revealColor = "#FFFFFF",
+  background = "#290044",
+  color = "#FFFFFF",
   className,
   style,
   ...props
 }: VerticalTabSliderProps) {
   const [active, setActive] = React.useState(0);
-  const [revealed, setRevealed] = React.useState(false);
-  const sectionRef = React.useRef<HTMLElement>(null);
   const scrollerRef = React.useRef<HTMLDivElement>(null);
-  const dark = reveal && revealed;
-
-  // The plate: dark while BOTH lines report the section intersecting. Mirrors
-  // `isIntersecting` (never latches), so it plays on every pass.
-  React.useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || !reveal) return;
-    const root = scrollParent(el);
-    let pastEntry = false;
-    let beforeExit = false;
-    const watch = (rootMargin: string, write: (hit: boolean) => void) =>
-      new IntersectionObserver(
-        ([entry]) => {
-          if (!entry) return;
-          write(entry.isIntersecting);
-          setRevealed(pastEntry && beforeExit);
-        },
-        { root, rootMargin },
-      );
-    const observers = [
-      watch(REVEAL_ENTRY_MARGIN, (hit) => (pastEntry = hit)),
-      watch(REVEAL_EXIT_MARGIN, (hit) => (beforeExit = hit)),
-    ];
-    observers.forEach((o) => o.observe(el));
-    return () => observers.forEach((o) => o.disconnect());
-  }, [reveal]);
 
   // Carousel (narrow) only: the card nearest the scroller's centre is active.
   // On the desktop layout the scroller is overflow-hidden and never scrolls.
@@ -132,10 +118,19 @@ export function VerticalTabSlider({
 
   return (
     <section
-      ref={sectionRef}
-      data-revealed={dark ? "" : undefined}
-      className={cn("@container relative overflow-hidden transition-colors duration-700 ease-out", className)}
-      style={{ backgroundColor: dark ? revealBackground : background, color: dark ? revealColor : color, ...style }}
+      className={cn("@container relative overflow-hidden", className)}
+      style={
+        {
+          "--vts-fade": `${fadeDuration}ms`,
+          "--vts-fade-ease": fadeEase,
+          "--vts-step": `${stepDuration}ms`,
+          "--vts-step-ease": stepEase,
+          "--vts-progress-ease": progressEase,
+          backgroundColor: background,
+          color,
+          ...style,
+        } as React.CSSProperties
+      }
       {...props}
     >
       {children ? <div className="relative z-10">{children}</div> : null}
@@ -150,8 +145,7 @@ export function VerticalTabSlider({
           // The active card's own photo, blurred 75px, mirrored, at 40%, behind the card column.
           <div
             aria-hidden
-            className="pointer-events-none absolute top-[calc(50%+50px)] left-[41px] h-[565px] w-[518px] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-700 ease-out @min-[960px]:left-[61px] @min-[960px]:h-[1024px] @min-[960px]:w-[938px]"
-            style={{ opacity: dark || !reveal ? 0.4 : 0 }}
+            className="pointer-events-none absolute top-[calc(50%+50px)] left-[41px] h-[565px] w-[518px] -translate-x-1/2 -translate-y-1/2 opacity-40 @min-[960px]:left-[61px] @min-[960px]:h-[1024px] @min-[960px]:w-[938px]"
           >
             <div className="relative h-full w-full -scale-x-100 overflow-hidden rounded-tl-[222px] @min-[960px]:rounded-tl-[403px] blur-[41px] @min-[960px]:blur-[75px]">
               {items.map((item, i) => (
@@ -160,7 +154,7 @@ export function VerticalTabSlider({
                   key={i}
                   src={item.image}
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out"
+                  className="absolute inset-0 h-full w-full object-cover transition-opacity duration-(--vts-fade) ease-(--vts-fade-ease)"
                   style={{ opacity: i === current ? 1 : 0 }}
                 />
               ))}
@@ -175,10 +169,11 @@ export function VerticalTabSlider({
           className="relative z-10 -mx-5 snap-x snap-mandatory scroll-px-5 overflow-x-auto px-5 [scrollbar-width:none] @min-[720px]:scroll-px-0 @min-[720px]:px-0 @min-[960px]:mx-0 @min-[960px]:-my-[37.5px] @min-[960px]:h-[520px] @min-[960px]:w-[400px] @min-[960px]:shrink-0 @min-[960px]:snap-none @min-[960px]:self-center @min-[960px]:overflow-hidden [&::-webkit-scrollbar]:hidden"
         >
           <ul
-            className="flex w-max items-center gap-5 @min-[720px]:px-[calc(50%-150px)] @min-[960px]:translate-y-(--vts-y) @min-[960px]:flex-col @min-[960px]:items-stretch @min-[960px]:gap-[10px] @min-[960px]:px-0 @min-[960px]:transition-transform @min-[960px]:ease-out"
+            className="flex w-max items-center gap-5 @min-[720px]:px-[calc(50%-150px)] @min-[960px]:translate-y-(--vts-y) @min-[960px]:flex-col @min-[960px]:items-stretch @min-[960px]:gap-[10px] @min-[960px]:px-0 @min-[960px]:transition-transform @min-[960px]:ease-(--vts-slide-ease)"
             style={
               {
                 "--vts-y": `-${current * SLIDE_STEP}px`,
+                "--vts-slide-ease": slideEase,
                 transitionDuration: `${slideDuration}ms`,
               } as React.CSSProperties
             }
@@ -193,7 +188,7 @@ export function VerticalTabSlider({
               >
                 <article
                   className={cn(
-                    "relative flex w-full flex-col justify-between overflow-hidden p-5 text-white transition-[height] duration-300 ease-out @min-[960px]:h-full @min-[960px]:p-[30px]",
+                    "relative flex w-full flex-col justify-between overflow-hidden p-5 text-white transition-[height] duration-(--vts-step) ease-(--vts-step-ease) @min-[960px]:h-full @min-[960px]:p-[30px]",
                     i === current ? "h-[420px]" : "h-[400px]",
                   )}
                 >
@@ -231,7 +226,7 @@ export function VerticalTabSlider({
         <div className="relative mt-5 flex items-center gap-5 @min-[720px]:justify-center @min-[960px]:hidden">
           <span className="relative block h-[5px] w-[300px] bg-current/30">
             <span
-              className="absolute inset-y-0 left-0 bg-current transition-[width] duration-300"
+              className="absolute inset-y-0 left-0 bg-current transition-[width] duration-(--vts-step) ease-(--vts-progress-ease)"
               style={{ width: `${((current + 1) / items.length) * 100}%` }}
             />
           </span>
@@ -259,7 +254,7 @@ export function VerticalTabSlider({
                 onPointerEnter={(e) => {
                   if (e.pointerType === "mouse") setActive(i);
                 }}
-                className="relative cursor-pointer text-left text-[34px] leading-[1.1] tracking-[-1px] transition duration-300 ease-out focus-visible:opacity-100!"
+                className="relative cursor-pointer text-left text-[34px] leading-[1.1] tracking-[-1px] transition duration-(--vts-step) ease-(--vts-step-ease) focus-visible:opacity-100!"
                 style={{
                   opacity: isActive ? 1 : inactiveOpacity,
                   transform: isActive ? `translateX(-${tabShift}px)` : undefined,
@@ -268,7 +263,7 @@ export function VerticalTabSlider({
                 {/* Leader rule from behind the card into the active title, in the title's own colour. */}
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute top-1/2 left-[-729px] h-px w-[729px] -translate-y-1/2 bg-linear-to-r from-current from-85% to-transparent transition-opacity duration-300 ease-out"
+                  className="pointer-events-none absolute top-1/2 left-[-729px] h-px w-[729px] -translate-y-1/2 bg-linear-to-r from-current from-85% to-transparent transition-opacity duration-(--vts-step) ease-(--vts-step-ease)"
                   style={{ opacity: isActive ? 1 : 0 }}
                 />
                 {item.title}
@@ -296,18 +291,10 @@ function PlusGlyph() {
       </span>
       <span
         aria-hidden
-        className="absolute inset-0 rounded-full bg-[#6B00DF] [clip-path:circle(0%_at_0%_100%)] transition-[clip-path] duration-300 ease-out group-hover/plus:[clip-path:circle(150%_at_0%_100%)] motion-reduce:transition-none"
+        className="absolute inset-0 rounded-full bg-[#6B00DF] [clip-path:circle(0%_at_0%_100%)] transition-[clip-path] duration-(--vts-step) ease-(--vts-step-ease) group-hover/plus:[clip-path:circle(150%_at_0%_100%)] motion-reduce:transition-none"
       >
         {plus("bg-white")}
       </span>
     </>
   );
-}
-
-/** Nearest ancestor that scrolls vertically, or null for the viewport. */
-function scrollParent(el: Element): HTMLElement | null {
-  for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
-    if (/(auto|scroll|overlay)/.test(getComputedStyle(p).overflowY)) return p;
-  }
-  return null;
 }

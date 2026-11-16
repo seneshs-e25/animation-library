@@ -24,35 +24,31 @@ export type HoverListItem = {
   href?: string;
 };
 
-export type HoverListGroup = {
-  /** Toggle label, e.g. a location. */
-  label: string;
-  items: HoverListItem[];
-};
-
 type HoverCardListProps = Omit<React.ComponentProps<"section">, "children"> & {
-  /** One list, or several behind a toggle (one per group). */
-  groups: HoverListGroup[];
+  /** The rows. */
+  items: HoverListItem[];
   heading?: React.ReactNode;
   /** Hovered row background and detail card colour. */
   accent?: string;
   /** Page background behind the rows. */
   background?: string;
-  /** Row tint duration, in ms. */
+  /** Row tint duration, in ms. Also the small-screen accordion's duration. */
   duration?: number;
+  /** Row tint and accordion easing (any CSS timing function). */
+  easing?: string;
   /** Detail card fade / scale-in duration, in ms (0 = it just appears, as on Hatch). */
   cardDuration?: number;
+  /** Detail card fade / scale-in easing (any CSS timing function). */
+  cardEase?: string;
   /** Show the 01, 02... index at the end of each row. */
   numbered?: boolean;
 };
 
-const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-
 /**
  * Hover card list: a list of big titles with arch thumbnails. Hovering a row
  * tints it and pops a detail card (photo, tag pills, bullets) out beside the
- * title, overlapping the rows above and below. An optional toggle switches
- * between lists. Recreated from Hatch's meeting rooms (a Framer site).
+ * title, overlapping the rows above and below. Recreated from Hatch's meeting
+ * rooms (a Framer site).
  *
  * How it works:
  * - Pure CSS hover: each row is a `group`; its tint and its card react to
@@ -64,26 +60,28 @@ const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
  * - Below 900px of container width (and on touch), rows become an accordion:
  *   tapping a row opens its details inline.
  *
+ * Timing: `duration` / `easing` for the tint and the accordion, `cardDuration`
+ * / `cardEase` for the floating card.
+ *
  * Reduced motion: tint and card change instantly.
  */
 export function HoverCardList({
-  groups,
+  items,
   heading,
   accent = "#CDCEA6",
   background = "#FAFAFA",
   duration = 400,
+  easing = "cubic-bezier(0.22, 1, 0.36, 1)",
   cardDuration = 200,
+  cardEase = "cubic-bezier(0.23, 1, 0.32, 1)",
   numbered = true,
   className,
   style,
   ...props
 }: HoverCardListProps) {
-  const [group, setGroup] = React.useState(0);
   const [open, setOpen] = React.useState<number | null>(null);
   const pointer = React.useRef<string>("mouse");
   const rootRef = React.useRef<HTMLElement>(null);
-  const items = groups[group]?.items ?? [];
-  const tabsId = React.useId();
 
   return (
     <section
@@ -94,58 +92,27 @@ export function HoverCardList({
           "--hl-accent": accent,
           "--hl-bg": background,
           "--hl-duration": `${duration}ms`,
+          "--hl-ease": easing,
           "--hl-card": `${cardDuration}ms`,
-          "--hl-ease": EASE,
+          "--hl-card-ease": cardEase,
           backgroundColor: background,
           ...style,
         } as React.CSSProperties
       }
       {...props}
     >
-      {(heading || groups.length > 1) && (
-        <div className="flex flex-wrap items-center justify-between gap-4 px-5 pb-10 @[900px]:px-[60px] @[900px]:pb-[120px]">
-          {heading && (
-            <h2 className="m-0 text-[28px] leading-[1.2] font-medium tracking-[-0.02em] text-[#232323] @[900px]:text-[38px]">
-              {heading}
-            </h2>
-          )}
-          {groups.length > 1 && (
-            <div role="tablist" className="flex gap-1 rounded-2xl bg-[#F3F3F3] p-2 @[900px]:px-4 @[900px]:py-3">
-              {groups.map((g, i) => (
-                <button
-                  key={g.label}
-                  type="button"
-                  role="tab"
-                  id={`${tabsId}-tab-${i}`}
-                  aria-selected={i === group}
-                  aria-controls={`${tabsId}-panel`}
-                  onClick={() => {
-                    setGroup(i);
-                    setOpen(null);
-                  }}
-                  className={cn(
-                    "cursor-pointer rounded-md border-0 px-4 py-2.5 text-base leading-none font-medium outline-none @[900px]:px-5 @[900px]:py-3.5 @[900px]:text-lg",
-                    "transition-[background-color,color] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-black motion-reduce:transition-none",
-                    i === group ? "bg-white text-black" : "bg-transparent text-black/50 hover:text-black"
-                  )}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      {heading && (
+        <h2 className="m-0 px-5 pb-10 text-[28px] leading-[1.2] font-medium tracking-[-0.02em] text-[#232323] @[900px]:px-[60px] @[900px]:pb-[120px] @[900px]:text-[38px]">
+          {heading}
+        </h2>
       )}
 
       <ul
-        id={`${tabsId}-panel`}
-        role={groups.length > 1 ? "tabpanel" : undefined}
-        aria-labelledby={groups.length > 1 ? `${tabsId}-tab-${group}` : undefined}
         className="m-0 list-none border-t border-(--hl-accent) p-0"
       >
         {items.map((item, i) => (
           <Row
-            key={`${group}-${i}`}
+            key={i}
             item={item}
             index={i}
             numbered={numbered}
@@ -247,7 +214,7 @@ function Row({
             aria-hidden
             className={cn(
               "pointer-events-none invisible absolute top-1/2 right-[159px] z-10 hidden w-[330px] origin-center -translate-y-1/2 scale-[0.96] opacity-0 @[900px]:block",
-              "transition-[opacity,scale,visibility] duration-(--hl-card) ease-out motion-reduce:transition-none",
+              "transition-[opacity,scale,visibility] duration-(--hl-card) ease-(--hl-card-ease) motion-reduce:transition-none",
               "group-hover:pointer-events-auto group-hover:visible group-hover:scale-100 group-hover:opacity-100",
               "group-focus-within:visible group-focus-within:scale-100 group-focus-within:opacity-100",
               "group-data-open:visible group-data-open:scale-100 group-data-open:opacity-100"

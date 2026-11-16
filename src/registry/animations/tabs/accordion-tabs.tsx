@@ -26,8 +26,22 @@ type AccordionTabsProps = Omit<React.ComponentProps<"div">, "children"> & {
   interval?: number;
   /** Time the open tab takes to expand and collapse, in ms (halved below 960px). */
   duration?: number;
+  /** Expand and collapse easing, a CSS timing function. Default: a strong ease-in-out. The original: cubic-bezier(0.3, 0.52, 0.49, 0.9). */
+  ease?: string;
   /** Crossfade between media panels, in ms. 0 swaps them instantly. */
   fade?: number;
+  /** Media crossfade easing. The original: cubic-bezier(0.25, 1, 0.5, 1). */
+  fadeEase?: string;
+  /** Easing of the progress bar fill along the open tab. The original: linear. */
+  fillEase?: string;
+  /** Chevron flip on the narrow accordion, in ms. */
+  iconDuration?: number;
+  /** Chevron flip easing. The original: cubic-bezier(0.23, 1, 0.32, 1). */
+  iconEase?: string;
+  /** Link chip hover (border and text colour), in ms. */
+  chipDuration?: number;
+  /** Link chip hover easing. The original: cubic-bezier(0.4, 0, 0.2, 1). */
+  chipEase?: string;
   /** Hold the timer while the pointer is over the component. */
   pauseOnHover?: boolean;
   /** Background of the open tab. */
@@ -48,8 +62,6 @@ type AccordionTabsProps = Omit<React.ComponentProps<"div">, "children"> & {
   titleClassName?: string;
 };
 
-const EASE = "cubic-bezier(0.3, 0.52, 0.49, 0.9)";
-
 /**
  * Accordion tabs: a list of feature titles beside a media panel. The open
  * tab expands to show its copy and link chips on a tinted card, a thin bar
@@ -60,15 +72,20 @@ const EASE = "cubic-bezier(0.3, 0.52, 0.49, 0.9)";
  *
  * How it works:
  * - The open index is the only state. Panels open with a CSS grid
- *   `0fr → 1fr` row transition, so nothing is measured.
- * - The progress fill is a CSS animation (`scaleX 0 → 1`, linear,
- *   `interval` long) and its `animationend` advances the tab, so pausing
+ *   `0fr → 1fr` row transition (`duration`, 400ms, on `ease`), so nothing
+ *   is measured.
+ * - The progress fill is a CSS animation (`scaleX 0 → 1`, `interval`
+ *   long, on `fillEase`, linear) and its `animationend` advances the tab, so pausing
  *   the animation pauses autoplay exactly.
  * - Autoplay runs only from 960px wide, while at least 20% of the component
  *   is on screen and the browser tab is visible. It waits while keyboard
  *   focus is inside (and, optionally, while hovered). After the last tab it
  *   rewinds to the first.
- * - Media panels are stacked; the incoming one fades in over the outgoing.
+ * - Media panels are stacked; the incoming one fades in over the outgoing
+ *   (`fade`, 600ms, on `fadeEase`); the outgoing one then hides instantly.
+ * - Small timings: the narrow chevron flips over `iconDuration` (300ms) on
+ *   `iconEase`, and link chips recolour on hover over `chipDuration` (150ms)
+ *   on `chipEase`.
  * - Below 960px tabs toggle (tapping the open one closes it) and there's no
  *   autoplay.
  *
@@ -80,7 +97,14 @@ export function AccordionTabs({
   autoplay = true,
   interval = 12000,
   duration = 400,
+  ease = "cubic-bezier(0.77, 0, 0.175, 1)",
   fade = 600,
+  fadeEase = "cubic-bezier(0.25, 1, 0.5, 1)",
+  fillEase = "linear",
+  iconDuration = 300,
+  iconEase = "cubic-bezier(0.23, 1, 0.32, 1)",
+  chipDuration = 150,
+  chipEase = "cubic-bezier(0.4, 0, 0.2, 1)",
   pauseOnHover = false,
   activeBackground = "#F8F5F3",
   textColor = "#242424",
@@ -167,7 +191,13 @@ export function AccordionTabs({
           "--at-interval": `${interval}ms`,
           "--at-duration": `${panelDuration}ms`,
           "--at-fade": `${reducedMotion ? 0 : fade}ms`,
-          "--at-ease": EASE,
+          "--at-ease": ease,
+          "--at-fade-ease": fadeEase,
+          "--at-fill-ease": fillEase,
+          "--at-icon": `${iconDuration}ms`,
+          "--at-icon-ease": iconEase,
+          "--at-chip": `${chipDuration}ms`,
+          "--at-chip-ease": chipEase,
           "--at-active": activeBackground,
           "--at-text": textColor,
           "--at-hover": hoverColor,
@@ -190,7 +220,7 @@ export function AccordionTabs({
     >
       <style>{`
 @keyframes at-fill-${id}{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-[data-accordion-tabs="${id}"] [data-fill]{animation:at-fill-${id} var(--at-interval) linear forwards}`}</style>
+[data-accordion-tabs="${id}"] [data-fill]{animation:at-fill-${id} var(--at-interval) var(--at-fill-ease) forwards}`}</style>
 
       <div className="flex flex-col min-[960px]:flex-row min-[960px]:gap-[3.125%]">
         <div className="w-full min-w-0 min-[960px]:w-[31.25%]">
@@ -233,7 +263,7 @@ export function AccordionTabs({
                     stroke="currentColor"
                     strokeWidth={2}
                     className={cn(
-                      "size-[22px] shrink-0 transition-transform duration-300 ease-out motion-reduce:transition-none sm:size-7 min-[960px]:hidden",
+                      "size-[22px] shrink-0 transition-transform duration-(--at-icon) ease-(--at-icon-ease) motion-reduce:transition-none sm:size-7 min-[960px]:hidden",
                       isOpen && "-rotate-180"
                     )}
                   >
@@ -267,7 +297,7 @@ export function AccordionTabs({
                             <a
                               key={link.label}
                               href={link.href}
-                              className="inline-flex max-w-full items-center rounded-[4px] border border-transparent bg-(--at-active) px-3 py-3 text-base leading-none text-[color-mix(in_srgb,var(--at-text)_70%,transparent)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-(--at-hover) min-[960px]:bg-white min-[960px]:px-[13px] [@media(hover:hover)]:hover:border-(--at-text) [@media(hover:hover)]:hover:text-(--at-text)"
+                              className="inline-flex max-w-full items-center rounded-[4px] border border-transparent bg-(--at-active) px-3 py-3 text-base leading-none text-[color-mix(in_srgb,var(--at-text)_70%,transparent)] transition-colors duration-(--at-chip) ease-(--at-chip-ease) outline-none focus-visible:ring-2 focus-visible:ring-(--at-hover) min-[960px]:bg-white min-[960px]:px-[13px] [@media(hover:hover)]:hover:border-(--at-text) [@media(hover:hover)]:hover:text-(--at-text)"
                             >
                               {link.label}
                             </a>
@@ -321,7 +351,7 @@ export function AccordionTabs({
                       // The incoming panel fades in on top; the outgoing one
                       // stays put underneath until it's covered.
                       isOpen
-                        ? "z-10 opacity-100 transition-opacity duration-(--at-fade) ease-[cubic-bezier(0.25,1,0.5,1)]"
+                        ? "z-10 opacity-100 transition-opacity duration-(--at-fade) ease-(--at-fade-ease)"
                         : "z-0 opacity-0 transition-opacity delay-(--at-fade) duration-0"
                     )}
                     style={{ background: item.mediaBackground ?? "var(--at-media-bg)" }}

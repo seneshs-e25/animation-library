@@ -30,6 +30,16 @@ type AwardsCarouselProps = Omit<React.ComponentProps<"div">, "children"> & {
   radius?: number;
   /** Time the row takes to move one card, in ms. */
   duration?: number;
+  /** Easing of the row, any CSS timing function. */
+  ease?: string;
+  /** Time a dot takes to widen and brighten, in ms. */
+  dotDuration?: number;
+  /** Easing of the dots, any CSS timing function. */
+  dotEase?: string;
+  /** Time an arrow takes to dim, tint on hover or dip on press, in ms. */
+  arrowDuration?: number;
+  /** Easing of the arrows, any CSS timing function. */
+  arrowEase?: string;
   /** Colour of the glow in the top-right of each card. */
   glowTop?: string;
   /** Colour of the glow along the bottom-left of each card. */
@@ -76,13 +86,18 @@ function useMediaQuery(query: string) {
  * - The track is a flex row inside a viewport with `overflow: visible`, so
  *   the next card peeks past the content edge; the root clips it at the
  *   section edge. Changing slide moves the track with `translate3d` by
- *   `index × (cardWidth + gap)` over 600ms `ease` (Swiper's defaults).
+ *   `index × (cardWidth + gap)` over `duration` (600ms) on `ease` (a strong
+ *   ease-in-out by default; the original uses Swiper's default CSS `ease`).
  * - From 992px it shows as many whole cards as fit and stops when the last
  *   card is in view; the arrow at that end dims to 35% and disables.
  * - Below 992px the arrows hide and swipe plus a row of pill dots move
- *   between cards. Cards keep their width (capped at the row width), so on
- *   tablets two or more show with the next one peeking, and on phones one
- *   card fills the row with the next peeking past the edge.
+ *   between cards (`dotDuration` 300ms on `dotEase`,
+ *   cubic-bezier(0.77, 0, 0.175, 1)). Cards keep their width (capped at the
+ *   row width), so on tablets two or more show with the next one peeking,
+ *   and on phones one card fills the row with the next peeking past the
+ *   edge.
+ * - Arrows dim, tint on hover and dip on press over `arrowDuration` (200ms)
+ *   on `arrowEase` (cubic-bezier(0.23, 1, 0.32, 1)).
  * - Left/Right keys work while focus is inside. Tabbing to a card link that
  *   is out of view scrolls the row to it.
  *
@@ -97,6 +112,11 @@ export function AwardsCarousel({
   mediaHeight = 200,
   radius = 20,
   duration = 600,
+  ease = "cubic-bezier(0.77, 0, 0.175, 1)",
+  dotDuration = 300,
+  dotEase = "cubic-bezier(0.77, 0, 0.175, 1)",
+  arrowDuration = 200,
+  arrowEase = "cubic-bezier(0.23, 1, 0.32, 1)",
   glowTop = "#E3308C",
   glowBottom = "#A309BB",
   color = "#410051",
@@ -208,6 +228,11 @@ export function AwardsCarousel({
           "--ac-media-h": `${mediaHeight}px`,
           "--ac-radius": `${radius}px`,
           "--ac-duration": `${duration}ms`,
+          "--ac-ease": ease,
+          "--ac-dot-duration": `${dotDuration}ms`,
+          "--ac-dot-ease": dotEase,
+          "--ac-arrow-duration": `${arrowDuration}ms`,
+          "--ac-arrow-ease": arrowEase,
           "--ac-color": color,
           "--ac-arrow": arrowColor,
           "--ac-max": `${maxWidth}px`,
@@ -223,7 +248,7 @@ export function AwardsCarousel({
       {...props}
     >
       <style>{`
-${s} [data-track]{transform:translate3d(calc(var(--ac-offset,calc(var(--ac-i) * -1 * (var(--ac-card) + var(--ac-gap)))) + var(--ac-drag)),0,0);transition:transform var(--ac-duration) ease}
+${s} [data-track]{transform:translate3d(calc(var(--ac-offset,calc(var(--ac-i) * -1 * (var(--ac-card) + var(--ac-gap)))) + var(--ac-drag)),0,0);transition:transform var(--ac-duration) var(--ac-ease)}
 ${s} [data-slide]{width:min(var(--ac-card),100%)}
 ${s} [data-track][data-dragging]{transition:none}
 @media (prefers-reduced-motion:reduce){${s} [data-track]{transition:none}}`}</style>
@@ -317,7 +342,7 @@ ${s} [data-track][data-dragging]{transition:none}
                 aria-current={i === current ? "true" : undefined}
                 onClick={() => go(i)}
                 className={cn(
-                  "h-2.5 rounded-[10px] bg-(--ac-color) transition-[width,opacity] duration-300 ease-in-out",
+                  "h-2.5 rounded-[10px] bg-(--ac-color) transition-[width,opacity] duration-(--ac-dot-duration) ease-(--ac-dot-ease)",
                   i === current ? "w-[30px]" : "w-2.5 opacity-20",
                 )}
               />
@@ -346,7 +371,7 @@ function ArrowButton({
       onClick={onClick}
       className={cn(
         "flex h-[70px] w-[120px] items-center justify-center rounded-[45px] border border-[rgba(160,160,160,0.3)] text-(--ac-arrow) outline-none",
-        "transition-[opacity,background-color,scale] duration-200 ease-out disabled:opacity-35",
+        "transition-[opacity,background-color,scale] duration-(--ac-arrow-duration) ease-(--ac-arrow-ease) disabled:opacity-35",
         "focus-visible:ring-2 focus-visible:ring-(--ac-color) focus-visible:ring-offset-2",
         "enabled:active:scale-[0.97] enabled:[@media(hover:hover)]:hover:bg-[rgba(160,160,160,0.08)]",
       )}

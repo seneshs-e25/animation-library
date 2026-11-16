@@ -15,6 +15,11 @@ type RisingHeadlineProps = Omit<React.HTMLAttributes<HTMLElement>, "children"> &
   stagger?: number;
   /** Seconds each letter takes to fill and rise. */
   duration?: number;
+  /**
+   * Easing for each letter, as a CSS timing function (`cubic-bezier(...)` or
+   * a keyword). The default is GSAP's `power2.out`, the original's ease.
+   */
+  ease?: string;
   /** How far each letter rises, in px. */
   distance?: number;
 };
@@ -44,7 +49,8 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffec
  *   `prefers-reduced-motion: no-preference`, and a `<noscript>` rule shows
  *   the text when JavaScript is off.
  * - One GSAP tween runs `clip-path` + `y` on every letter with a per-letter
- *   stagger, then clears the inline styles.
+ *   stagger, then clears the inline styles. The ease is a CSS cubic-bezier,
+ *   turned into an easing function for GSAP by `cssEase` below.
  *
  * Reduced motion: the text is shown in place, no motion.
  */
@@ -54,6 +60,7 @@ export function RisingHeadline({
   trigger = "load",
   stagger = 0.11,
   duration = 1.2,
+  ease = "cubic-bezier(0.33, 1, 0.68, 1)",
   distance = 32,
   className,
   style,
@@ -84,7 +91,7 @@ export function RisingHeadline({
           y: 0,
           duration,
           stagger,
-          ease: "power2.out",
+          ease: cssEase(ease) ?? ease,
           paused: true,
           onComplete: () => {
             finish();
@@ -110,7 +117,7 @@ export function RisingHeadline({
     }, root);
 
     return () => ctx.revert();
-  }, [text, trigger, stagger, duration, distance]);
+  }, [text, trigger, stagger, duration, ease, distance]);
 
   const s = `[data-rising-headline="${id}"]`;
 
@@ -152,4 +159,38 @@ export function RisingHeadline({
       </span>
     </Tag>
   );
+}
+
+const CSS_KEYWORDS: Record<string, number[]> = {
+  linear: [0, 0, 1, 1],
+  ease: [0.25, 0.1, 0.25, 1],
+  "ease-in": [0.42, 0, 1, 1],
+  "ease-out": [0, 0, 0.58, 1],
+  "ease-in-out": [0.42, 0, 0.58, 1],
+};
+
+/**
+ * A CSS timing function (`cubic-bezier(x1, y1, x2, y2)` or a keyword) as an
+ * easing function, since GSAP can't read CSS curves without CustomEase.
+ * Solves the curve's x for t by bisection. Anything else returns undefined
+ * (so a GSAP ease name like "power2.out" can still be passed straight through).
+ */
+function cssEase(css: string): ((t: number) => number) | undefined {
+  const m = css.trim().match(/^cubic-bezier\(([^)]*)\)$/);
+  const p = m ? m[1].split(",").map(Number) : CSS_KEYWORDS[css.trim()];
+  if (!p || p.length !== 4 || p.some((n) => !Number.isFinite(n))) return undefined;
+  const [x1, y1, x2, y2] = p;
+  const at = (a: number, b: number, s: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3;
+  return (t) => {
+    if (t <= 0 || t >= 1) return t <= 0 ? 0 : 1;
+    let lo = 0;
+    let hi = 1;
+    let s = t;
+    for (let i = 0; i < 24; i++) {
+      s = (lo + hi) / 2;
+      if (at(x1, x2, s) < t) lo = s;
+      else hi = s;
+    }
+    return at(y1, y2, s);
+  };
 }

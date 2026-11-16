@@ -1,6 +1,7 @@
-import type { AssetSlot, Control, ControlValues, RegistryEntry } from "@/registry/types";
+import { pointsLiteral, type AssetSlot, type Control, type ControlValues, type RegistryEntry } from "@/registry/types";
 
 function formatProp(control: Control, value: ControlValues[string]) {
+  if (control.type === "points") return `${control.name}={${pointsLiteral(String(value))}}`;
   if (typeof value === "string") return `${control.name}="${value}"`;
   if (value === true) return control.name;
   return `${control.name}={${value}}`;
@@ -86,6 +87,7 @@ function fillTokens(text: string, entry: RegistryEntry, values: ControlValues) {
       const control = entry.controls.find((c) => c.name === name);
       if (!control) return match;
       const raw = values[name] ?? control.default;
+      if (control.type === "points") return pointsLiteral(String(raw));
       if (mul) return String(Math.round((Number(raw) * Number(mul)) / Number(div ?? 1)));
       const value = String(raw);
       if (!cases) return value;
@@ -209,7 +211,7 @@ function buildMotionPrompt(entry: RegistryEntry, sources: Source[], values: Cont
           "Use the component as written. Its motion is the code itself, so don't rewrite it in CSS, a canvas 2D loop or an animation library. Tune it only through its props.",
         ]
       : [
-          "Match the motion spec exactly: the same properties, values, durations and easing curves. Don't change them unless I ask.",
+          "Match the motion exactly: the same properties, values, durations and easing curves. Don't change them unless I ask. On an existing component, this applies to the motion only; its sizes, styles, layout and behaviour stay its own (see How to apply).",
           entry.dependencies?.length
             ? `Use ${entry.dependencies.join(" and ")} as the reference implementation does. Don't swap it for a different animation library or rebuild it in plain CSS.`
             : "Use CSS transitions or plain JS. Don't add an animation library.",
@@ -219,12 +221,17 @@ function buildMotionPrompt(entry: RegistryEntry, sources: Source[], values: Cont
 
   const apply = m.apply
     ? bullets(m.apply.map(f))
-    : `- **If the site already has the element this belongs on** (its own button, card or section component), add this motion to that element using the site's existing styling approach. Keep its markup, colours and spacing, and only add what the motion needs.
-- **If there's nothing suitable**, add the reference component below and use it.`;
+    : `- **If the site already has this component** (its own carousel, button, card, tabs or section), this is a motion transfer only. Add the motion to that component and change nothing else:
+  - **Transfer** what moves and how: which properties animate, their from/to values, durations, easing curves, delays and stagger, triggers, interruption handling and reduced motion.
+  - **Don't transfer** anything else in the spec or the reference code: element sizes, control styles (arrows, dots, buttons), wrappers, widths, gaps, breakpoints, colours, or behaviour like looping, autoplay rules or where the controls sit. Those describe the reference component's look, not the motion.
+  - **Keep the component as it is**: don't add, remove, move or restyle its elements, and don't change its behaviour. Its existing controls keep their markup and styles and only gain the transitions the motion needs.
+  - **If the motion can't work without a structural change** (for example a wrapper for a sliding track), make the smallest change that works. If it would change how the component looks or behaves, stop and ask me before making it.
+  - **In your final report**, list every change that isn't motion (markup, styles, behaviour). Expect that list to be empty.
+- **If the site doesn't have this component**, add the reference component below and use it, with its full spec: motion, look and behaviour.`;
 
   const intro = required
     ? "The spec below describes what it does and what each setting controls. The motion lives in the code, so the component is used as written; the site's own content and layout stay as they are."
-    : "The motion below is the requirement. The site's own fonts, spacing and markup stay as they are; colours are covered in the spec.";
+    : "The motion below is the requirement. If the site already has this component, only the motion moves across and everything else about it stays as it is (see How to apply). The site's own fonts and spacing stay as they are; colours are covered in the spec.";
 
   const codeIntro = required
     ? `## Implementation (use as written)
@@ -237,7 +244,7 @@ React + Tailwind CSS v4. It's a working example of the spec; adapt it to the sit
   return `# ${entry.title}: animation brief
 
 Add the "${entry.title}" animation to this site. ${f(m.intent)}
-${entry.source ? `\nSeen live on ${entry.source}.${entry.recreated ? ` The spec was recreated by studying that site (it runs on ${entry.recreated}), not ported from its source code.` : ""} Open it to compare the motion if anything in the spec is unclear.\n` : ""}
+
 ${intro}
 
 ## Motion spec
@@ -290,7 +297,7 @@ function buildInstallPrompt(entry: RegistryEntry, sources: Source[], values: Con
   return `Add the "${entry.title}" animation to this project.
 
 ${entry.description}.
-${entry.source ? `\nSeen live on ${entry.source}${entry.recreated ? ` (recreated from the live site, which runs on ${entry.recreated})` : ""}.\n` : ""}
+
 Stack: React + Tailwind CSS v4 (Next.js App Router). If the project uses a different setup, adapt the component while keeping the same motion.
 ${deps}
 Create the following file${sources.length > 1 ? "s" : ""} in an \`animations\` folder inside the project's components directory (e.g. \`src/components/animations/\` if the project uses \`src/\`):

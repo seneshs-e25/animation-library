@@ -16,8 +16,11 @@ type CountUpProps = Omit<React.ComponentProps<"span">, "prefix"> & {
    * row of stats `delay={index * duration}` to count them one after another.
    */
   delay?: number;
-  /** "linear" (the original: constant speed) or "ease-out" (slows into the final value). */
-  easing?: "linear" | "ease-out";
+  /**
+   * Easing of the count, as a CSS timing function (`cubic-bezier(...)` or a
+   * keyword). "linear" is the original: constant speed.
+   */
+  easing?: string;
   /** How much of the number must be visible to start, 0–1. */
   threshold?: number;
 };
@@ -35,7 +38,9 @@ const decimalsOf = (n: number) => (String(n).split(".")[1] ?? "").length;
  * reduced motion) the reader just sees it. On hydration the number is zeroed
  * before paint, so a reader scrolling down meets 0 and watches it count, not
  * the final figure snapping back. Only the number's own text is rewritten,
- * once per frame with requestAnimationFrame; the prefix and suffix never change.
+ * once per frame with requestAnimationFrame, over `duration` ms on the `easing`
+ * curve (a CSS timing function, solved in JS by `cssEase`); the prefix and
+ * suffix never change.
  *
  * Screen readers get the final value once (visually hidden copy); the
  * counting digits are aria-hidden so they aren't announced frame by frame.
@@ -67,11 +72,12 @@ export function CountUp({
     let raf = 0;
     let timer = 0;
 
+    const ease = cssEase(easing) ?? ((t: number) => t);
     const run = () => {
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min((now - start) / duration, 1);
-        const eased = easing === "ease-out" ? 1 - Math.pow(1 - t, 3) : t;
+        const eased = ease(t);
         el.textContent = (value * eased).toFixed(decimals);
         if (t < 1) raf = requestAnimationFrame(tick);
       };
@@ -115,4 +121,37 @@ export function CountUp({
       </span>
     </span>
   );
+}
+
+const CSS_KEYWORDS: Record<string, number[]> = {
+  linear: [0, 0, 1, 1],
+  ease: [0.25, 0.1, 0.25, 1],
+  "ease-in": [0.42, 0, 1, 1],
+  "ease-out": [0, 0, 0.58, 1],
+  "ease-in-out": [0.42, 0, 0.58, 1],
+};
+
+/**
+ * A CSS timing function (`cubic-bezier(x1, y1, x2, y2)` or a keyword) as an
+ * easing function for the requestAnimationFrame count. Solves the curve's x
+ * for t by bisection. Anything it can't read returns undefined (linear).
+ */
+function cssEase(css: string): ((t: number) => number) | undefined {
+  const m = css.trim().match(/^cubic-bezier\(([^)]*)\)$/);
+  const p = m ? m[1].split(",").map(Number) : CSS_KEYWORDS[css.trim()];
+  if (!p || p.length !== 4 || p.some((n) => !Number.isFinite(n))) return undefined;
+  const [x1, y1, x2, y2] = p;
+  const at = (a: number, b: number, s: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3;
+  return (t) => {
+    if (t <= 0 || t >= 1) return t <= 0 ? 0 : 1;
+    let lo = 0;
+    let hi = 1;
+    let s = t;
+    for (let i = 0; i < 24; i++) {
+      s = (lo + hi) / 2;
+      if (at(x1, x2, s) < t) lo = s;
+      else hi = s;
+    }
+    return at(y1, y2, s);
+  };
 }

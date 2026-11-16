@@ -30,6 +30,8 @@ type ScrollTextRevealProps = Omit<React.HTMLAttributes<HTMLElement>, "children">
   riseDistance?: number;
   /** Duration of the rise, in ms. */
   riseDuration?: number;
+  /** Easing of the rise, as a CSS timing function. */
+  riseEasing?: string;
 };
 
 /** How much of the text must be showing before the rise plays (as in the original). */
@@ -53,7 +55,8 @@ const RISE_THRESHOLD = 0.2;
  *   some of ~100 concurrent scroll-driven animations at their first frame),
  *   get the same sweep from a passive scroll listener that writes each
  *   span's opacity once per frame, as the original does.
- * - The block also fades up 48px over 1.4s the first time 20% of it is in
+ * - The block also fades up (`riseDistance` px over `riseDuration` ms on
+ *   `riseEasing`; 48px, 1400ms by default) the first time 20% of it is in
  *   view. It's only hidden after hydration, and only if it starts fully off
  *   screen, so the server HTML always shows the text and nothing flashes.
  *
@@ -70,6 +73,7 @@ export function ScrollTextReveal({
   rise = true,
   riseDistance = 48,
   riseDuration = 1400,
+  riseEasing = "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
   className,
   style,
   ...props
@@ -181,6 +185,7 @@ export function ScrollTextReveal({
           "--str-dim": dimOpacity,
           "--str-rise": `${riseDistance}px`,
           "--str-rise-duration": `${riseDuration}ms`,
+          "--str-rise-ease": riseEasing,
           ...style,
         } as React.CSSProperties
       }
@@ -196,7 +201,7 @@ export function ScrollTextReveal({
 ${s} [data-unit]{opacity:var(--str-dim);animation:str-fill 1ms linear both;animation-timeline:${timelineName};animation-range:cover var(--f) cover var(--t)}
 }
 ${s}[data-rise=pending]>[data-lines]{opacity:0;translate:0 var(--str-rise)}
-${s}[data-rise=shown]>[data-lines]{animation:str-rise var(--str-rise-duration) cubic-bezier(.25,.46,.45,.94) both}
+${s}[data-rise=shown]>[data-lines]{animation:str-rise var(--str-rise-duration) var(--str-rise-ease) both}
 }`}</style>
       <span className="sr-only">{text.replace(/\n/g, " ")}</span>
       <span ref={linesRef} aria-hidden data-lines className="block">

@@ -24,8 +24,18 @@ type StepTabsProps = Omit<React.ComponentProps<"div">, "children"> & {
   defaultIndex?: number;
   /** Crossfade between cards, in ms. */
   fadeDuration?: number;
+  /** Card crossfade easing, a CSS timing function. The original (Swiper fade): ease. */
+  fadeEase?: string;
   /** Image slide-in, in ms. */
   slideDuration?: number;
+  /** Image slide easing. The original: easeOutCubic, cubic-bezier(0.33, 1, 0.68, 1). */
+  slideEase?: string;
+  /** Pill change: gradient fade, label colour, border and shadow, icon whitening, in ms. */
+  tabDuration?: number;
+  /** Pill change easing. The original: cubic-bezier(0.23, 1, 0.32, 1). */
+  tabEase?: string;
+  /** Easing of the icon whitening on the active pill. The original: cubic-bezier(0.4, 0, 0.2, 1). */
+  iconEase?: string;
   /** How far right the image starts, as a % of its own width. */
   slideOffset?: number;
   /** Show the dotted gradient line between pills. */
@@ -54,12 +64,15 @@ type StepTabsProps = Omit<React.ComponentProps<"div">, "children"> & {
  * How it works:
  * - The active tab is the only state. Every card sits in the same grid cell,
  *   so the stack is as tall as the tallest card and never jumps.
- * - Cards crossfade on `opacity` ({fadeDuration}ms `ease`, Swiper's fade).
+ * - Cards crossfade on `opacity` (`fadeDuration`, 600ms, on `fadeEase`,
+ *   CSS `ease`, Swiper's fade).
  *   The image inside each card moves on `transform` (`translateX(offset%)` →
- *   0, {slideDuration}ms easeOutCubic) inside a clipped, rounded box, both
+ *   0, `slideDuration`, 700ms, on `slideEase`, easeOutCubic) inside a clipped, rounded box, both
  *   ways, so a fast click retargets from wherever it is.
  * - Tabs follow the WAI-ARIA tabs pattern: arrow keys, Home and End move
  *   between tabs; inactive panels are `inert`.
+ * - The pills change over `tabDuration` (300ms) on `tabEase`; an `img` icon
+ *   whitens over the same 300ms on `iconEase`.
  *
  * Reduced motion: the crossfade stays, the image doesn't slide.
  */
@@ -67,7 +80,12 @@ export function StepTabs({
   items,
   defaultIndex = 0,
   fadeDuration = 600,
+  fadeEase = "ease",
   slideDuration = 700,
+  slideEase = "cubic-bezier(0.33, 1, 0.68, 1)",
+  tabDuration = 300,
+  tabEase = "cubic-bezier(0.23, 1, 0.32, 1)",
+  iconEase = "cubic-bezier(0.4, 0, 0.2, 1)",
   slideOffset = 80,
   connectors = true,
   accentFrom = "#410051",
@@ -121,7 +139,12 @@ export function StepTabs({
       style={
         {
           "--st-fade": `${fadeDuration}ms`,
+          "--st-fade-ease": fadeEase,
           "--st-slide": `${slideDuration}ms`,
+          "--st-slide-ease": slideEase,
+          "--st-tab": `${tabDuration}ms`,
+          "--st-tab-ease": tabEase,
+          "--st-icon-ease": iconEase,
           "--st-offset": `${slideOffset}%`,
           "--st-from": accentFrom,
           "--st-to": accentTo,
@@ -135,7 +158,7 @@ export function StepTabs({
       {...props}
     >
       <style>{`
-[data-step-tabs="${id}"] [data-media]{transform:translateX(var(--st-offset));transition:transform var(--st-slide) cubic-bezier(.33,1,.68,1)}
+[data-step-tabs="${id}"] [data-media]{transform:translateX(var(--st-offset));transition:transform var(--st-slide) var(--st-slide-ease)}
 [data-step-tabs="${id}"] [data-active] [data-media]{transform:none}
 @media (prefers-reduced-motion:reduce){[data-step-tabs="${id}"] [data-media]{transform:none;transition:none}}`}</style>
 
@@ -164,7 +187,7 @@ export function StepTabs({
                 tabIndex={selected ? 0 : -1}
                 onClick={() => setActive(i)}
                 className={cn(
-                  "relative isolate flex min-h-10 shrink-0 cursor-pointer items-center gap-[5px] rounded-full border border-[rgb(65_0_81/0.1)] bg-white px-[13px] py-[9px] outline-none transition-[border-color,box-shadow] duration-300 ease-out focus-visible:ring-2 focus-visible:ring-(--st-to) focus-visible:ring-offset-2 md:min-h-14 md:gap-[15px] md:px-[29px] md:py-[11px] min-[1200px]:px-[30px] min-[1200px]:py-[15px]",
+                  "relative isolate flex min-h-10 shrink-0 cursor-pointer items-center gap-[5px] rounded-full border border-[rgb(65_0_81/0.1)] bg-white px-[13px] py-[9px] outline-none transition-[border-color,box-shadow] duration-(--st-tab) ease-(--st-tab-ease) focus-visible:ring-2 focus-visible:ring-(--st-to) focus-visible:ring-offset-2 md:min-h-14 md:gap-[15px] md:px-[29px] md:py-[11px] min-[1200px]:px-[30px] min-[1200px]:py-[15px]",
                   selected && "border-transparent shadow-[0_5px_20px_rgb(65_0_81/0.4)]"
                 )}
               >
@@ -172,7 +195,7 @@ export function StepTabs({
                 <span
                   aria-hidden
                   className={cn(
-                    "absolute -inset-px -z-10 rounded-full bg-[linear-gradient(90deg,var(--st-from)_0%,var(--st-to)_100%)] transition-opacity duration-300 ease-out",
+                    "absolute -inset-px -z-10 rounded-full bg-[linear-gradient(90deg,var(--st-from)_0%,var(--st-to)_100%)] transition-opacity duration-(--st-tab) ease-(--st-tab-ease)",
                     selected ? "opacity-100" : "opacity-0"
                   )}
                 />
@@ -180,7 +203,7 @@ export function StepTabs({
                   <span
                     aria-hidden
                     className={cn(
-                      "flex w-[15px] shrink-0 md:w-[26px] *:h-auto *:w-full [&_img]:transition-[filter] [&_img]:duration-300",
+                      "flex w-[15px] shrink-0 md:w-[26px] *:h-auto *:w-full [&_img]:transition-[filter] [&_img]:duration-(--st-tab) [&_img]:ease-(--st-icon-ease)",
                       selected && "[&_img]:brightness-0 [&_img]:invert"
                     )}
                   >
@@ -189,7 +212,7 @@ export function StepTabs({
                 )}
                 <span
                   className={cn(
-                    "text-xs leading-[1.4] font-semibold whitespace-nowrap transition-colors duration-300 ease-out md:text-base md:font-bold",
+                    "text-xs leading-[1.4] font-semibold whitespace-nowrap transition-colors duration-(--st-tab) ease-(--st-tab-ease) md:text-base md:font-bold",
                     selected ? "text-white" : "text-(--st-label)",
                     tabClassName
                   )}
@@ -226,7 +249,7 @@ export function StepTabs({
               inert={!selected}
               data-active={selected || undefined}
               className={cn(
-                "col-start-1 row-start-1 grid min-w-0 grid-cols-1 items-start rounded-[20px] border border-(--st-border) bg-(--st-card) shadow-[0_10px_30px_rgb(65_0_81/0.2)] transition-opacity duration-(--st-fade) ease-[ease] md:grid-cols-2 min-[992px]:grid-cols-[5fr_7fr]",
+                "col-start-1 row-start-1 grid min-w-0 grid-cols-1 items-start rounded-[20px] border border-(--st-border) bg-(--st-card) shadow-[0_10px_30px_rgb(65_0_81/0.2)] transition-opacity duration-(--st-fade) ease-(--st-fade-ease) md:grid-cols-2 min-[992px]:grid-cols-[5fr_7fr]",
                 selected ? "z-10 opacity-100" : "opacity-0"
               )}
             >

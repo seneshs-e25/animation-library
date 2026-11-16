@@ -20,7 +20,11 @@ type LineMaskRevealProps = Omit<React.HTMLAttributes<HTMLElement>, "children"> &
   stagger?: number;
   /** Seconds each line takes to slide up. */
   duration?: number;
-  /** GSAP ease for each line. */
+  /**
+   * Easing for each line, as a CSS timing function (`cubic-bezier(...)` or a
+   * keyword). The default is GSAP's `power4.out`, the original's ease. A GSAP
+   * ease name (e.g. "expo.out") also works.
+   */
   ease?: string;
   /** Which line leads the stagger. */
   from?: "start" | "center" | "end" | "random";
@@ -42,7 +46,8 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffec
  * - Lines are pushed down 125% of their own height inside their mask (the
  *   mask is padded 0.12em so descenders survive tight leading, so 110% would
  *   leave a sliver showing), then
- *   one staggered tween brings them to 0.
+ *   one staggered tween brings them to 0. The ease is a CSS cubic-bezier,
+ *   turned into an easing function for GSAP by `cssEase` below.
  * - Before hydration the element is `visibility: hidden` (lines don't exist
  *   until it's measured), only under `prefers-reduced-motion: no-preference`;
  *   a `<noscript>` rule shows it when JavaScript is off.
@@ -56,7 +61,7 @@ export function LineMaskReveal({
   replay = true,
   stagger = 0.12,
   duration = 1,
-  ease = "power4.out",
+  ease = "cubic-bezier(0.22, 1, 0.36, 1)",
   from = "start",
   className,
   ...props
@@ -85,7 +90,7 @@ export function LineMaskReveal({
         tween = gsap.fromTo(
           self.lines,
           { yPercent: 125 },
-          { yPercent: 0, duration, ease, stagger: { each: stagger, from }, paused: !shown },
+          { yPercent: 0, duration, ease: cssEase(ease) ?? ease, stagger: { each: stagger, from }, paused: !shown },
         );
         // A finished paragraph that re-wraps into more lines stays finished.
         if (wasDone) return void tween.progress(1);
@@ -141,4 +146,38 @@ export function LineMaskReveal({
       </Tag>
     </>
   );
+}
+
+const CSS_KEYWORDS: Record<string, number[]> = {
+  linear: [0, 0, 1, 1],
+  ease: [0.25, 0.1, 0.25, 1],
+  "ease-in": [0.42, 0, 1, 1],
+  "ease-out": [0, 0, 0.58, 1],
+  "ease-in-out": [0.42, 0, 0.58, 1],
+};
+
+/**
+ * A CSS timing function (`cubic-bezier(x1, y1, x2, y2)` or a keyword) as an
+ * easing function, since GSAP can't read CSS curves without CustomEase.
+ * Solves the curve's x for t by bisection. Anything else returns undefined
+ * (so a GSAP ease name like "power2.out" can still be passed straight through).
+ */
+function cssEase(css: string): ((t: number) => number) | undefined {
+  const m = css.trim().match(/^cubic-bezier\(([^)]*)\)$/);
+  const p = m ? m[1].split(",").map(Number) : CSS_KEYWORDS[css.trim()];
+  if (!p || p.length !== 4 || p.some((n) => !Number.isFinite(n))) return undefined;
+  const [x1, y1, x2, y2] = p;
+  const at = (a: number, b: number, s: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3;
+  return (t) => {
+    if (t <= 0 || t >= 1) return t <= 0 ? 0 : 1;
+    let lo = 0;
+    let hi = 1;
+    let s = t;
+    for (let i = 0; i < 24; i++) {
+      s = (lo + hi) / 2;
+      if (at(x1, x2, s) < t) lo = s;
+      else hi = s;
+    }
+    return at(y1, y2, s);
+  };
 }

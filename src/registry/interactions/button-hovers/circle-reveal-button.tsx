@@ -10,8 +10,10 @@ type CircleRevealButtonProps = Omit<React.ComponentProps<"a">, "color"> & {
   gradientTo?: string;
   /** Label color. */
   textColor?: string;
-  /** Reveal duration in milliseconds. */
+  /** Reveal duration in milliseconds, in and out. */
   duration?: number;
+  /** Reveal easing (any CSS timing function), in and out. */
+  easing?: string;
 };
 
 /**
@@ -23,6 +25,7 @@ type CircleRevealButtonProps = Omit<React.ComponentProps<"a">, "color"> & {
  * percentage radius is measured against the box diagonal, so 100% always
  * reaches every corner regardless of the button's width. `clip-path` is
  * composited, so the reveal doesn't trigger layout or paint on the pill.
+ * Timing is `duration` and `easing`, the same both ways.
  */
 export function CircleRevealButton({
   color = "#E3308C",
@@ -30,6 +33,7 @@ export function CircleRevealButton({
   gradientTo = "#E3308C",
   textColor = "#FFFFFF",
   duration = 500,
+  easing = "cubic-bezier(0.4, 0, 0.2, 1)",
   className,
   style,
   children,
@@ -50,6 +54,7 @@ export function CircleRevealButton({
           "--reveal-to": gradientTo,
           "--reveal-text": textColor,
           "--reveal-duration": `${duration}ms`,
+          "--reveal-ease": easing,
           ...style,
         } as React.CSSProperties
       }
@@ -61,7 +66,7 @@ export function CircleRevealButton({
           "pointer-events-none absolute inset-0 -z-10",
           "bg-[linear-gradient(315deg,var(--reveal-from)_0%,var(--reveal-to)_100%)]",
           "[clip-path:circle(0%_at_50%_50%)] will-change-[clip-path]",
-          "transition-[clip-path] duration-(--reveal-duration) ease-[cubic-bezier(0.4,0,0.2,1)]",
+          "transition-[clip-path] duration-(--reveal-duration) ease-(--reveal-ease)",
           "group-hover:[clip-path:circle(100%_at_50%_50%)] group-focus-visible:[clip-path:circle(100%_at_50%_50%)]",
           "motion-reduce:transition-none"
         )}

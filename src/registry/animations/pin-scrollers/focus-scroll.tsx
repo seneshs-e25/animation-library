@@ -22,12 +22,16 @@ type FocusScrollProps = Omit<React.ComponentProps<"div">, "children"> & {
   gap?: number;
   /** Which side the pinned media sits on. The original: left. */
   mediaSide?: "left" | "right";
-  /** Crossfade between media, in ms. */
+  /** Crossfade between media (and text dimming), in ms. */
   duration?: number;
+  /** Crossfade easing, a CSS timing function. The original: cubic-bezier(0.4, 0, 0.2, 1). */
+  ease?: string;
   /** Opacity of text blocks that are out of focus. 1 = no dimming (the original). */
   inactiveOpacity?: number;
   /** Time the phone carousel takes to move one card, in ms. */
   slideDuration?: number;
+  /** Easing for the phone carousel move and progress fill, a CSS timing function. The original: ease. */
+  slideEase?: string;
   /** Colours for the phone cards and progress bar: "dark" for dark sections, "light" for light ones. */
   theme?: "dark" | "light";
 };
@@ -54,8 +58,8 @@ const EDGE_FRICTION = 0.35;
  * How it works:
  * - From 720px wide, the media sit stacked in a sticky column: the active
  *   one is in the flow (so the column takes its height), the others are
- *   absolute and transparent. Changing focus fades opacity over 500ms
- *   cubic-bezier(0.4, 0, 0.2, 1).
+ *   absolute and transparent. Changing focus fades opacity over `duration`
+ *   (500ms) on `ease` (cubic-bezier(0.4, 0, 0.2, 1)).
  * - Each text block has a focus zone, as in the original's ScrollTrigger:
  *   it starts when the block's top reaches `stickyTop - 10 + height/4` and
  *   ends when its bottom reaches `stickyTop - 10 + height/2`. Scrolling down
@@ -65,9 +69,9 @@ const EDGE_FRICTION = 0.35;
  * - A passive scroll listener checks zones once per animation frame and only
  *   sets state when the active block changes.
  * - Below 720px: each item is a card (media 191px tall, then text) in a row
- *   that moves one card with `translateX` over 500ms `ease`; the next card
- *   peeks in on the right. A progress bar under it fills to
- *   (index + 1) / count over the same 500ms.
+ *   that moves one card with `translateX` over `slideDuration` (500ms) on
+ *   `slideEase` (`ease`); the next card peeks in on the right. A progress
+ *   bar under it fills to (index + 1) / count with the same timing.
  *
  * Breakpoints are container queries on the component's own width, set to
  * the original's container widths: 720px (pinned layout), 960px and 1220px.
@@ -81,8 +85,10 @@ export function FocusScroll({
   gap = 80,
   mediaSide = "left",
   duration = 500,
+  ease = "cubic-bezier(0.4, 0, 0.2, 1)",
   inactiveOpacity = 1,
   slideDuration = 500,
+  slideEase = "ease",
   theme = "dark",
   className,
   style,
@@ -179,7 +185,6 @@ export function FocusScroll({
   }, [count]);
 
   const s = `[data-focus-scroll="${id}"]`;
-  const ease = "cubic-bezier(.4,0,.2,1)";
   const reverse = mediaSide === "right";
 
   return (
@@ -192,6 +197,7 @@ export function FocusScroll({
           "--focus-media-w": `${mediaWidth}%`,
           "--focus-gap": `${gap}px`,
           "--focus-duration": `${duration}ms`,
+          "--focus-ease": ease,
           "--focus-dim": inactiveOpacity,
           ...style,
         } as React.CSSProperties
@@ -212,10 +218,10 @@ ${s} [data-carousel]{display:none}
 }
 ${s} [data-media-col]{flex:0 0 50%;position:sticky;top:var(--focus-top)}
 ${s} [data-text-col]{flex:0 0 calc(50% - 40px)}
-${s} [data-media]{position:absolute;inset:0 auto auto 0;width:100%;opacity:0;pointer-events:none;transition:opacity var(--focus-duration) ${ease}}
+${s} [data-media]{position:absolute;inset:0 auto auto 0;width:100%;opacity:0;pointer-events:none;transition:opacity var(--focus-duration) var(--focus-ease)}
 ${s} [data-media][data-active]{position:relative;opacity:1;pointer-events:auto}
 ${s} [data-media]>*{display:block;width:100%;height:auto;object-fit:contain}
-${s} [data-focus-block]{display:flex;flex-direction:column;flex:1;padding:40px 0;transition:opacity var(--focus-duration) ${ease}}
+${s} [data-focus-block]{display:flex;flex-direction:column;flex:1;padding:40px 0;transition:opacity var(--focus-duration) var(--focus-ease)}
 ${s} [data-focus-block]:not([data-active]){opacity:var(--focus-dim)}
 @container (min-width:960px){${s} [data-focus-block]{min-height:270px}}
 @container (min-width:1220px){
@@ -255,7 +261,7 @@ ${s} [data-focus-block][data-last]{padding-bottom:60px}
         </div>
       </div>
 
-      <FocusCarousel items={items} duration={slideDuration} theme={theme} />
+      <FocusCarousel items={items} duration={slideDuration} ease={slideEase} theme={theme} />
     </div>
   );
 }
@@ -264,10 +270,12 @@ ${s} [data-focus-block][data-last]{padding-bottom:60px}
 function FocusCarousel({
   items,
   duration,
+  ease,
   theme,
 }: {
   items: FocusScrollItem[];
   duration: number;
+  ease: string;
   theme: "dark" | "light";
 }) {
   const count = items.length;
@@ -338,7 +346,7 @@ function FocusCarousel({
               drag !== null
                 ? `translate3d(calc(${-index * 100}% + ${drag}px),0,0)`
                 : `translate3d(${-index * 100}%,0,0)`,
-            transition: drag !== null ? "none" : `transform ${duration}ms ease`,
+            transition: drag !== null ? "none" : `transform ${duration}ms ${ease}`,
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -385,7 +393,7 @@ function FocusCarousel({
         <div
           data-progress
           className={cn("h-full rounded-full", light ? "bg-[#001A47]" : "bg-white")}
-          style={{ width: `${((index + 1) / Math.max(count, 1)) * 100}%`, transition: `width ${duration}ms ease` }}
+          style={{ width: `${((index + 1) / Math.max(count, 1)) * 100}%`, transition: `width ${duration}ms ${ease}` }}
         />
       </div>
     </div>

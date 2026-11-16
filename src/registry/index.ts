@@ -1,4 +1,5 @@
 import type { Category, ControlValues, RegistryEntry } from "./types";
+import { easingOptions, easings } from "./motion";
 
 export * from "./types";
 
@@ -49,6 +50,40 @@ const hoverChecks = (state: string) => [
   `On a touch device: tapping doesn't leave the button stuck in the ${state}.`,
 ];
 
+/** The button hovers' press timing (a micro-interaction), shared by every button. */
+const pressTimingControls = [
+  { type: "number", name: "pressDuration", label: "Press", default: 160, min: 0, max: 400, step: 10, unit: "ms", secondary: true },
+  { type: "select", name: "pressEase", label: "Press easing", default: easings.out, options: easingOptions, secondary: true },
+] satisfies RegistryEntry["controls"];
+
+/** Shared button timing: separate in/out duration and curve, plus a press. */
+const buttonTimingControls = (d: { in: number; out: number; max?: number; ease?: string; exitEase?: string }) =>
+  [
+    { type: "select", name: "ease", label: "Easing in", default: d.ease ?? easings.out, options: easingOptions },
+    { type: "number", name: "duration", label: "Duration in", default: d.in, min: 0, max: d.max ?? 1000, step: 10, unit: "ms" },
+    { type: "select", name: "exitEase", label: "Easing out", default: d.exitEase ?? d.ease ?? easings.out, options: easingOptions },
+    { type: "number", name: "exitDuration", label: "Duration out", default: d.out, min: 0, max: d.max ?? 1000, step: 10, unit: "ms" },
+    { type: "number", name: "pressScale", label: "Press scale", default: 0.97, min: 0.9, max: 1, step: 0.01 },
+    ...pressTimingControls,
+  ] satisfies RegistryEntry["controls"];
+
+/** Spec wording for the press timing (`pressTimingControls`). */
+const pressTiming = "Press: {pressDuration}ms, `{pressEase}`, both ways.";
+
+/** Spec wording that goes with `buttonTimingControls`. `what` is the moving part, e.g. "Fill". */
+const buttonTiming = (what: string, exitNote = " Exits are quicker than entries so the button feels light when you leave it.") => [
+  `${what} in: {duration}ms, easing \`{ease}\`.`,
+  `${what} out: {exitDuration}ms, easing \`{exitEase}\`.${exitNote}`,
+  pressTiming,
+  "No delay.",
+];
+const buttonInterruption = (what: string) =>
+  `Use CSS transitions, not keyframe animations. Set the exit timing on the rest state and the entry timing on the hover/focus state (a transition uses the timing of the state it's heading to). If the pointer leaves mid-way, ${what} reverses from wherever it is with the exit timing; it never jumps to the start or the end.`;
+const pressState = "Press{pressScale|1= (off)|*=: on `:active` the whole button scales to `{pressScale}` and springs back on release}.";
+const pressCheck = "Press it{pressScale|1= (press scale is off: nothing should scale)|*=: it dips to {pressScale} and comes back}.";
+const noEaseIn = "Use the curves exactly as given. Never use an ease-in curve on a hover: it starts slow and feels late.";
+const timingNote = "Timing is props: `duration`/`ease` for the way in, `exitDuration`/`exitEase` for the way out, `pressDuration`/`pressEase` for the press, and `pressScale` (1 turns the press off). Easings are any CSS timing function.";
+
 /** Shared spec wording for the WebGL shader backgrounds. */
 const shader = {
   trigger:
@@ -86,79 +121,6 @@ const shader = {
  */
 export const registry: RegistryEntry[] = [
   {
-    slug: "fill-sweep",
-    title: "Fill sweep",
-    description: "Background fills from one edge while the label inverts",
-    category: "interactions",
-    group: "button-hovers",
-    level: "atom",
-    componentName: "FillSweepButton",
-    files: [
-      {
-        name: "fill-sweep-button.tsx",
-        path: "src/registry/interactions/button-hovers/fill-sweep-button.tsx",
-      },
-    ],
-    usageChildren: "Get started",
-    themeToggle: false,
-    motion: {
-      intent:
-        "A hover state for a call-to-action button. A solid fill sweeps across the button from the {direction} edge while the label colour flips so it stays readable. It should feel quick and confident: fast at the start, settling softly at the end, never bouncy.",
-      trigger: hoverTrigger("filled state"),
-      states: [
-        "Fill: a solid layer behind the label that covers the whole button. At rest it is {direction|left=`scaleX(0)` with `transform-origin: left`|bottom=`scaleY(0)` with `transform-origin: bottom`}. When active it is at scale 1.",
-        "Label: its colour changes from the rest colour to the filled colour, at the same time and on the same curve as the fill.",
-        "Nothing else moves. The button's size, border, padding and label position stay the same.",
-      ],
-      timing: [
-        "Duration: {duration}ms for both the fill and the label colour, in and out.",
-        "Easing: `cubic-bezier(0.23, 1, 0.32, 1)` (a strong ease-out) for both.",
-        "No delay and no stagger: the fill and the label start together.",
-      ],
-      interruption: transitionInterruption("the fill"),
-      reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, remove both transitions so the filled state appears instantly on hover and focus. Keep the state change itself.",
-      rules: [
-        "Animate the fill with `transform: scale` on its own absolutely positioned layer behind the label. Don't animate width, left, background-position or a gradient: those repaint every frame.",
-        "The button needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the fill on a negative z-index, so the fill is clipped to the button's rounded shape and stays behind the label.",
-      ],
-      checks: [
-        "Hover: the fill sweeps in from the {direction} edge over {duration}ms, and the label stays readable the whole way.",
-        "Move the pointer off halfway: the fill goes back from where it was, with no snap.",
-        ...hoverChecks("filled state"),
-      ],
-    },
-    controls: [
-      {
-        type: "select",
-        name: "direction",
-        label: "Direction",
-        default: "left",
-        options: [
-          { label: "From left", value: "left" },
-          { label: "From bottom", value: "bottom" },
-        ],
-      },
-      {
-        type: "number",
-        name: "duration",
-        label: "Duration",
-        default: 400,
-        min: 150,
-        max: 800,
-        step: 10,
-        unit: "ms",
-      },
-      { type: "color", name: "textColor", label: "Text color", default: "#FFFFFF" },
-      { type: "color", name: "fillColor", label: "Fill color", default: "#fafafa" },
-      { type: "color", name: "hoverTextColor", label: "Hover text", default: "#0a0a0a" },
-    ],
-    promptNotes: [
-      "It renders an <a>, like the other button hovers; pass `href` and any other anchor props. For an action that isn't a link, swap the element for a <button type=\"button\">.",
-      "All colours are props: `textColor` and `borderColor` (default white at 15%) at rest, `fillColor` and `hoverTextColor` once filled. The focus outline uses `fillColor` with a 2px offset, so it reads on any background.",
-    ],
-  },
-  {
     slug: "corner-bloom",
     title: "Corner bloom",
     description:
@@ -174,57 +136,90 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/button-hovers/corner-bloom-button.tsx",
       },
     ],
+    usageProps: ['href=""'],
     usageChildren: "Request Demo",
     motion: {
       intent:
-        "A hover state for a pill call-to-action. An ellipse in a second colour grows out of a point just past the bottom-right corner until it floods the whole pill, like ink spreading from the corner. It should feel smooth and even: eased in and out, never bouncy.",
+        "A hover state for a pill call-to-action. An ellipse in a second colour grows out of a point just past the bottom-right corner until it floods the whole pill, like ink spreading from the corner. It should feel buttery: quick to respond, even all the way, settling softly, never bouncy. Leaving is quicker than arriving, and a slight press confirms the click.",
       trigger: hoverTrigger("flooded state"),
       states: [
         "Bloom: an ellipse (`border-radius: 50%`) behind the label, sized to the button plus 100px on each axis (`width/height: calc(100% + 100px)`) and positioned 50px outside the bottom-right corner (`right: -50px; bottom: -50px`). At full size it covers all four corners of the pill. At rest it is `scale(0)` with `transform-origin: bottom right`; when active it is `scale(1)`.",
         "Label and arrow: they keep their colour and don't move. The label colour has to read on both the resting colour and the bloom colour.",
+        "Press{pressScale|1= (off)|*=: on `:active` the whole pill scales to `{pressScale}` and springs back on release}.",
         "Nothing else changes. The pill's size, padding and resting background stay the same.",
       ],
       timing: [
-        "Duration: {duration}ms, in and out.",
-        "Easing: `ease-in-out` (`cubic-bezier(0.42, 0, 0.58, 1)`).",
+        "Bloom in: {duration}ms, easing `{ease}`.",
+        "Bloom out: {exitDuration}ms, easing `{exitEase}`. Exits are quicker than entries so the button feels light when you leave it.",
+        pressTiming,
         "No delay.",
       ],
-      interruption: transitionInterruption("the bloom"),
+      interruption:
+        "Use CSS transitions, not keyframe animations. Set the exit timing on the rest state and the entry timing on the hover/focus state (a transition uses the timing of the state it's heading to). If the pointer leaves mid-bloom, it shrinks back from wherever it is with the exit timing; it never jumps to the start or the end.",
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, remove the transition so the flooded state appears instantly on hover and focus. Keep the state change itself.",
+        "Under `prefers-reduced-motion: reduce`, drop the movement but keep the change soft: the bloom sits at full size (`scale(1)`) with `opacity: 0`, and fades to `opacity: 1` over {reducedFade}ms `{reducedFadeEase}` on hover and focus. No press scale. Reduced motion means less motion, not a hard swap.",
       rules: [
         "Animate the bloom with `transform: scale` on its own absolutely positioned layer. Don't animate its width, height or border-radius: those trigger layout and paint every frame.",
         "The pill needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the bloom on a negative z-index. Also add `mask-image: radial-gradient(white, black)` on the pill: without it Safari doesn't clip a transforming child to the rounded corners.",
         "Give the bloom `pointer-events: none` so it never interferes with the hover.",
+        "Use the curves exactly as given. Never use an ease-in or ease-in-out curve on the way in: they start slow, and the bloom already spends its first frames outside the pill, so the hover feels late.",
       ],
       checks: [
-        "Hover: the ellipse grows from just past the bottom-right corner over {duration}ms. At full size it covers the whole pill, including the rounded left end.",
-        "Move the pointer off halfway: the bloom shrinks back from where it was, with no snap.",
+        "Hover: the ellipse grows from just past the bottom-right corner over {duration}ms, starting to show straight away. At full size it covers the whole pill, including the rounded left end.",
+        "Move the pointer off halfway: the bloom shrinks back from where it was, quicker than it came in, with no snap.",
+        "Press it{pressScale|1= (press scale is off: nothing should scale)|*=: it dips to {pressScale} and comes back}.",
         "In Safari: the pill's rounded corners stay clipped while the bloom grows.",
-        ...hoverChecks("flooded state"),
+        "Tab to the button: it shows the same flooded state, plus a visible focus outline.",
+        "Turn on reduced motion: the bloom doesn't grow; the flooded colour fades in over {reducedFade}ms, and pressing doesn't scale.",
+        "On a touch device: tapping doesn't leave the button stuck in the flooded state.",
       ],
     },
     controls: [
       { type: "color", name: "color", label: "Button color", default: "#308970" },
       { type: "color", name: "bloomColor", label: "Bloom color", default: "#1C212B" },
       { type: "color", name: "textColor", label: "Text color", default: "#F2F1EE" },
+      { type: "select", name: "ease", label: "Easing in", default: easings.out, options: easingOptions },
       {
         type: "number",
         name: "duration",
-        label: "Duration",
-        default: 400,
-        min: 200,
+        label: "Duration in",
+        default: 300,
+        min: 150,
         max: 1000,
         step: 10,
         unit: "ms",
       },
+      { type: "select", name: "exitEase", label: "Easing out", default: easings.drawer, options: easingOptions },
+      {
+        type: "number",
+        name: "exitDuration",
+        label: "Duration out",
+        default: 200,
+        min: 100,
+        max: 1000,
+        step: 10,
+        unit: "ms",
+      },
+      {
+        type: "number",
+        name: "pressScale",
+        label: "Press scale",
+        default: 0.97,
+        min: 0.9,
+        max: 1,
+        step: 0.01,
+      },
+      ...pressTimingControls,
+      { type: "number", name: "reducedFade", label: "Reduced-motion fade", default: 150, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "reducedFadeEase", label: "Reduced-motion easing", default: easings.ease, options: easingOptions, secondary: true },
       { type: "boolean", name: "arrow", label: "Arrow", default: true },
-      { type: "text", name: "href", label: "Link", default: "/request-demo", always: true },
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props. The arrow is optional (`arrow={false}`).",
       "The pill never grows wider than its container (`max-w-full`); a long label wraps and stays centred beside the arrow.",
       "The original uses the Moderat typeface; the component inherits the site's font.",
+      "Timing is props: `duration`/`ease` for the way in, `exitDuration`/`exitEase` for the way out, `pressDuration`/`pressEase` for the press, `pressScale` (1 turns the press off), and `reducedFade`/`reducedFadeEase` for the reduced-motion fade. Easings are any CSS timing function.",
+      "Deliberate change from the original's motion: it used one 400ms `ease-in-out` both ways and no press. This uses 300ms in on a strong ease-out, 200ms out on the drawer curve, and a press.",
     ],
   },
   {
@@ -243,30 +238,37 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/button-hovers/ghost-fill-button.tsx",
       },
     ],
+    usageProps: ['href=""'],
     usageChildren: "Explore Sophos Fusion",
     themeToggle: false,
     motion: {
       intent:
-        "A hover state for an outlined (ghost) pill button. The transparent pill fills solid and the label switches to the brand colour. It's a quick, linear colour change: fast enough to feel like instant feedback, soft enough not to flash.",
+        "A hover state for an outlined (ghost) pill button. The transparent pill fills solid and the label switches to the brand colour. It's a soft colour change that eases in and settles, never a flash. Leaving is quicker than arriving, and a slight press confirms the click.",
       trigger: hoverTrigger("filled state"),
       states: [
         "Background: transparent → the fill colour.",
         "Label: the outline colour → the hover text colour (the brand colour).",
-        "The border keeps its colour and width. Nothing moves or changes size.",
+        "Press{pressScale|1= (off)|*=: on `:active` the whole pill scales to `{pressScale}` and springs back on release}.",
+        "The border keeps its colour and width. Nothing else moves or changes size.",
       ],
       timing: [
-        "Duration: {duration}ms for both the background and the label colour, in and out.",
-        "Easing: `linear` for both.",
-        "No delay: both change together.",
+        "Fill in: {duration}ms, easing `{ease}`, for both the background and the label colour.",
+        "Fill out: {exitDuration}ms, easing `{exitEase}`, for both. Exits are quicker than entries so the button feels light when you leave it.",
+        pressTiming,
+        "No delay: the background and the label change together.",
       ],
-      interruption: transitionInterruption("the colour"),
+      interruption:
+        "Use CSS transitions, not keyframe animations. Set the exit timing on the rest state and the entry timing on the hover/focus state (a transition uses the timing of the state it's heading to). The press keeps its own {pressDuration}ms timing in both. If the pointer leaves mid-fill, the colours reverse from wherever they are with the exit timing; they never jump.",
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, remove the transition so the colours swap instantly. Keep the state change itself.",
+        "Under `prefers-reduced-motion: reduce`, remove the colour transitions and the press scale, so the colours swap instantly. Keep the state change itself.",
       rules: [
-        "Transition only `background-color` and `color`, not `all`, so the focus outline, border and layout never animate.",
+        "Transition only `background-color`, `color` and the press scale, not `all`, so the focus outline, border and layout never animate.",
+        "Use the curves exactly as given. Never use an ease-in curve on a hover: it starts slow and feels late.",
       ],
       checks: [
-        "Hover: the pill fills and the label turns the brand colour within {duration}ms, with no flash or flicker.",
+        "Hover: the pill fills and the label turns the brand colour over {duration}ms, with no flash or flicker.",
+        "Move the pointer off halfway: the colours go back from where they were, quicker than they came in.",
+        "Press it{pressScale|1= (press scale is off: nothing should scale)|*=: it dips to {pressScale} and comes back}.",
         ...hoverChecks("filled state"),
       ],
     },
@@ -274,22 +276,45 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "color", label: "Outline & text", default: "#FFFFFF" },
       { type: "color", name: "fillColor", label: "Fill color", default: "#FFFFFF" },
       { type: "color", name: "hoverTextColor", label: "Hover text", default: "#2006F7" },
+      { type: "select", name: "ease", label: "Easing in", default: easings.out, options: easingOptions },
       {
         type: "number",
         name: "duration",
-        label: "Duration",
-        default: 100,
+        label: "Duration in",
+        default: 300,
         min: 0,
-        max: 500,
+        max: 1000,
         step: 10,
         unit: "ms",
       },
-      { type: "text", name: "href", label: "Link", default: "/products", always: true },
+      { type: "select", name: "exitEase", label: "Easing out", default: easings.expo, options: easingOptions },
+      {
+        type: "number",
+        name: "exitDuration",
+        label: "Duration out",
+        default: 210,
+        min: 0,
+        max: 1000,
+        step: 10,
+        unit: "ms",
+      },
+      {
+        type: "number",
+        name: "pressScale",
+        label: "Press scale",
+        default: 0.97,
+        min: 0.9,
+        max: 1,
+        step: 0.01,
+      },
+      ...pressTimingControls,
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
       "Designed for dark or saturated backgrounds (the original sits on a blue gradient).",
       "The original uses Inter at weight 700; the component inherits the site's font.",
+      timingNote,
+      "Deliberate change from the original's motion: it used one 100ms `linear` swap both ways and no press. This uses 300ms in on a strong ease-out, 210ms out on an expo ease-out, and a press.",
     ],
   },
   {
@@ -308,29 +333,33 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/button-hovers/color-snap-button.tsx",
       },
     ],
+    usageProps: ['href=""'],
     usageChildren: "Learn about our model",
     motion: {
       intent:
-        "A hover and press state for a solid pill button. The background snaps from its resting colour to a bright accent on hover, and to a lighter tint while pressed. The original has no transition at all: the instant swap is what makes it feel crisp.",
+        "A hover and press state for a solid pill button. The background turns a bright accent on hover, and a lighter tint with a slight dip while pressed. The change is quick and crisp, easing out so it responds instantly and settles softly.",
       trigger:
         "Pointer hover, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this), and keyboard focus (`:focus-visible`) show the hover colour. Pressing (`:active`) shows the pressed colour on every device, including touch.",
       states: [
         "Background: resting colour → hover colour on hover and focus → pressed colour while pressed.",
+        pressState,
         "The label colour, size, padding and position never change.",
       ],
       timing: [
-        "Background colour: {duration}ms, `linear`.{duration|0= That's an instant swap, which matches the original. Don't add a transition.|*=}",
-        "No delay.",
+        ...buttonTiming("Colour"),
+        "The pressed colour uses the press timing too ({pressDuration}ms), so pressing feels immediate.",
       ],
-      interruption:
-        "{duration|0=With an instant swap there's nothing to interrupt.|*=Use a CSS transition on `background-color`, so leaving mid-change reverses from the current colour.}",
+      interruption: buttonInterruption("the colour"),
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, there's no transition: the colours swap instantly.",
+        "Under `prefers-reduced-motion: reduce`, remove the transitions and the press scale: the colours swap instantly.",
       rules: [
-        "Only `background-color` changes. Don't add scale, shadow or lift effects on hover or press.",
+        "Only `background-color` and the press scale change. Don't add shadow or lift effects on hover or press.",
+        noEaseIn,
       ],
       checks: [
         "Hover: the background turns the hover colour {duration|0=instantly|*=over {duration}ms}.",
+        "Move the pointer off: the colour goes back quicker than it came in.",
+        pressCheck,
         "Press and hold: the background turns the pressed colour; releasing returns it to the hover colour.",
         "Tab to the button: it shows the hover colour, plus a visible focus outline.",
         "On a touch device: tapping shows the pressed colour briefly and doesn't leave the hover colour stuck.",
@@ -341,21 +370,13 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "hoverColor", label: "Hover color", default: "#FF6300" },
       { type: "color", name: "activeColor", label: "Pressed color", default: "#FFB350" },
       { type: "color", name: "textColor", label: "Text color", default: "#FFFFFF" },
-      {
-        type: "number",
-        name: "duration",
-        label: "Duration",
-        default: 0,
-        min: 0,
-        max: 400,
-        step: 10,
-        unit: "ms",
-      },
-      { type: "text", name: "href", label: "Link", default: "/our-model", always: true },
+      ...buttonTimingControls({ in: 200, out: 150, max: 600 }),
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
       "The original uses Montserrat at weight 600 (Google Font); the component inherits the site's font.",
+      timingNote,
+      "Deliberate change from the original's motion: it swapped colours instantly with no press. This eases the colour in over 200ms and out over 150ms on a strong ease-out, and adds a press. Set `duration={0}` and `exitDuration={0}` for the original instant swap.",
     ],
   },
   {
@@ -374,6 +395,7 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/button-hovers/circle-reveal-button.tsx",
       },
     ],
+    usageProps: ['href=""'],
     usageChildren: "Explore More",
     themeToggle: false,
     motion: {
@@ -387,7 +409,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Duration: {duration}ms, in and out.",
-        "Easing: `cubic-bezier(0.4, 0, 0.2, 1)`.",
+        "Easing: `{easing}`, in and out.",
         "No delay.",
       ],
       interruption: transitionInterruption("the circle"),
@@ -419,7 +441,7 @@ export const registry: RegistryEntry[] = [
         step: 10,
         unit: "ms",
       },
-      { type: "text", name: "href", label: "Link", default: "/platform", always: true },
+      { type: "select", name: "easing", label: "Easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions },
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
@@ -445,32 +467,32 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/button-hovers/outline-sweep-button.tsx",
       },
     ],
+    usageProps: ['href=""'],
     usageChildren: "Read our blog",
     motion: {
       intent:
-        "A hover state for an outlined pill button. A solid, pill-shaped fill sweeps in from the left and keeps its rounded leading edge. The label colour changes more slowly, so it flips around the moment the fill passes the middle.",
+        "A hover state for an outlined pill button. A solid, pill-shaped fill sweeps in from the left and keeps its rounded leading edge. The label flips colour exactly at the fill's edge, so it's crisp and readable at every point of the sweep. It eases in and out evenly, like the original; leaving is quicker than arriving, and a slight press confirms the click.",
       trigger: hoverTrigger("filled state"),
       states: [
-        "Fill: a solid layer that covers the button including its 1px border (`inset: -1px`), with fully rounded corners. At rest it is `clip-path: inset(0 100% 0 0 round 9999px)` (hidden to the left); when active it is `clip-path: inset(0 0 0 0 round 9999px)`.",
-        "Label: the outline colour → the hover text colour, on its own slower timing (below).",
-        "The border, size and padding stay the same. Nothing moves.",
+        "Filled layer: a copy of the label on the solid fill, covering the button including its 1px border (`inset: -1px`, with 1px more horizontal padding so its label sits exactly on the real one), with fully rounded corners. At rest it is `clip-path: inset(0 100% 0 0 round 9999px)` (hidden to the left); when active it is `clip-path: inset(0 0 0 0 round 9999px)`. One clip reveals the fill and its label together, so the label colour changes exactly at the fill's edge, never as a fade.",
+        "Label at rest: the button's own label stays as it is underneath. It never changes colour.",
+        pressState,
+        "The border, size and padding stay the same. Nothing else moves.",
       ],
-      timing: [
-        "Fill: {duration}ms, `ease-in-out` (`cubic-bezier(0.42, 0, 0.58, 1)`).",
-        "Label colour: {duration*7/3}ms (7/3 of the fill), `cubic-bezier(0.86, 0, 0.07, 1)` (ease-in-out quint). This curve holds the old colour, flips sharply in the middle and then settles, so the label changes as the fill passes under it.",
-        "Both start together, with no delay.",
-      ],
-      interruption: transitionInterruption("the fill (and the label colour)"),
+      timing: buttonTiming("Fill"),
+      interruption: buttonInterruption("the fill"),
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, remove both transitions so the filled state appears instantly on hover and focus. Keep the state change itself.",
+        "Under `prefers-reduced-motion: reduce`, remove the clip transition and the press scale so the filled state appears instantly on hover and focus. Keep the state change itself.",
       rules: [
         "Reveal the fill with `clip-path: inset(... round 9999px)`. Don't use `scaleX`, which squashes the rounded end into an oval, and don't animate `width`, which triggers layout every frame.",
-        "The button needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the fill on a negative z-index.",
+        "The filled layer is `aria-hidden`. The button needs `overflow: hidden` and `isolation: isolate`. Don't animate the label's `color`: a colour fade leaves it low-contrast mid-sweep.",
+        noEaseIn,
       ],
       checks: [
         "Hover: the fill sweeps in from the left over {duration}ms, with a rounded leading edge the whole way.",
-        "The label flips around the halfway point of the sweep and has fully settled by {duration*7/3}ms.",
-        "Move the pointer off halfway: the fill goes back from where it was, with no snap.",
+        "The label is split cleanly at the fill's edge the whole way, with no faded or low-contrast moment.",
+        "Move the pointer off halfway: the fill goes back from where it was, quicker than it came in, with no snap.",
+        pressCheck,
         ...hoverChecks("filled state"),
       ],
     },
@@ -478,21 +500,13 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "color", label: "Outline & text", default: "#6B00DF" },
       { type: "color", name: "fillColor", label: "Fill color", default: "#6B00DF" },
       { type: "color", name: "hoverTextColor", label: "Hover text", default: "#FFFFFF" },
-      {
-        type: "number",
-        name: "duration",
-        label: "Duration",
-        default: 300,
-        min: 150,
-        max: 800,
-        step: 10,
-        unit: "ms",
-      },
-      { type: "text", name: "href", label: "Link", default: "/blog", always: true },
+      ...buttonTimingControls({ in: 300, out: 200, ease: easings.easeInOut }),
     ],
     promptNotes: [
       "It renders an <a>; pass `href` and any other anchor props.",
       "The original uses the licensed Lota Grotesque at weight 400; the closest Google Font is Hanken Grotesk. The component inherits the site's font.",
+      timingNote,
+      "The fill uses the original's `ease-in-out` curve and its 300ms on the way in. Three deliberate changes: the way out is quicker (200ms, the original used 300ms); the original faded the label over 700ms on an ease-in-out quint, which leaves it purple on purple mid-sweep, so this flips it exactly at the fill's edge; and it adds a press.",
     ],
   },
   {
@@ -512,35 +526,34 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/image-hovers/zoom-image-card.tsx",
       },
     ],
-    usageProps: ['src="/images/ducati.webp"', 'logo="/images/ducati-logo.svg"', 'logoAlt="Ducati"'],
+    usageProps: ['href=""', 'src="/images/ducati.webp"', 'logo="/images/ducati-logo.svg"', 'logoAlt="Ducati"'],
     motion: {
       intent:
-        "A hover state for a linked customer tile: a photo in a rounded frame, a logo in its corner and a caption below. Hovering anywhere on the card slowly grows the photo inside the frame: the picture moves, the frame, logo and caption don't. It should feel calm and barely there, an invitation to click rather than a jump.",
+        "A hover state for a linked customer tile: a photo in a rounded frame with a logo in its corner. Hovering the card slowly grows the photo inside the frame: the picture moves, the frame and logo don't. It should feel calm and barely there, an invitation to click rather than a jump.",
       trigger:
-        "Pointer hover anywhere on the card (frame or caption), only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same zoom. On touch there is no zoom; a tap just follows the link.",
+        "Pointer hover on the card, only on devices that really hover (`@media (hover: hover)`; Tailwind v4's `hover:` already does this). Keyboard focus on the card (`:focus-visible`) shows the same zoom. On touch there is no zoom; a tap just follows the link.",
       states: [
         "Photo: `scale(1)` at rest → `scale({scale})` when active, from the centre (the default `transform-origin`).",
         "Frame: keeps its size and rounded corners and clips the growing photo.",
         "{scrim|true=Corner scrim (a black gradient in the top-left behind the logo) and logo: they sit above the photo and don't move or zoom.|*=Logo: sits above the photo and doesn't move or zoom.}",
-        "Caption: doesn't change.",
       ],
       timing: [
         "Duration: {duration}ms, in and out.",
-        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`).",
+        "Easing: `{easing}`.",
         "No delay.",
       ],
       interruption: transitionInterruption("the zoom"),
       reducedMotion:
         "Under `prefers-reduced-motion: reduce`, the photo doesn't zoom at all: it stays at `scale(1)` on hover and focus (gate the scale with `motion-safe:`). Don't swap the zoom for an instant jump.",
       rules: [
-        "The whole card is one link, and the hover is on the card, so the zoom starts wherever the pointer enters it, caption included.",
+        "The whole card is one link and the hover is on the link, so focus and hover share one trigger.",
         "Animate the photo with `transform: scale`. Don't animate its width, height or `background-size`.",
         "The frame needs `overflow: hidden` plus `isolation: isolate`; without the isolation, Safari loses the rounded corners while the photo is transformed.",
         "Put the scrim and logo in the frame above the photo, not inside the scaled element, so they hold still.",
         "If the site has its own Image component, put the transition on the element that renders the photo and keep it filling the frame with `object-fit: cover`.",
       ],
       checks: [
-        "Hover the caption, not the photo: the photo still grows to {scale}× over {duration}ms, and the logo doesn't move.",
+        "Hover the card: the photo grows to {scale}× over {duration}ms, and the logo doesn't move.",
         "The frame's rounded corners stay rounded while the photo grows, including in Safari.",
         "Move the pointer off halfway: the photo shrinks back from where it was, with no snap.",
         "Tab to the card: the photo zooms and the card shows a visible focus outline.",
@@ -549,9 +562,9 @@ export const registry: RegistryEntry[] = [
       ],
     },
     controls: [
-      { type: "text", name: "title", label: "Caption", default: "Ducati fuels motorsport innovation with NetApp", always: true },
-      { type: "number", name: "scale", label: "Zoom scale", default: 1.04, min: 1, max: 1.2, step: 0.01 },
-      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "scale", label: "Zoom scale", default: 1.07, min: 1, max: 1.2, step: 0.01 },
+      { type: "number", name: "duration", label: "Duration", default: 350, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: easings.cssOut, options: easingOptions },
       { type: "number", name: "radius", label: "Corner radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
       {
         type: "select",
@@ -566,8 +579,6 @@ export const registry: RegistryEntry[] = [
         ],
       },
       { type: "boolean", name: "scrim", label: "Corner scrim", default: true },
-      { type: "color", name: "titleColor", label: "Caption color", default: "#000000" },
-      { type: "text", name: "href", label: "Link", default: "/customers/ducati", always: true },
     ],
     assets: [
       {
@@ -588,11 +599,10 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "The whole card is one <a>: hovering anywhere on it (or keyboard focus) zooms the photo. Pass `href` and any other anchor props.",
       "`logo` and `logoAlt` are optional; the logo sits 30px in from the frame's top-left, capped at 60px tall and 205px wide. Use a white logo with the scrim on (`scrim`, default true), which darkens that corner.",
-      "Other props: `easing` (any CSS timing function, default Tailwind's ease-out), `frameColor` (shows under the photo while it loads, default NetApp's #0054D7), `alt`.",
+      "Other props: `frameColor` (shows under the photo while it loads and colours the focus ring, default NetApp's #0054D7), `alt`.",
       "The frame is fluid: it fills its column and keeps `aspectRatio`. The original uses 301 / 360 in its grid and 330 / 360 in the single-column mobile layout.",
       "It renders plain <img> tags. If the site has its own Image component (e.g. components/common/Image), swap it in for the photo with fill/object-cover and keep the transition and scale classes on it.",
       "No client JavaScript, so it works in a Server Component.",
-      "Original typography: F37 Judge (licensed), caption 20px / 32px with 0.2px tracking (16px / 26px below the xl breakpoint), black. The component inherits the site's font; the demo uses Inter Tight as the closest Google Font.",
     ],
   },
   {
@@ -612,7 +622,7 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/image-hovers/reveal-link-card.tsx",
       },
     ],
-    usageProps: ['src="/images/catalog-tile.png"'],
+    usageProps: ['href=""', 'src="/images/catalog-tile.png"'],
     motion: {
       intent:
         "A hover state for a tall image tile that links somewhere. At rest the tile shows only its image and title. On hover a \"{linkLabel}\" link fades up from the bottom over a rising gradient{lift|true=, and the whole card lifts slightly|*=}. Three layers move on two timings, so it feels layered and soft rather than a single snap.",
@@ -626,9 +636,10 @@ export const registry: RegistryEntry[] = [
         "The image and the title stay still.",
       ],
       timing: [
-        "Label and chevron: 300ms, CSS `ease`.",
-        "Gradient: 600ms, CSS `ease`. It's twice as slow as the label, so the label arrives first and the gradient settles in behind it.",
-        "{lift|true=Card lift and shadow: 300ms, CSS `ease`.|*=No card lift.}",
+        "Label and chevron: {duration}ms, easing `{easing}`.",
+        "Gradient in: its rise takes {duration}ms, with the label, but its opacity takes {gradientFade}ms, both easing `{easing}`. Give the two properties separate durations on the hover state (`transition-duration: {gradientFade}ms, {duration}ms` for `opacity, transform`), so the colour keeps washing in softly after the label has landed.",
+        "Gradient out: opacity and rise both take twice the label's duration ({duration}ms × 2), easing `{easing}`. Set this on the resting state, so it applies when the pointer leaves.",
+        "{lift|true=Card lift and shadow: {duration}ms, easing `{easing}`.|*=No card lift.}",
         "Everything starts together, with no delay or stagger.",
       ],
       interruption: transitionInterruption("each layer"),
@@ -642,7 +653,7 @@ export const registry: RegistryEntry[] = [
         "Don't hide the label on touch: show the label and gradient at full opacity under `@media (hover: none)`.",
       ],
       checks: [
-        "Hover: the label fades up 5px and the chevron nudges right over 300ms, while the gradient rises and finishes later, at 600ms.",
+        "Hover: the label fades up 5px and the chevron nudges right over {duration}ms; the gradient rises with them but keeps deepening until {gradientFade}ms.",
         "Move the pointer off halfway: every layer goes back from where it was, with no snap.",
         "Tab to the card: the same reveal happens, plus a visible focus ring.",
         "Turn on reduced motion: the label and gradient fade in, but nothing moves.",
@@ -655,7 +666,9 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "color", label: "Card color", default: "#0E2219" },
       { type: "color", name: "textColor", label: "Text color", default: "#FFFFFF" },
       { type: "boolean", name: "lift", label: "Lift on hover", default: true },
-      { type: "text", name: "href", label: "Link", default: "/customers/business-continuity", always: true },
+      { type: "number", name: "duration", label: "Duration", default: 300, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "gradientFade", label: "Gradient fade", default: 1000, min: 200, max: 2000, step: 50, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: easings.cssOut, options: easingOptions },
     ],
     assets: [
       {
@@ -691,7 +704,7 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/image-hovers/rising-copy-card.tsx",
       },
     ],
-    usageProps: ['src="/images/story-tile.webp"'],
+    usageProps: ['href=""', 'src="/images/story-tile.webp"'],
     motion: {
       intent:
         "A hover state for a linked story tile: art, a big headline and a CTA. At rest the headline sits at the foot of the card just above the CTA. On hover the art slowly zooms, the headline travels up to the top of the card and an optional description opens under it, the CTA stays at the foot, and the art takes on a colour tint. Everything moves together on one long ease-out, so it feels like a single calm shift rather than separate effects.",
@@ -707,7 +720,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Duration: {duration}ms for the zoom, the headline's travel, the description row, and both fades.",
-        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`) for all of them.",
+        "Easing: `{easing}` for all of them. The original uses `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`).",
         "Everything starts together, with no delay or stagger.",
       ],
       interruption: transitionInterruption("every part"),
@@ -730,11 +743,12 @@ export const registry: RegistryEntry[] = [
       ],
     },
     controls: [
-      { type: "text", name: "title", label: "Title", default: "Unleashing imagination with data — petabytes at a time", always: true },
+      { type: "text", name: "title", label: "Title", default: "Unleashing imagination with data – petabytes at a time", always: true },
       { type: "text", name: "description", label: "Description", default: "" },
-      { type: "text", name: "ctaLabel", label: "CTA label", default: "Explore the IDC study", always: true },
+      { type: "text", name: "ctaLabel", label: "CTA label", default: "Learn More", always: true },
       { type: "number", name: "scale", label: "Zoom scale", default: 1.1, min: 1, max: 1.3, step: 0.01 },
       { type: "number", name: "duration", label: "Duration", default: 500, min: 200, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: "cubic-bezier(0, 0, 0.2, 1)", options: easingOptions },
       { type: "color", name: "tint", label: "Hover tint", default: "#25006D" },
       {
         type: "select",
@@ -747,7 +761,6 @@ export const registry: RegistryEntry[] = [
           { label: "560px (tall)", value: "560" },
         ],
       },
-      { type: "text", name: "href", label: "Link", default: "/customers/dreamworks", always: true },
     ],
     assets: [
       {
@@ -800,7 +813,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Zoom: {duration}ms, in and out.",
-        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`).",
+        "Easing: `{easing}`, in and out.",
         "No delay.",
       ],
       interruption: transitionInterruption("the zoom"),
@@ -824,8 +837,9 @@ export const registry: RegistryEntry[] = [
       ],
     },
     controls: [
-      { type: "number", name: "scale", label: "Zoom scale", default: 1.04, min: 1, max: 1.2, step: 0.01 },
-      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "scale", label: "Zoom scale", default: 1.07, min: 1, max: 1.2, step: 0.01 },
+      { type: "number", name: "duration", label: "Duration", default: 350, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: easings.cssOut, options: easingOptions },
       { type: "number", name: "radius", label: "Corner radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
     ],
     assets: [
@@ -840,7 +854,7 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "`tiles` is an array of `{ image, alt?, title?, ctaLabel?, href?, tone? }`. `href` makes the whole card a link and turns on its zoom; `ctaLabel` only shows on linked cards. `tone` is \"light\" (white copy on dark art, the default) or \"dark\" (dark #1E252F copy on pale art, plus a faint #D2CEEB hairline).",
       "The layout is built for five tiles; tiles 6–10 start a second bento below, and so on. Pass fewer and the empty slots stay empty.",
-      "Other props: `easing`, `chipFrom` / `chipTo` (the light chip's hover gradient).",
+      "Other props: `chipFrom` / `chipTo` (the light chip's hover gradient). `easing` is any CSS timing function.",
       "Card padding 30px (21px top and bottom on the wide card in the original), copy gap 20px, titles 28px / 1.1 (22px stacked), CTA label 16px / 1.6.",
       "It renders plain <img> tags. If the site has its own Image component, swap it in with fill/object-cover and keep the transition and scale classes on it.",
       "No client JavaScript, so it works in a Server Component.",
@@ -864,7 +878,7 @@ export const registry: RegistryEntry[] = [
         path: "src/registry/interactions/image-hovers/hover-card-list.tsx",
       },
     ],
-    usageProps: ['heading="Meeting Rooms"', "groups={groups}"],
+    usageProps: ["items={items}"],
     defaultTheme: "light",
     themeToggle: false,
     fullBleed: true,
@@ -878,11 +892,10 @@ export const registry: RegistryEntry[] = [
         "Detail card, 900px+: `opacity: 0; scale: 0.96; visibility: hidden` \u2192 `opacity: 1; scale: 1; visible`. It's 330px wide, absolutely positioned 159px from the row's right edge (about 55px left of the index) and centred on the row (`top: 50%; translateY(-50%)`), so it overhangs the neighbouring rows; the hovered row is raised (`z-index`) above them.",
         "Card contents: photo (299:222, only the top-right corner rounded, 34px), white tag pills (10px, icon + label) and a 16px bullet list in #666, on an `{accent}` card with 16px padding.",
         "Below 900px: the details open inline under the title with a `grid-template-rows: 0fr \u2192 1fr` reveal and a fade, and the row stays tinted while open.",
-        "Location toggle (when there's more than one group): the active tab is a white pill with black text, the others 50% black on #F3F3F3. Switching swaps the list and closes any open row.",
       ],
       timing: [
-        "Row tint: {duration}ms, `cubic-bezier(0.22, 1, 0.36, 1)`, in and out.",
-        "Detail card: {cardDuration}ms `ease-out` for opacity and scale{cardDuration|0= (0 = it just appears, as on Hatch)|*=}.",
+        "Row tint: {duration}ms, `{easing}`, in and out.",
+        "Detail card: {cardDuration}ms `{cardEase}` for opacity and scale{cardDuration|0= (0 = it just appears, as on Hatch)|*=}.",
         "Inline accordion: {duration}ms, the same curve as the tint.",
       ],
       interruption:
@@ -892,7 +905,7 @@ export const registry: RegistryEntry[] = [
       responsive:
         "From 900px of container width: rows 32px top and bottom with 75px left and 60px right padding, a 112px thumbnail (60px 60px 30px 30px arch), titles clamp(40px, 4.3cqw, 62px) and 38px indexes, and the floating card. Below 900px: 18px 20px rows, a 50px thumbnail, 28px titles, 20px indexes, and the inline accordion instead of the card.",
       rules: [
-        "Keep the hover in CSS (`group-hover`, `group-focus-within`); state is only the selected group and the open row for taps.",
+        "Keep the hover in CSS (`group-hover`, `group-focus-within`); the only state is the open row for taps.",
         "Hide closed cards with `visibility: hidden` (transitioned along with opacity) so the invisible cards, which overhang the neighbouring rows, never catch the pointer or a click.",
         "Put the card inside the row, not in a shared overlay, so hovering the card keeps the row hovered and the card sits beside its own row.",
         "Animate only `opacity`, `scale` and `background-color` (plus `grid-template-rows` for the small-screen accordion).",
@@ -902,7 +915,6 @@ export const registry: RegistryEntry[] = [
         "Sweep down the list: each row's card takes over smoothly, with no flicker or stuck cards.",
         "Move the pointer from the row onto its card: the card stays open.",
         "Tab through the rows: each one tints and shows its card.",
-        "Switch the toggle: the other list shows and nothing is left open.",
         "Below 900px or on a phone: tapping a row opens its details inline; tapping again closes them.",
         "Turn on reduced motion: everything changes instantly.",
       ],
@@ -910,19 +922,21 @@ export const registry: RegistryEntry[] = [
     controls: [
       { type: "color", name: "accent", label: "Accent", default: "#CDCEA6" },
       { type: "number", name: "duration", label: "Tint", default: 400, min: 0, max: 1000, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Tint easing", default: "cubic-bezier(0.22, 1, 0.36, 1)", options: easingOptions },
       { type: "number", name: "cardDuration", label: "Card reveal", default: 200, min: 0, max: 600, step: 10, unit: "ms" },
+      { type: "select", name: "cardEase", label: "Card easing", default: easings.out, options: easingOptions },
       { type: "boolean", name: "numbered", label: "Index numbers", default: true },
     ],
     assets: [
       {
-        prop: "groups[].items[].thumb",
+        prop: "items[].thumb",
         label: "Row thumbnail",
         fit: "A square, arch-shaped thumbnail at the start of the row: 50px, 112px from 900px, object-cover",
         placeholder: "224x224",
         optional: true,
       },
       {
-        prop: "groups[].items[].image",
+        prop: "items[].image",
         label: "Card photo",
         fit: "The photo on the hover card, 299 / 222, object-cover. Defaults to `thumb`",
         placeholder: "660x490",
@@ -930,12 +944,12 @@ export const registry: RegistryEntry[] = [
       },
     ],
     promptNotes: [
-      "`groups` is an array of `{ label, items }`; with more than one group a toggle shows (Hatch uses one per location), with one it doesn't. Each item is `{ title, thumb?, image?, alt?, tags?, bullets?, href? }`: `image` (the card photo) defaults to `thumb`, `tags` are `{ icon?, label }` pills, and `href` makes the row a link. Items without an image, tags or bullets get no card.",
+      "`items` is an array of rows. Each item is `{ title, thumb?, image?, alt?, tags?, bullets?, href? }`: `image` (the card photo) defaults to `thumb`, `tags` are `{ icon?, label }` pills, and `href` makes the row a link. Items without an image, tags or bullets get no card.",
       "The file also exports `HourglassIcon` and `ArmchairIcon` (Tabler icons, MIT) for duration and capacity tags.",
-      "Other props: `heading`, `background` (#FAFAFA, the resting row colour), `numbered` (01, 02... at the end of each row).",
+      "Other props: `heading`, `background` (#FAFAFA, the resting row colour), `numbered` (01, 02... at the end of each row). Timing props: `duration`/`easing` (tint and accordion), `cardDuration`/`cardEase` (floating card); easings are any CSS timing function.",
       "Deliberate change: on Hatch the card just appears (it mounts on hover). Here it fades and scales in over `cardDuration` (200ms) so sweeping the list reads as one motion; set `cardDuration={0}` for the original snap. The tint uses Framer's 0.4s spring there, matched with an ease-out curve here. Hatch's card also carries a faint stripe pattern in the corner (brand artwork, not included).",
       "It renders plain <img> tags. If the site has its own Image component, swap it in with object-cover and keep the classes.",
-      "It's a Client Component (\"use client\") for the toggle and the tap-to-open state; the hover itself is CSS.",
+      "It's a Client Component (\"use client\") for the tap-to-open state; the hover itself is CSS.",
       "Original typography: Montserrat (Google Font) for the heading (38px / 500), titles (62px / 400), indexes and tags; Open Sans 16px for the bullets. The component inherits the site's font; the demo uses Montserrat.",
     ],
   },
@@ -968,7 +982,9 @@ export const registry: RegistryEntry[] = [
         "Each letter: `clip-path: inset(120% -10% -20% -10%)` → `inset(-20% -10% -20% -10%)` (the top inset pulls up, so the letter fills bottom → top; the box is padded past the glyph so descenders and ascenders aren't cut off) and `translateY({distance}px)` → `0`, together.",
         "Spaces are letters too (a 0.3em inline-block), so the stagger keeps its rhythm across words. The stagger runs through the whole headline in reading order, across line breaks.",
       ],
-      timing: ["Letters: {duration}s each, `power2.out`, {stagger}s between one letter starting and the next."],
+      timing: [
+        "Letters: {duration}s each, easing `{ease}` (a CSS cubic-bezier; the original is GSAP's `power2.out`, which is `cubic-bezier(0.33, 1, 0.68, 1)`), {stagger}s between one letter starting and the next.",
+      ],
       interruption:
         "It's a one-shot intro: nothing can interrupt or reverse it. If the text changes, the tween is reverted and plays again from hidden.",
       reducedMotion:
@@ -977,6 +993,7 @@ export const registry: RegistryEntry[] = [
         "Split into words → letters. Wrap each word in a `white-space: nowrap` inline-block so inline-block letters never break mid-word. The split spans are `aria-hidden`; screen readers get the full headline once from a visually hidden copy inside the heading.",
         "Hide the letters with CSS before hydration (clipped and pushed down), so nothing flashes, and add a `<noscript>` rule that shows them when JavaScript is off.",
         "Animate only `clip-path` and `transform`: no layout properties. Run it as one staggered GSAP tween in a `gsap.context` scoped to the heading and revert it on unmount.",
+        "The easing is a CSS cubic-bezier. GSAP can't read those without the CustomEase plugin, so turn it into an easing function `(t) => number` (solve the curve's x for t) and pass that as the tween's `ease`.",
         "Clear the inline styles on complete, so the finished headline is plain text with nothing left on `will-change`.",
       ],
       checks: [
@@ -1000,6 +1017,7 @@ export const registry: RegistryEntry[] = [
       },
       { type: "number", name: "stagger", label: "Letter stagger", default: 0.11, min: 0.01, max: 0.3, step: 0.01, unit: "s" },
       { type: "number", name: "duration", label: "Letter duration", default: 1.2, min: 0.2, max: 3, step: 0.05, unit: "s" },
+      { type: "select", name: "ease", label: "Easing", default: "cubic-bezier(0.33, 1, 0.68, 1)", options: easingOptions },
       { type: "number", name: "distance", label: "Rise distance", default: 32, min: 0, max: 120, step: 2, unit: "px" },
     ],
     promptNotes: [
@@ -1042,7 +1060,7 @@ export const registry: RegistryEntry[] = [
         "Slots are counted across words and lines in reading order. Spaces keep a slot without a span, so the ripple holds its rhythm across word gaps.",
       ],
       timing: [
-        "Each letter: {duration}ms, `cubic-bezier(0.22, 0.61, 0.36, 1)`, `fill-mode: backwards` (held hidden through its own delay).",
+        "Each letter: {duration}ms, easing `{easing}` over the whole keyframe run, `fill-mode: backwards` (held hidden through its own delay).",
         "Letter n starts at {delay}ms + n × {stagger}ms. In the original that's measured off the comp: the front crosses ~15 characters in ~630ms, and the 470ms lead lets the eyebrow above uncover first.",
       ],
       interruption: "A one-shot entrance: it plays once and can't be interrupted or reversed.",
@@ -1076,6 +1094,7 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "delay", label: "Delay", default: 470, min: 0, max: 2000, step: 10, unit: "ms" },
       { type: "number", name: "stagger", label: "Letter stagger", default: 42, min: 5, max: 150, step: 1, unit: "ms" },
       { type: "number", name: "duration", label: "Letter duration", default: 500, min: 100, max: 2000, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: "cubic-bezier(0.22, 0.61, 0.36, 1)", options: easingOptions },
       { type: "number", name: "rise", label: "Rise", default: 0.42, min: 0, max: 1.5, step: 0.02, unit: "em" },
       { type: "number", name: "overshoot", label: "Overshoot", default: 0.06, min: 0, max: 0.3, step: 0.01, unit: "em" },
       { type: "number", name: "blur", label: "Blur", default: 14, min: 0, max: 40, step: 1, unit: "px" },
@@ -1121,7 +1140,7 @@ export const registry: RegistryEntry[] = [
         "The mask is padded 0.12em top and bottom (with a matching negative margin, so layout doesn't change) so ascenders and descenders aren't cut off under tight leading.",
       ],
       timing: [
-        "Lines: {duration}s each, `{ease}`, {stagger}s between one line starting and the next, led from the {from|start=first line|end=last line|center=middle line|random=lines in random order}.",
+        "Lines: {duration}s each, easing `{ease}` (a CSS cubic-bezier; the original is GSAP's `power4.out`, which is `cubic-bezier(0.22, 1, 0.36, 1)`), {stagger}s between one line starting and the next, led from the {from|start=first line|end=last line|center=middle line|random=lines in random order}.",
       ],
       interruption:
         "{trigger|view={replay|true=Leaving the viewport mid-animation lets it finish off screen; once fully out it snaps back to hidden, and entering again restarts it from hidden.|*=It's a one-shot: once started it always finishes.}|*=It's a one-shot intro: nothing interrupts or reverses it.} If the width changes or the web font loads, the lines are re-measured and re-split, and the tween keeps its progress (a finished paragraph stays finished).",
@@ -1133,6 +1152,7 @@ export const registry: RegistryEntry[] = [
         "Keep the `<style>` tags outside the split element, or SplitText will split them too.",
         "SplitText puts the full text on an `aria-label` and hides the split line spans from screen readers; keep its default `aria: \"auto\"`.",
         "Animate only `transform` (yPercent). Revert the split on unmount so React gets its original text node back.",
+        "The easing is a CSS cubic-bezier. GSAP can't read those without the CustomEase plugin, so turn it into an easing function `(t) => number` (solve the curve's x for t) and pass that as the tween's `ease`.",
       ],
       checks: [
         "{trigger|view=Scroll the paragraph into view|*=Reload the page}: each line slides up from under its own edge, top line first, {stagger}s apart.",
@@ -1164,19 +1184,7 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "replay", label: "Replay on re-entry", default: true },
       { type: "number", name: "stagger", label: "Line stagger", default: 0.12, min: 0, max: 0.5, step: 0.01, unit: "s" },
       { type: "number", name: "duration", label: "Line duration", default: 1, min: 0.2, max: 3, step: 0.05, unit: "s" },
-      {
-        type: "select",
-        name: "ease",
-        label: "Easing",
-        default: "power4.out",
-        options: [
-          { label: "Power 4 out", value: "power4.out" },
-          { label: "Expo out", value: "expo.out" },
-          { label: "Power 3 out", value: "power3.out" },
-          { label: "Circ out", value: "circ.out" },
-          { label: "Back out", value: "back.out(1.4)" },
-        ],
-      },
+      { type: "select", name: "ease", label: "Easing", default: "cubic-bezier(0.22, 1, 0.36, 1)", options: easingOptions },
       {
         type: "select",
         name: "from",
@@ -1230,7 +1238,7 @@ export const registry: RegistryEntry[] = [
         "Only letters animate; spaces stay as plain text and don't take a stagger slot. The stagger runs through the whole headline in reading order, across line breaks, led from the {from|start=first letter|end=last letter|center=middle letter outwards|random=letters in random order}.",
       ],
       timing: [
-        "Each letter: {duration}ms with one `power2.out` ease (`cubic-bezier(0.33, 1, 0.68, 1)`) across the whole keyframe run, not per step, so the squash snaps and the wobble slows down. {stagger}ms between one letter starting and the next.",
+        "Each letter: {duration}ms with one easing, `{easing}`, across the whole keyframe run, not per step (the original is GSAP's `power2.out`, which is `cubic-bezier(0.33, 1, 0.68, 1)`), so the squash snaps and the wobble slows down. {stagger}ms between one letter starting and the next.",
       ],
       interruption:
         "{trigger|view={replay|true=Leaving the viewport mid-animation lets it finish off screen; once fully out it snaps back to hidden, and entering again restarts it from the first keyframe.|*=It's a one-shot: once started it always finishes.}|*=It's a one-shot intro: nothing interrupts or reverses it.} Replaying cancels any running letter animations before starting new ones.",
@@ -1264,6 +1272,7 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "replay", label: "Replay on re-entry", default: true },
       { type: "number", name: "stagger", label: "Letter stagger", default: 50, min: 0, max: 200, step: 5, unit: "ms" },
       { type: "number", name: "duration", label: "Letter duration", default: 1100, min: 200, max: 3000, step: 50, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: "cubic-bezier(0.33, 1, 0.68, 1)", options: easingOptions },
       { type: "number", name: "intensity", label: "Intensity", default: 1, min: 0, max: 1.5, step: 0.05 },
       {
         type: "select",
@@ -1298,6 +1307,8 @@ export const registry: RegistryEntry[] = [
     level: "atom",
     source: "https://weonic-website.web.app/motion?tab=playground&n=70",
     componentName: "TextMarquee",
+    motionNote:
+      "Constant speed: the strip moves at a steady px/s with no duration or easing; only the hover slow-down has a timing.",
     files: [
       {
         name: "text-marquee.tsx",
@@ -1314,12 +1325,13 @@ export const registry: RegistryEntry[] = [
       states: [
         "Content: the items in order, each followed by the separator ({separator}), {gap}px apart, with a trailing {gap}px gap so one group is exactly one loop. The group is cloned (aria-hidden) until the clones cover the strip's width plus one spare, re-counted on resize.",
         "Motion: the track moves {direction|right=right|*=left} at {speed}px/s via `translate3d`, and the offset wraps into one group width, so the jump back is invisible.",
-        "{slowOnHover|true=Hover (mouse and pen only, not touch): the target speed drops to 0; leaving sets it back to {speed}px/s. The actual speed moves 10% of the way to the target per 60fps frame (`1 - 0.9^(dt / 16.67)`), so it glides to a stop in about half a second and glides back up.|*=No hover behaviour.}",
+        "{slowOnHover|true=Hover (mouse and pen only, not touch): the target speed drops to 0; leaving sets it back to {speed}px/s. The actual speed eases exponentially toward the target, covering 95% of the change in {hoverRamp}ms (each frame closes `1 - 0.05^(dt / {hoverRamp})` of the gap; 474ms is the original's 10% per 60fps frame), so it glides to a stop and glides back up.|*=No hover behaviour.}",
         "{scrollBoost|true=Scroll boost: page scroll velocity (px/ms, blended 50% toward each new reading, decaying ×0.92 per frame) is added as |v| × 900 px/s, and its sign sets the direction: scrolling down runs the {direction|right=right|*=left}, up runs it the other way.|*=}",
         "{fade|0=No edge fade.|*=Edges: a `mask-image` fades the strip out over the first and last {fade}% of its width.}",
       ],
       timing: [
         "Continuous: {speed}px/s, linear, frame-rate independent (distance = speed × frame time; frame time is capped at 100ms so a stalled tab doesn't leap).",
+        "{slowOnHover|true=Hover slow-down and speed-up: an exponential ease-out that covers 95% of the change in {hoverRamp}ms.|*=}",
       ],
       interruption:
         "Hover and scroll only change the target speed, and the real speed always eases toward it, so any change mid-motion is smooth. Resizing re-measures the group and the clone count without resetting the offset.",
@@ -1353,6 +1365,7 @@ export const registry: RegistryEntry[] = [
         ],
       },
       { type: "boolean", name: "slowOnHover", label: "Slow down on hover", default: true },
+      { type: "number", name: "hoverRamp", label: "Hover slow-down", default: 474, min: 50, max: 2000, step: 1, unit: "ms", secondary: true },
       { type: "boolean", name: "scrollBoost", label: "Scroll boost", default: false },
       { type: "number", name: "gap", label: "Gap", default: 40, min: 0, max: 160, step: 4, unit: "px" },
       { type: "number", name: "fade", label: "Edge fade", default: 8, min: 0, max: 30, step: 1, unit: "%" },
@@ -1376,6 +1389,8 @@ export const registry: RegistryEntry[] = [
     level: "atom",
     source: "https://stripe.com/",
     componentName: "BlendThroughHeadline",
+    motionNote:
+      "No motion of its own: the tint follows whatever moves in the background layer, so there's no duration or easing.",
     files: [
       {
         name: "blend-through-headline.tsx",
@@ -1468,7 +1483,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Duration: {duration}ms per number.",
-        "{easing|linear=Easing: linear (constant speed, no ease-in or ease-out), as in the original.|*=Easing: ease-out (cubic, `1 - (1 - t)^3`), so the count slows into the final value.}",
+        "{easing|linear=Easing: linear (constant speed, no ease-in or ease-out), as in the original.|*=Easing: `{easing}` (a CSS timing function, solved in JS for each frame's progress: find the curve's x for t, use its y).}",
         "In a row: each number starts when the previous one lands, i.e. stat n waits n × {duration}ms after the trigger (`delay={index * duration}`).",
       ],
       interruption:
@@ -1495,16 +1510,7 @@ export const registry: RegistryEntry[] = [
       { type: "text", name: "prefix", label: "Prefix", default: "" },
       { type: "text", name: "suffix", label: "Suffix", default: "TB/s", always: true },
       { type: "number", name: "duration", label: "Duration", default: 1000, min: 200, max: 3000, step: 50, unit: "ms" },
-      {
-        type: "select",
-        name: "easing",
-        label: "Easing",
-        default: "linear",
-        options: [
-          { label: "Linear (original)", value: "linear" },
-          { label: "Ease out", value: "ease-out" },
-        ],
-      },
+      { type: "select", name: "easing", label: "Easing", default: "linear", options: easingOptions },
       { type: "number", name: "threshold", label: "Visible to start", default: 0.4, min: 0, max: 1, step: 0.05 },
     ],
     promptNotes: [
@@ -1525,6 +1531,8 @@ export const registry: RegistryEntry[] = [
     level: "atom",
     source: "https://netapp.ai/",
     componentName: "ScrollTextReveal",
+    motionNote:
+      "Scroll-linked: the fill follows the scroll position, so it has no duration or easing; only the rise on enter is timed.",
     files: [
       {
         name: "scroll-text-reveal.tsx",
@@ -1546,7 +1554,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Fill: `linear`, mapped to scroll (no duration).",
-        "{rise|true=Rise: {riseDuration}ms, `cubic-bezier(0.25, 0.46, 0.45, 0.94)`, once on first entry.|*=No rise.}",
+        "{rise|true=Rise: {riseDuration}ms, easing `{riseEasing}`, once on first entry.|*=No rise.}",
       ],
       interruption:
         "The fill has no state of its own: it always matches the scroll position, so scrolling back un-fills it and stopping freezes it mid-sweep.{rise|true= The rise plays once and never replays.|*=}",
@@ -1600,6 +1608,7 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "rise", label: "Rise on enter", default: true },
       { type: "number", name: "riseDistance", label: "Rise distance", default: 48, min: 0, max: 120, step: 2, unit: "px" },
       { type: "number", name: "riseDuration", label: "Rise duration", default: 1400, min: 200, max: 2400, step: 50, unit: "ms" },
+      { type: "select", name: "riseEasing", label: "Rise easing", default: "cubic-bezier(0.25, 0.46, 0.45, 0.94)", options: easingOptions },
     ],
     promptNotes: [
       "This is a base component: it only handles the text and its motion. Font, size, colour, alignment and width come from `className` on the component (it renders a single `as` element, `h2` by default). The section, background and logo above it are not part of it.",
@@ -1619,6 +1628,8 @@ export const registry: RegistryEntry[] = [
     level: "atom",
     source: "https://cntfl-eight25corporate-e25qa.vercel.app/",
     componentName: "ScrollShiftHeadline",
+    motionNote:
+      "Scroll-linked: the lines move with the scroll position, so there's no duration or easing.",
     files: [
       {
         name: "scroll-shift-headline.tsx",
@@ -1716,7 +1727,7 @@ export const registry: RegistryEntry[] = [
         "On load: the first measure picks the right section with the transition off, so nothing fades in on page load.",
       ],
       timing: [
-        "Crossfade: {duration}ms, CSS `ease`, for `background-color` and `color` together.",
+        "Crossfade: {duration}ms, easing `{easing}`, for `background-color` and `color` together.",
         "It starts the moment the new section crosses the line, while that section is still mostly below the fold, so the fade is done by the time it fills the screen.",
       ],
       interruption:
@@ -1740,12 +1751,13 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "color1", label: "Section 1", default: "#FFFFFF" },
       { type: "color", name: "color2", label: "Section 2", default: "#000000" },
       { type: "color", name: "color3", label: "Section 3", default: "#0054D7" },
-      { type: "number", name: "duration", label: "Duration", default: 500, min: 0, max: 2000, step: 50, unit: "ms" },
+      { type: "number", name: "duration", label: "Duration", default: 350, min: 0, max: 2000, step: 50, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: "ease", options: easingOptions },
       { type: "number", name: "arriveAt", label: "Switch at (viewport)", default: 0.8, min: 0.2, max: 1, step: 0.05 },
     ],
     promptNotes: [
       "`sections` is an array of `{ color, textColor?, className?, children? }`, one per section, in page order. Each renders as a transparent <section>; give it height and content as usual. The active section also gets a `data-active` attribute for styling its own content.",
-      "Other props: `easing` (default `ease`), `arriveAt`, `duration`.",
+      "Timing props: `duration` (ms) and `easing` (any CSS timing function) for the crossfade; `arriveAt` sets where in the viewport a section takes over.",
       "It's a client component, but the first colour is server-rendered.",
       "The original is NetApp's \"dark takeover\": when a dark section arrives, the WHOLE page (including the header and sections outside it) fades to black (a #001330 → #000 gradient over the first 540px), and it hands back once that section has scrolled fully off the top. This component scopes the effect to its own wrapper and generalises it to any number of colours.",
     ],
@@ -1781,7 +1793,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Strip: `linear`, infinite. Its speed is {speed}px per second: measure one copy's width (the track's full width ÷ 6) and set the duration to `3 × copyWidth ÷ {speed}` seconds, clamped to 10–200s. Re-measure when the logos load or the layout changes.",
-        "Hover scale: 300ms, `cubic-bezier(0.4, 0, 0.2, 1)`, in and out.",
+        "Hover scale: {hoverDuration}ms, `{hoverEase}`, in and out.",
       ],
       interruption:
         "Pausing freezes the strip mid-move and resuming continues from there (`animation-play-state`, not a restart). The hover scale reverses from wherever it is if the pointer leaves mid-grow. A re-measure only changes the duration, so the speed adjusts without the strip jumping back.",
@@ -1797,7 +1809,7 @@ export const registry: RegistryEntry[] = [
       checks: [
         "Watch one logo for 10 seconds: it moves about {speed*10}px, at a constant speed.",
         "Watch the strip for a full loop: no jump, gap or overlap at any point.",
-        "Hover a linked logo on desktop: it grows to {hoverScale}× over 300ms and the whole strip stops; move off and the strip carries on from the same place.",
+        "Hover a linked logo on desktop: it grows to {hoverScale}× over {hoverDuration}ms and the whole strip stops; move off and the strip carries on from the same place.",
         "Hover an unlinked logo: nothing happens.",
         "At 375px: logos are 60px tall and the strip moves at the same speed.",
         "Turn on reduced motion: the strip stands still and can be scrolled sideways.",
@@ -1817,6 +1829,8 @@ export const registry: RegistryEntry[] = [
       },
       { type: "boolean", name: "pauseOnHover", label: "Pause on hover", default: true },
       { type: "number", name: "hoverScale", label: "Hover scale", default: 1.1, min: 1, max: 1.3, step: 0.01 },
+      { type: "number", name: "hoverDuration", label: "Hover", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "hoverEase", label: "Hover easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions, secondary: true },
       { type: "number", name: "gap", label: "Gap", default: 70, min: 16, max: 160, step: 2, unit: "px" },
       { type: "number", name: "logoHeight", label: "Logo height", default: 80, min: 32, max: 120, step: 2, unit: "px" },
       { type: "color", name: "background", label: "Background", default: "#EDF2F9" },
@@ -1873,7 +1887,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Row: {speed}px per second, `linear`. The duration is measured: one half's width ÷ {speed}.",
-        "Card open / close: {hoverDuration}ms, CSS `ease`, on height, background, border, shadow, and the copy's rows and opacity together.",
+        "Card open / close: {hoverDuration}ms, `{hoverEase}`, on height, background, border, shadow, and the copy's rows and opacity together.",
       ],
       interruption:
         "Pausing freezes the row mid-move and it resumes from there (`animation-play-state`). A card that loses hover mid-open closes from wherever it is with the same transition. Resizing only re-measures the duration and copy count; the row doesn't jump back.",
@@ -1895,7 +1909,7 @@ export const registry: RegistryEntry[] = [
       ],
     },
     controls: [
-      { type: "number", name: "speed", label: "Speed", default: 77, min: 10, max: 200, step: 1, unit: "px/s" },
+      { type: "number", name: "speed", label: "Speed", default: 52, min: 10, max: 200, step: 1, unit: "px/s" },
       {
         type: "select",
         name: "direction",
@@ -1911,6 +1925,7 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "cardHeight", label: "Card height", default: 324, min: 240, max: 440, step: 4, unit: "px" },
       { type: "number", name: "hoverGrow", label: "Hover grow", default: 58, min: 0, max: 120, step: 2, unit: "px" },
       { type: "number", name: "hoverDuration", label: "Hover", default: 300, min: 0, max: 800, step: 10, unit: "ms" },
+      { type: "select", name: "hoverEase", label: "Hover easing", default: easings.out, options: easingOptions },
       { type: "color", name: "hoverBorder", label: "Hover border", default: "#D9CCDC" },
     ],
     assets: [
@@ -1927,7 +1942,7 @@ export const registry: RegistryEntry[] = [
       "`items` is an array of `{ icon?, title, description?, href? }`. `title` and `description` are nodes so the site's heading and paragraph styles apply; the title is clamped to 3 lines. With `href` the card is a link; without it the card is still focusable so keyboard users can open it.",
       "The section heading and intro above the row are not part of this component - render them separately. The original section is white with 197px / 162px padding from 992px (80px below), and 83px between the intro and the row.",
       "Original typography: heading Cabinet Grotesk (licensed) 36px / 1.2, weight 400, -0.56px tracking, #410051 from 992px; 22px bold below. Copy 16px / 1.5 #0B0623 (14px on phones). Icons are 32px pink line icons. The demo uses Bricolage Grotesque for the heading.",
-      "Motion matches the original: a CSS keyframe marquee at about 77px/s (7500px every 97.8s), and on hover the card goes from 324px to 382px tall, rgb(163 9 187 / 0.05) to white, with a #D9CCDC border and `0 8px 28px rgb(11 6 35 / 0.12)` shadow over 300ms `ease`. Deliberate changes: the original's copy pops in with `display: none → block` and its card grows only as tall as the row allows; here the copy opens smoothly with the grow, the card grows evenly about its centre, and the row pauses on hover so the open card stays under the pointer.",
+      "The original runs a CSS keyframe marquee at about 77px/s (7500px every 97.8s), and on hover the card goes from 324px to 382px tall, rgb(163 9 187 / 0.05) to white, with a #D9CCDC border and `0 8px 28px rgb(11 6 35 / 0.12)` shadow over 300ms `ease`. Deliberate changes: the defaults here run slower (52px/s) and open the card on a strong ease-out (`cubic-bezier(0.23, 1, 0.32, 1)`) so it feels more responsive; the original's copy pops in with `display: none → block` and its card grows only as tall as the row allows; here the copy opens smoothly with the grow, the card grows evenly about its centre, and the row pauses on hover so the open card stays under the pointer.",
       "It is a Client Component (\"use client\") because it measures its width with a ResizeObserver. The keyframes and pause rules ship inside the component in a React 19 `<style href precedence>` tag; on React 18, move them into the global CSS.",
     ],
   },
@@ -1965,7 +1980,7 @@ export const registry: RegistryEntry[] = [
         "Marquee: `before \u00b7 thumb \u00b7 after` (\"Hot [image] Desks\") repeating, moving left with `translateX`. Words are 7.67cqw (101px in a 1320px row), weight 400, -0.04em tracking, white; the thumb is 0.79em tall with the card's leaf shape. Strips use 36px words and a 1.36em thumb.",
       ],
       timing: [
-        "Width (`flex-grow`) and the detail card's fade: {duration}ms, `cubic-bezier(0.12, 0.23, 0.5, 1)`, together (Framer's tween in the original).",
+        "Width (`flex-grow`) and the detail card's fade: {duration}ms, `{ease}`, together{ease|cubic-bezier(0.12, 0.23, 0.5, 1)= (Framer's tween in the original)|*=}.",
         "Marquee: linear, {speed}px per second, endless.",
       ],
       interruption:
@@ -1995,8 +2010,9 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "stripHeight", label: "Strip height", default: 200, min: 120, max: 320, step: 2, unit: "px" },
       { type: "number", name: "expand", label: "Open width", default: 1.39, min: 1.1, max: 2.5, step: 0.01 },
       { type: "number", name: "stripExpand", label: "Open strip width", default: 1.49, min: 1.1, max: 2.5, step: 0.01 },
-      { type: "number", name: "duration", label: "Expand", default: 400, min: 150, max: 1000, step: 10, unit: "ms" },
-      { type: "number", name: "speed", label: "Marquee speed", default: 100, min: 20, max: 300, step: 5, unit: "px/s" },
+      { type: "number", name: "duration", label: "Expand", default: 500, min: 150, max: 1000, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Expand easing", default: easings.inOut, options: easingOptions },
+      { type: "number", name: "speed", label: "Marquee speed", default: 40, min: 20, max: 300, step: 5, unit: "px/s" },
       { type: "number", name: "gap", label: "Gap", default: 8, min: 0, max: 32, step: 1, unit: "px" },
       { type: "number", name: "radius", label: "Radius", default: 0, min: 0, max: 32, step: 1, unit: "px" },
     ],
@@ -2057,37 +2073,40 @@ export const registry: RegistryEntry[] = [
     fullBleed: true,
     motion: {
       intent:
-        "A row of slim, faded cards where the one you point at grows to fill the row and its content rises into view, so a set of testimonials can be browsed by sweeping across them. It should feel smooth and deliberate, never twitchy as the pointer moves.",
+        "A row of slim, faded cards where the one you point at grows to fill the row and its content rises into view, so a set of testimonials can be browsed by sweeping across them. It should answer the pointer at once and then settle softly, and never flicker as the pointer sweeps across the row.",
       trigger:
-        "Pointer hover on a card (devices that really hover), or keyboard focus on it. One card is always open; leaving the row keeps the last one open.",
+        "Pointer resting on a card for {hoverDelay}ms (hover intent), or keyboard focus on it (immediately). One card is always open; leaving the row keeps the last one open.",
       states: [
         "Closed card: `flex: 0 0 {collapsedWidth}px` at `opacity: {inactiveOpacity}`; its content is hidden.",
         "Open card: adds `flex-grow: 1` (fills the rest of the row) at `opacity: 1`.",
-        "Open card's content: from `opacity: 0; translateY(50px)` to `opacity: 1; translateY(0)`. It keeps a fixed 420px min width, so the text never reflows while the card grows; the card clips it.",
+        "Open card's content: from `opacity: 0; translateY(24px)` to `opacity: 1; translateY(0)`. It keeps a fixed 420px min width, so the text never reflows while the card grows; the card clips it.",
       ],
       timing: [
-        "Card width and opacity: {duration}ms, `cubic-bezier(0.4, 0, 1, 1)`, together.",
-        "Content fade and rise: {contentDuration}ms, `ease-in-out`.",
+        "Card width (`flex-grow`): {duration}ms, `{ease}`{ease|cubic-bezier(0.32, 0.72, 0, 1)= (the iOS drawer curve: moves at once, then a long soft settle)|cubic-bezier(0.23, 1, 0.32, 1)= (strong ease-out: responds at once, then a long soft settle)|*=}.",
+        "Card opacity: {fadeDuration}ms, `{fadeEase}`{fadeEase|cubic-bezier(0.23, 1, 0.32, 1)= (strong ease-out)|cubic-bezier(0.32, 0.72, 0, 1)= (the iOS drawer curve)|*=}, so the card lights up before it's done growing.",
+        "Content in: {contentDuration}ms, `{fadeEase}`, starting {contentDelay}ms after the card, so the card makes room first.",
+        "Content out: {contentExitDuration}ms, same curve, no delay. Exit is faster than enter, so the old quote is gone before its card closes around it.",
       ],
       interruption:
-        "After a hover opens a card, further hovers are ignored for 800ms, so sweeping the pointer across the row doesn't make cards flicker open and shut. When the lock ends, the card under the pointer (if different) opens. Keyboard focus opens a card immediately, ignoring the lock. Transitions retarget from their current values.",
+        "Nothing is ever blocked. A card only opens once the pointer has rested on it for {hoverDelay}ms, so sweeping across the row skips the cards in between; moving on before then cancels it. Every change is a CSS transition, so opening another card mid-way retargets each width, opacity and offset from where it is. Keyboard focus opens a card immediately.",
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, cards switch instantly: no width, fade or rise transitions.",
+        "Under `prefers-reduced-motion: reduce` the width and the content's rise snap, but the opacity of cards and content still fades over 200ms `ease`, so the change stays readable.",
       responsive:
         "Expands from 1200px wide. Below that the cards become a horizontal scroll-snap row of full, open cards {mobileHeight}px tall (vs {height}px on desktop); no hover expansion.",
       rules: [
         "Animate the width with `flex-grow` on flex items so one transition handles every card, not by setting pixel widths in JS.",
-        "Only the active index is state; widths and fades are CSS transitions.",
+        "Only the active index is state; widths and fades are CSS transitions. Don't lock out hovers while a card opens: use hover intent (a short dwell timer) instead.",
+        "Never put an ease-in curve on the opening card: it starts slow at the moment the user is watching.",
         "If a card's media is a video, play it only while that card is open.",
       ],
       checks: [
-        "Hover a closed card: it grows to fill the row over {duration}ms while the open one shrinks to {collapsedWidth}px and fades to {inactiveOpacity}.",
-        "The new card's content fades in and rises 50px over {contentDuration}ms, without the text reflowing.",
-        "Sweep the pointer quickly across the whole row: at most one change per 800ms, no flicker.",
+        "Rest on a closed card: it starts growing at once and settles softly over {duration}ms, while the open one shrinks to {collapsedWidth}px and fades to {inactiveOpacity}.",
+        "The new card's content rises 24px and fades in just after the card starts growing, without the text reflowing; the old card's content is gone almost immediately.",
+        "Sweep the pointer quickly across the whole row: only the card you stop on opens, with no flicker. Rest on a card, then move to another mid-open: it turns around smoothly, with no wait.",
         "Leave the row: the last card stays open.",
         "Tab through the cards: each opens as it gets focus.",
         "Below 1200px: a swipeable row of full cards.",
-        "Turn on reduced motion: cards switch instantly.",
+        "Turn on reduced motion: the width snaps, and cards and content only fade.",
       ],
     },
     controls: [
@@ -2097,8 +2116,14 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "gap", label: "Gap", default: 20, min: 0, max: 48, step: 2, unit: "px" },
       { type: "number", name: "radius", label: "Radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
       { type: "number", name: "inactiveOpacity", label: "Closed opacity", default: 0.2, min: 0.1, max: 1, step: 0.05 },
-      { type: "number", name: "duration", label: "Expand", default: 400, min: 150, max: 1000, step: 10, unit: "ms" },
-      { type: "number", name: "contentDuration", label: "Content reveal", default: 800, min: 200, max: 1400, step: 10, unit: "ms" },
+      { type: "number", name: "duration", label: "Expand", default: 600, min: 150, max: 1000, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Expand easing", default: easings.out, options: easingOptions },
+      { type: "number", name: "contentDuration", label: "Content reveal", default: 500, min: 200, max: 1400, step: 10, unit: "ms" },
+      { type: "number", name: "contentDelay", label: "Content delay", default: 200, min: 0, max: 500, step: 10, unit: "ms" },
+      { type: "select", name: "fadeEase", label: "Reveal easing", default: easings.drawer, options: easingOptions },
+      { type: "number", name: "hoverDelay", label: "Hover intent", default: 120, min: 0, max: 400, step: 10, unit: "ms" },
+      { type: "number", name: "contentExitDuration", label: "Content out", default: 150, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "number", name: "fadeDuration", label: "Card fade", default: 300, min: 0, max: 1000, step: 10, unit: "ms", secondary: true },
       { type: "boolean", name: "overlay", label: "Dark overlay", default: true },
     ],
     assets: [
@@ -2125,6 +2150,7 @@ export const registry: RegistryEntry[] = [
       "Expands from 1200px wide (`minWidth`), as in the original. Below that the cards become a horizontal scroll-snap row of full cards, `mobileHeight` tall (480px, vs 621px `height` on desktop) so a narrow card isn't a towering strip (the original uses a Swiper carousel there).",
       "It is a Client Component (\"use client\") because of the hover state. Only the active index is state; widths and fades are CSS transitions.",
       "If a card's media is a video, play it only while the card is open (the original pauses the others).",
+      "Deliberate change from the original's motion: Ironclad grows the card on an ease-in curve over 400ms, fades the content in over 800ms ease-in-out, and ignores hovers for 800ms after each open. Here it uses the iOS drawer curve for the width, a strong ease-out for the content (faster out than in), and a 120ms hover intent instead of the lock, so it responds at once without flickering.",
     ],
   },
   {
@@ -2163,9 +2189,9 @@ export const registry: RegistryEntry[] = [
         "Arrows: white 50px circles with an accent chevron; on hover the fill becomes the accent and the chevron white. At the {loop|true=ends they stay enabled because the row wraps|*=first and last slide the matching arrow is disabled and nothing moves}.",
       ],
       timing: [
-        "Row slide: {duration}ms, CSS `ease`.",
-        "Card focus change (opacity, blur, scale): {focusDuration}ms, `cubic-bezier(0.4, 0, 0.2, 1)`, starting at the same moment as the row slide, so the new card is sharp before the row stops.",
-        "Dot width: 150ms, `cubic-bezier(0.4, 0, 0.2, 1)`. Arrow colours: 300ms, `cubic-bezier(0.4, 0, 0.2, 1)`.",
+        "Row slide: {duration}ms, `{ease}`.",
+        "Card focus change (opacity, blur, scale): {focusDuration}ms, `{focusEase}`, starting at the same moment as the row slide, so the new card is sharp before the row stops.",
+        "Dot width: {dotDuration}ms. Arrow colours: {arrowDuration}ms. `SpotlightSlide` play button hover scale: {playDuration}ms. All three on `{controlEase}`.",
         "{autoplay|true=Autoplay: each slide holds for {interval}ms; the timer restarts after every change. {loop|true=After the last slide it wraps to the first.|*=It stops on the last slide.}|*=No autoplay.}",
       ],
       interruption:
@@ -2196,8 +2222,14 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "autoplay", label: "Autoplay", default: true },
       { type: "number", name: "interval", label: "Interval", default: 5000, min: 2000, max: 10000, step: 500, unit: "ms" },
       { type: "number", name: "slideWidth", label: "Slide width", default: 1012, min: 830, max: 1200, step: 2, unit: "px" },
-      { type: "number", name: "duration", label: "Slide", default: 500, min: 150, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "duration", label: "Slide", default: 700, min: 150, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Slide easing", default: easings.inOut, options: easingOptions },
       { type: "number", name: "focusDuration", label: "Focus", default: 150, min: 0, max: 800, step: 10, unit: "ms" },
+      { type: "select", name: "focusEase", label: "Focus easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions },
+      { type: "number", name: "dotDuration", label: "Dot", default: 150, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "number", name: "arrowDuration", label: "Arrow hover", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "number", name: "playDuration", label: "Play hover", default: 200, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "controlEase", label: "Controls easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions, secondary: true },
       { type: "number", name: "inactiveOpacity", label: "Side opacity", default: 0.3, min: 0, max: 1, step: 0.05 },
       { type: "number", name: "inactiveBlur", label: "Side blur", default: 5, min: 0, max: 16, step: 1, unit: "px" },
       { type: "number", name: "inactiveScale", label: "Side scale", default: 0.95, min: 0.8, max: 1, step: 0.01 },
@@ -2245,7 +2277,7 @@ export const registry: RegistryEntry[] = [
       "The file exports two components: `SpotlightSlider` (the carousel: track, peeking neighbours, autoplay, arrows, logo tabs, dots) and `SpotlightSlide` (the Sophos testimonial card layout). Any content can go in a slide; `SpotlightSlide` is the usual one.",
       "`items` is an array of `{ content, label, tab }`. `label` names the slide for screen readers and the tab buttons. `tab` is the logo in the row under the slider (1024px+); pass the colour logo, the slider greys out the inactive ones. Leave `tab` out on every item, or pass `showTabs={false}`, to hide the tabs; the dots then show at every width. `showDots={false}` hides the dots.",
       "`SpotlightSlide`: black card. From an 800px-wide card the text and media sit side by side with a min-height of 460px; below that, text on top and media underneath (212px tall, 349px from a 600px card). Left text column 480px wide with 40px padding (30px on small cards): white logo (max 180×38px, pushed to the top), the outlined quote mark fading out to the bottom right, the quote (24px / 1.15, weight 300, -0.08em tracking, closing quote added for you), name (18px) and role (14px). The media sits right, 868px wide and 72px past the card edge, under a black-to-transparent gradient 489px wide.",
-      "`SpotlightSlide` options: `onPlay` shows a 90px play button (60px on small cards) that scales to 1.1 on hover over 200ms; `playIcon` replaces its default white circle (the original uses its own play image). `pattern={{ wide, narrow }}` overlays a decorative image on the card's right side (1012×569 on wide cards, 327px wide on small ones), above the media and under the text.",
+      "`SpotlightSlide` options: `onPlay` shows a 90px play button (60px on small cards) that scales to 1.1 on hover (timed by the slider's `playDuration` and `controlEase` through CSS variables; 200ms `cubic-bezier(0.4, 0, 0.2, 1)` when used on its own); `playIcon` replaces its default white circle (the original uses its own play image). `pattern={{ wide, narrow }}` overlays a decorative image on the card's right side (1012×569 on wide cards, 327px wide on small ones), above the media and under the text.",
       "The original uses Lexend Exa (Google Font) for the quote and name and Inter for the role; the component inherits the site's font, so load Lexend Exa on the section if you want the match. The section around it is #EDF2F9 with a 44px weight-300 heading; the heading and 'See all case studies' button aren't part of this component.",
       "Opening the video (the original uses a Fancybox iframe modal for YouTube) is up to the site: `onPlay` is a plain callback.",
       "It is a Client Component (\"use client\"). State is the active index, the drag offset and the autoplay flags; the track position, fades and blur are CSS transitions.",
@@ -2285,11 +2317,12 @@ export const registry: RegistryEntry[] = [
         "Track: a flex row of {cardWidth}px cards with {gap}px gaps, moved by `translate3d(-index × ({cardWidth} + {gap})px, 0, 0)`. The next card peeks past the content edge and the section clips it.",
         "From 992px it shows as many whole cards as fit and stops when the last card is in view; the arrow at that end drops to 35% opacity and is disabled.",
         "Dots (below 992px): 10px pills; the active one widens to 30px at full opacity, the others are at 20%.",
-        "Arrows: no hover state in the original; this version adds a faint grey fill on hover and a 0.97 press scale (200ms ease-out).",
+        "Arrows: no hover state in the original; this version adds a faint grey fill on hover and a 0.97 press scale.",
       ],
       timing: [
-        "Row: {duration}ms, CSS `ease` (Swiper's default).",
-        "Dot width and opacity: 300ms `ease-in-out`.",
+        "Row: {duration}ms, `{ease}`{ease|ease= (Swiper's default)|*=}.",
+        "Dot width and opacity: {dotDuration}ms, `{dotEase}`.",
+        "Arrow dim, hover fill and press scale: {arrowDuration}ms, `{arrowEase}`.",
       ],
       interruption:
         "Clicking an arrow mid-slide retargets the row from its current position. While dragging, the row follows the finger 1:1 (a quarter of that past the first or last card) with its transition off; on release it moves one card if the drag passed 50px, otherwise it springs back.",
@@ -2303,7 +2336,7 @@ export const registry: RegistryEntry[] = [
         "Make off-screen cards unreachable by Tab only if they're out of view; tabbing to one moves the row to it.",
       ],
       checks: [
-        "Click next: the row moves one card over {duration}ms with `ease`, and the next card still peeks at the edge.",
+        "Click next: the row moves one card over {duration}ms with `{ease}`, and the next card still peeks at the edge.",
         "Keep clicking: it stops when the last card is fully in view and that arrow dims to 35% and disables.",
         "At 375px: no arrows, dots under the row; a 60px swipe moves one card, a 30px swipe springs back.",
         "Turn on reduced motion: the row jumps.",
@@ -2315,6 +2348,11 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "mediaHeight", label: "Badge height", default: 200, min: 140, max: 320, step: 4, unit: "px" },
       { type: "number", name: "radius", label: "Radius", default: 20, min: 0, max: 40, step: 1, unit: "px" },
       { type: "number", name: "duration", label: "Slide", default: 600, min: 150, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Slide easing", default: easings.inOut, options: easingOptions },
+      { type: "number", name: "dotDuration", label: "Dot", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "dotEase", label: "Dot easing", default: easings.inOut, options: easingOptions, secondary: true },
+      { type: "number", name: "arrowDuration", label: "Arrow", default: 200, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "arrowEase", label: "Arrow easing", default: easings.out, options: easingOptions, secondary: true },
       { type: "color", name: "glowTop", label: "Top glow", default: "#E3308C" },
       { type: "color", name: "glowBottom", label: "Bottom glow", default: "#A309BB" },
       { type: "color", name: "color", label: "Text", default: "#410051" },
@@ -2331,7 +2369,7 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "`items` is an array of `{ image, title, label?, href? }`. `image` is the award badge (an <img> or SVG); it is fitted into a 220×100 box centred in the glowing card. `title` is the award name under the card. `href` makes the whole card a link. `label` names the slide for screen readers when `title` isn't plain text.",
       "`heading` and `description` render the section header with the two arrows to its right, as in the original. Leave both out to render just the row (the arrows then sit above it on the right).",
-      "Below 992px the arrows hide. Cards keep their 280px width (capped at the row width), so tablets show two or more with the next peeking and phones show one with the next peeking past the edge; swipe (50px threshold, rubber-bands at the ends) plus 10px pill dots (active one 30px wide, others 20% opacity, width over 300ms ease-in-out) move between them. Keep `min-[992px]:` rather than a Tailwind default breakpoint.",
+      "Below 992px the arrows hide. Cards keep their 280px width (capped at the row width), so tablets show two or more with the next peeking and phones show one with the next peeking past the edge; swipe (50px threshold, rubber-bands at the ends) plus 10px pill dots (active one 30px wide, others 20% opacity, width over `dotDuration` on `dotEase`, 300ms `cubic-bezier(0.77, 0, 0.175, 1)` by default) move between them. Keep `min-[992px]:` rather than a Tailwind default breakpoint.",
       "Card glow: two blurred SVG shapes from the original, inlined as a data-URI background: `#E3308C` at 50% from the top right and `#A309BB` at 30% along the bottom left, on whatever background the section has (white in the original). Change them with `glowTop` / `glowBottom`.",
       "The original arrows are 120×70 pills with a 1px rgba(160,160,160,.3) border, 45px radius and a 31×23 arrow (#0B0623), 15px apart. They have no hover state in the original; this version adds a faint grey fill on hover and a 0.97 press scale.",
       "Typography from the original: heading 66px / 1, weight 300, -1.72px tracking (36px / 1.2, weight 400 below 992px), max 860px wide; description 18px / 1.6; award names 28px / 1.2 (22px below 992px), -0.56px tracking, 21px above. All #410051. The original uses Cabinet Grotesk (free from Fontshare, not on Google Fonts) for the heading and names and Mona Sans (Google Font) for the description; the component inherits the site's font. The demo uses Hanken Grotesk as the closest Google Font.",
@@ -2370,7 +2408,7 @@ export const registry: RegistryEntry[] = [
         "The last card never changes.",
       ],
       timing: [
-        "No fixed duration: progress follows scroll. Each frame, the displayed value moves 0.2 of the way toward the scroll-based target (frame-rate independent, as at 60fps), and a 0.2s linear CSS transition on transform, opacity and filter smooths it further.",
+        "No fixed duration: progress follows scroll. Each frame, the displayed value moves 0.2 of the way toward the scroll-based target (frame-rate independent, as at 60fps), and a {smoothDuration}ms `{smoothEase}` CSS transition on transform, opacity and filter smooths it further.",
       ],
       interruption:
         "Progress always follows the scroll position, so scrolling back up reverses the effect smoothly; there's nothing to cancel.",
@@ -2401,6 +2439,8 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "scale", label: "Scale to", default: 0.96, min: 0.8, max: 1, step: 0.01 },
       { type: "number", name: "blur", label: "Blur", default: 10, min: 0, max: 24, step: 1, unit: "px" },
       { type: "boolean", name: "fade", label: "Fade out", default: true },
+      { type: "number", name: "smoothDuration", label: "Smoothing", default: 300, min: 0, max: 800, step: 10, unit: "ms" },
+      { type: "select", name: "smoothEase", label: "Smoothing easing", default: easings.out, options: easingOptions },
     ],
     promptNotes: [
       "Each child becomes one card. The component draws the card box (background, radius, min height); put the card's content inside as children.",
@@ -2444,8 +2484,8 @@ export const registry: RegistryEntry[] = [
         "Phone progress bar: a 5px pill whose fill width is `(index + 1) / count`.",
       ],
       timing: [
-        "Crossfade: {duration}ms, `cubic-bezier(0.4, 0, 0.2, 1)`, outgoing and incoming at the same time.",
-        "Phone row and progress fill: {slideDuration}ms, CSS `ease`.",
+        "Crossfade: {duration}ms, `{ease}`, outgoing and incoming at the same time.",
+        "Phone row and progress fill: {slideDuration}ms, `{slideEase}`.",
         "No delays and no stagger.",
       ],
       interruption:
@@ -2456,7 +2496,7 @@ export const registry: RegistryEntry[] = [
         "Breakpoints are on the component's own width (container queries), matching the original's container widths. 720px+: pinned layout, media 50%, text `50% - 40px`, 40px gap, text blocks 40px top and bottom padding. 960px+: text blocks at least 270px tall. 1220px+: media {mediaWidth}%, gap {gap}px, text blocks at least 450px tall with 105px top / 155px bottom padding (60px bottom on the last). Below 720px: the phone card row.",
       rules: [
         "Pin with `position: sticky`, not by fixing the element or translating it on scroll. The fade is `opacity` only.",
-        "Don't add GSAP or a carousel library either. The original uses GSAP ScrollTrigger (only its onEnter/onEnterBack callbacks, no scrub) for the swap and react-slick for the phone row; its values are matched here: `waitForAnimate: true`, `touchThreshold: 5`, `edgeFriction: 0.35`, speed 500, `ease`.",
+        "Don't add GSAP or a carousel library either. The original uses GSAP ScrollTrigger (only its onEnter/onEnterBack callbacks, no scrub) for the swap and react-slick for the phone row; its values are matched here: `waitForAnimate: true`, `touchThreshold: 5`, `edgeFriction: 0.35`, speed 500, `ease` (the defaults of `slideDuration` and `slideEase`).",
         "Read scroll positions in a passive scroll listener, at most once per animation frame, and only set state when the active block changes, so scrolling doesn't re-render.",
         "Don't put it inside an ancestor with `overflow: hidden`; that breaks sticky. Use `overflow-x: clip` on the section to clip the peeking phone card.",
       ],
@@ -2485,8 +2525,10 @@ export const registry: RegistryEntry[] = [
         ],
       },
       { type: "number", name: "duration", label: "Crossfade", default: 500, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Crossfade easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions },
       { type: "number", name: "inactiveOpacity", label: "Inactive text", default: 1, min: 0.2, max: 1, step: 0.05 },
       { type: "number", name: "slideDuration", label: "Phone slide", default: 500, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "slideEase", label: "Slide easing", default: easings.ease, options: easingOptions },
       {
         type: "select",
         name: "theme",
@@ -2526,6 +2568,8 @@ export const registry: RegistryEntry[] = [
     level: "section",
     source: "https://netapp.ai/technology/ai-performance-scale/",
     componentName: "CollapsingStack",
+    motionNote:
+      "Scroll-linked: the rows are dealt by the scroll position, so there's no duration or easing; Scrub sets how many seconds the deal takes to catch up with the scroll.",
     dependencies: ["gsap"],
     files: [
       {
@@ -2607,7 +2651,7 @@ export const registry: RegistryEntry[] = [
     slug: "vertical-tab-slider",
     title: "Vertical tab slider",
     description:
-      "Hovering a list of service titles slides a tall photo card to match, steps the title forward on a leader line and glows the card's colours behind it, while the section fades to a dark plate, used on eight25 website",
+      "Hovering a list of service titles slides a tall photo card to match, steps the title forward on a leader line and glows the card's colours behind it, used on eight25 website",
     category: "animations",
     group: "tabs",
     level: "section",
@@ -2625,34 +2669,33 @@ export const registry: RegistryEntry[] = [
     fullBleed: true,
     motion: {
       intent:
-        "A services list that drives a photo card: running the pointer down the titles slides a 400×520 card window up or down to that service's card, and the hovered title steps forward with a hairline running into it from behind the card, so the list and the card read as one control. The card's own photo glows, blurred, behind the column.{reveal|true= As the section scrolls in, the whole band fades from {background} to a dark {revealBackground} plate, and fades back when it leaves.|*=}",
+        "A services list that drives a photo card: running the pointer down the titles slides a 400×520 card window up or down to that service's card, and the hovered title steps forward with a hairline running into it from behind the card, so the list and the card read as one control. The card's own photo glows, blurred, behind the column.",
       trigger:
-        "Desktop (container ≥ 960px): hovering a title with a mouse selects it (`pointerenter`, `pointerType === \"mouse\"` only, so a tap or a pen hovering doesn't select). Click selects too, as the fallback. Keyboard: Enter/Space select; focus alone doesn't (tabbing through doesn't drag the track), but a focused title shows at full opacity. Narrow: swiping the card carousel; the card nearest the scroller's centre becomes active.{reveal|true= Plate: scroll position, via two IntersectionObservers: it goes dark once the section's top has risen above 34% of the viewport height (`rootMargin: 0 0 -66% 0`) and back once its bottom has risen above 30% (`rootMargin: -30% 0 0 0`). It's dark only while both report intersecting, and it never latches, so it plays on every pass.|*=}",
+        "Desktop (container ≥ 960px): hovering a title with a mouse selects it (`pointerenter`, `pointerType === \"mouse\"` only, so a tap or a pen hovering doesn't select). Click selects too, as the fallback. Keyboard: Enter/Space select; focus alone doesn't (tabbing through doesn't drag the track), but a focused title shows at full opacity. Narrow: swiping the card carousel; the card nearest the scroller's centre becomes active.",
       states: [
         "Card track: a column of 520px cards with 10px gaps inside a 400×520 `overflow: hidden` window. Active card n → `translateY(-n × 530px)`.",
         "Active title: `opacity: 1` and `translateX(-{tabShift}px)`. The others: `opacity: {inactiveOpacity}`.",
         "Leader rule: a 1px line, 729px long, ending at the active title's left edge at its vertical centre, `linear-gradient(to right, currentColor 85%, transparent)`, opacity 0 → 1. It belongs to each title (so it follows a title that wraps) and paints behind the card.",
-        "{glow|true=Glow: every card's photo stacked in one box (938×1024 desktop, 518×565 narrow), mirrored horizontally, `blur(75px)` (41px narrow) with a 403px corner radius, centred on the card column; only the active one is at opacity 1, so the colours dissolve between cards. The box is at `opacity: 0.4`{reveal|true= once the plate is dark, 0 before|*=}.|*=No glow.}",
-        "{reveal|true=Plate: section `background-color` {background} → {revealBackground} and `color` {color} → {revealColor}. The titles and leader rule inherit the colour; the card copy is always white on its dark scrim.|*=No plate change: the section stays {background} with {color} text.}",
+        "{glow|true=Glow: every card's photo stacked in one box (938×1024 desktop, 518×565 narrow), mirrored horizontally, `blur(75px)` (41px narrow) with a 403px corner radius, centred on the card column; only the active one is at opacity 1, so the colours dissolve between cards. The box is at `opacity: 0.4`.|*=No glow.}",
+        "Section: {background} background with {color} text. The titles and leader rule inherit the colour; the card copy is always white on its dark scrim.",
         "Narrow (< 960px): the same cards as a horizontal scroll-snap carousel (300px wide; the active card is 420px tall, the others 400px), with a 5px progress bar filled to (active + 1) / count and an `n / total` counter. No tab column.",
         "Plus link: a white disc with a purple plus; on hover of the disc itself a violet disc wipes in from the bottom-left corner (`clip-path: circle(0% at 0% 100%)` → `circle(150% at 0% 100%)`).",
       ],
       timing: [
-        "Card track: {slideDuration}ms `ease-out` on `transform`.",
-        "Title step and opacity, leader rule: 300ms `ease-out`.",
-        "Narrow card height (400 ↔ 420): 300ms `ease-out`.",
-        "{glow|true=Glow crossfade: 700ms `ease-out`.|*=}",
-        "{reveal|true=Plate: 700ms `ease-out` on `background-color` and `color`.|*=}",
-        "Plus wipe: 300ms `ease-out`.",
+        "Card track: {slideDuration}ms `{slideEase}` on `transform`.",
+        "Title step and opacity, leader rule: {stepDuration}ms `{stepEase}`.",
+        "Narrow card height (400 ↔ 420): {stepDuration}ms `{stepEase}`.",
+        "Narrow progress fill: {stepDuration}ms `{progressEase}` on `width`.",
+        "{glow|true=Glow crossfade: {fadeDuration}ms `{fadeEase}`.|*=}",
+        "Plus wipe: {stepDuration}ms `{stepEase}`.",
       ],
       interruption:
-        "Everything is a CSS transition on state, so running the pointer quickly down the list retargets the track from wherever it is, with no queue. The plate reverses mid-fade the same way.",
+        "Everything is a CSS transition on state, so running the pointer quickly down the list retargets the track from wherever it is, with no queue.",
       reducedMotion:
-        "Under `prefers-reduced-motion: reduce`, keep the selection (it's how the card is chosen) but make the track move, title step and crossfades instant, and skip the plus wipe. The plate can still change colour, without the fade.",
+        "Under `prefers-reduced-motion: reduce`, keep the selection (it's how the card is chosen) but make the track move, title step and crossfades instant, and skip the plus wipe.",
       rules: [
         "Translate the `<ul>` inside the window with a CSS custom property set from state; don't scroll it.",
         "On narrow screens use a native `scroll-snap` carousel so touch keeps the browser's own inertia, and read the active card back out of the scroll position (the slide whose centre is nearest the scroller's centre) rather than driving it.",
-        "Measure the plate's IntersectionObservers against the nearest scrolling ancestor if there is one, otherwise the viewport.",
         "Stack the glow images and crossfade them on opacity rather than swapping one `src`, so a change is a dissolve, not a pop while bytes load. At 75px of blur a small image is enough.",
         "Lift the card window above the tab column (`z-index`) so the leader rule passes behind the card.",
       ],
@@ -2660,20 +2703,22 @@ export const registry: RegistryEntry[] = [
         "Run the pointer down the titles: the card window slides to each card in {slideDuration}ms, the hovered title steps {tabShift}px left at full opacity with the line running into it from behind the card, and the others dim to {inactiveOpacity}.",
         "Tap a title on a touch screen: it selects only on the tap, not on touch-down.",
         "Tab through the titles with the keyboard: focus shows on each without moving the card; Enter selects.",
-        "{reveal|true=Scroll the section in: the band fades to {revealBackground} with white type once its top passes a third of the way up the screen, and back as it leaves the top; scroll back and it plays again.|*=}",
         "Narrow the container below 960px: the cards become a swipe carousel with the progress bar and counter, and the counter follows the swipe.",
       ],
     },
     controls: [
       { type: "number", name: "slideDuration", label: "Card slide", default: 500, min: 0, max: 1200, step: 50, unit: "ms" },
+      { type: "select", name: "slideEase", label: "Slide easing", default: easings.out, options: easingOptions },
+      { type: "number", name: "fadeDuration", label: "Glow fade", default: 700, min: 0, max: 1500, step: 10, unit: "ms" },
+      { type: "select", name: "fadeEase", label: "Fade easing", default: easings.out, options: easingOptions },
+      { type: "number", name: "stepDuration", label: "Tab step", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "stepEase", label: "Tab step easing", default: easings.out, options: easingOptions, secondary: true },
+      { type: "select", name: "progressEase", label: "Progress easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions, secondary: true },
       { type: "number", name: "tabShift", label: "Active tab step", default: 40, min: 0, max: 80, step: 2, unit: "px" },
       { type: "number", name: "inactiveOpacity", label: "Inactive tabs", default: 0.4, min: 0.1, max: 1, step: 0.05 },
       { type: "boolean", name: "glow", label: "Photo glow", default: true },
-      { type: "boolean", name: "reveal", label: "Dark plate on scroll", default: true },
-      { type: "color", name: "background", label: "Background", default: "#FFFFFF" },
-      { type: "color", name: "color", label: "Text", default: "#4E008E" },
-      { type: "color", name: "revealBackground", label: "Plate background", default: "#290044" },
-      { type: "color", name: "revealColor", label: "Plate text", default: "#FFFFFF" },
+      { type: "color", name: "background", label: "Background", default: "#290044" },
+      { type: "color", name: "color", label: "Text", default: "#FFFFFF" },
     ],
     assets: [
       {
@@ -2687,8 +2732,8 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "`items` is an array of `{ title, description?, image, imageAlt?, href?, linkLabel? }`, one per card and tab. `title` is the tab label and the small title at the top of the card; `description` is the large copy at the bottom (clamped to 5 lines); `href` adds the plus link (no href, no plus, but the slot is kept so copy wraps the same on every card).",
       "Use the raw photo for `image`: the component lays the original's scrim over it (a corner shade, a shade up from the bottom left and a flat 20% black) so white copy reads on any photo. An image with the scrim already baked in comes out about 40% too dark.",
-      "`children` render above the card row (headline, intro copy, a CTA) and inherit the section's text colour, so they flip with the plate. The original has an 80px headline, then copy indented to the tab column's left edge (550px).",
-      "The original darkens the WHOLE PAGE (it sets `data-plate=\"dark\"` on <html> and recolours the neighbouring sections and the header). This component scopes the plate to its own section. If the site wants the page-wide version, set a data attribute on <html> from the same `revealed` state.",
+      "`children` render above the card row (headline, intro copy, a CTA) and inherit the section's text colour. The original has an 80px headline, then copy indented to the tab column's left edge (550px).",
+      "The original fades the whole page to this dark plate as the section scrolls in (it sets `data-plate=\"dark\"` on <html>). This component leaves that out and just uses the plate's colours, since the hover is the effect it's for.",
       "Layout: from a 960px-wide container the row is the 400px card window and a 730px tab column with at least 150px between them; the card is 520px tall in a 445px row, overflowing 37.5px above and below. It's a container query, so it follows the section's width, not the viewport (the original switches at the 1200px viewport).",
       "The original also draws 39 white bars under `mix-blend-overlay` and two blurred curve shapes behind the card column (decoration, not part of this component; the demo has a simple stand-in).",
       "Original typography: tabs in Landour Text (licensed) 34px / 110%, -1px tracking; card title Instrument Sans bold 14px / 160% (18px narrow); card copy Instrument Sans 24px / 140% (18px narrow). The demo uses Hanken Grotesk for the tabs as the closest Google Font, and Instrument Sans (a Google Font) for the cards.",
@@ -2728,9 +2773,10 @@ export const registry: RegistryEntry[] = [
         "Panels: one flex track with a 10px gap, moved by whole panels with `translateX`.{autoplay|true= After the last tab it slides back to the first.|*=}",
       ],
       timing: [
-        "{autoplay|true={progress|true=Fill: {interval}ms, `linear`. It completes exactly as the tab changes.|*=Timer: {interval}ms.}|*=}",
-        "Panel slide: {duration}ms, CSS `ease`.",
-        "Active tab background and label colour: 300ms `ease-out`.",
+        "{autoplay|true={progress|true=Fill: {interval}ms, `{fillEase}`. It completes exactly as the tab changes.|*=Timer: {interval}ms.}|*=}",
+        "Panel slide: {duration}ms, `{ease}`.",
+        "Active tab background and label colour: {tabDuration}ms `{tabEase}`.",
+        "{autoplay|true={pauseButton|true=Pause button hover dim (to 80%): {hoverDuration}ms `{tabEase}`.|*=}|*=}",
       ],
       interruption:
         "Clicking a tab mid-slide retargets the panel from where it is.{autoplay|true= Pausing (focus, off-screen, hidden tab{pauseOnHover|true=, hover|*=}{pauseButton|true=, or the pause button|*=}) freezes the timer where it is and resumes it from there; the fill is the timer, so it can't drift.|*=}",
@@ -2754,7 +2800,12 @@ export const registry: RegistryEntry[] = [
     controls: [
       { type: "boolean", name: "autoplay", label: "Autoplay", default: true },
       { type: "number", name: "interval", label: "Interval", default: 4500, min: 1500, max: 10000, step: 100, unit: "ms" },
-      { type: "number", name: "duration", label: "Slide", default: 600, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "duration", label: "Slide", default: 700, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Slide easing", default: easings.inOut, options: easingOptions },
+      { type: "select", name: "fillEase", label: "Fill easing", default: easings.linear, options: easingOptions },
+      { type: "number", name: "tabDuration", label: "Tab fade", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "number", name: "hoverDuration", label: "Button hover", default: 200, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "tabEase", label: "Tab easing", default: easings.out, options: easingOptions, secondary: true },
       { type: "boolean", name: "progress", label: "Progress fill", default: true },
       { type: "boolean", name: "pauseOnHover", label: "Pause on hover", default: false },
       { type: "boolean", name: "pauseButton", label: "Pause button", default: true },
@@ -2777,7 +2828,7 @@ export const registry: RegistryEntry[] = [
       "`items` is an array of `{ label, media, content }`. `label` is the tab text (the original uses `/context`, `/strategy`, ...). `media` fills the rounded media box and is sized to it (an image with `object-cover`, or a video). `content` is optional and renders under the box (title, copy, CTA), styled with the site's typography.",
       "The section heading and intro above the tabs are not part of this component - render them separately in the section.",
       "`mediaBackground` (any CSS `background` value) shows behind the media; the original uses a purple background image behind a product screenshot. Media box height steps 300 / 400 (768px) / 500 (992px) / `mediaHeight` (1200px, default 560), as in the original.",
-      "Motion matches the original Swiper setup: each tab holds for 4500ms, then panels slide 600ms `ease` with a 10px gap, rewinding to the first tab after the last. The active tab gets a `linear-gradient(90deg, #410051, #E3308C)` background, and a `linear-gradient(90deg, transparent, #E3308C)` fill at 50% opacity sweeps across it linearly. Keep these unless asked. One deliberate change: the original sweep runs 5000ms and gets cut off at 90%; here it runs exactly `interval`, so it completes as the tab changes.",
+      "The original Swiper setup holds each tab for 4500ms, then slides panels 600ms `ease` with a 10px gap (the defaults here slide slower, 700ms on a strong ease-in-out), rewinding to the first tab after the last. The active tab gets a `linear-gradient(90deg, #410051, #E3308C)` background, and a `linear-gradient(90deg, transparent, #E3308C)` fill at 50% opacity sweeps across it linearly. Keep these unless asked. One deliberate change: the original sweep runs 5000ms and gets cut off at 90%; here it runs exactly `interval`, so it completes as the tab changes.",
       "Tab labels default to `font-mono text-sm lowercase`; the original uses Space Mono 14px (a Google Font). Pass `tabClassName` to set the site's mono font. The original's panel title uses Cabinet Grotesk (licensed); use the site's display font or a close Google Font such as Bricolage Grotesque.",
       "The progress fill's CSS animation is the timer: its `animationend` advances the tab, so pausing the animation pauses autoplay exactly. Autoplay waits while the component is less than 25% on screen or the browser tab is hidden. Clicking a tab restarts the timer from zero (autoplay keeps going, like the original).",
       "Accessibility: WAI-ARIA tabs (role tablist/tab/tabpanel, roving tabindex, arrow keys, Home, End); inactive panels are `inert`. Give images real alt text. For WCAG 2.2.2, a 45px pause / play button sits at the end of the tab bar while autoplay is on (`pauseButton`, default true; keep it unless the site has another way to stop the motion), and autoplay also holds while keyboard focus is inside the component.",
@@ -2820,10 +2871,10 @@ export const registry: RegistryEntry[] = [
         "Link chips: white with a transparent 1px border; on hover the border and text turn `{textColor}`.",
       ],
       timing: [
-        "{autoplay|true=Progress fill: {interval}ms, `linear`. The tab changes exactly when it completes.|*=}",
-        "Panel open / close: {duration}ms from 960px ({duration}ms halved below), `cubic-bezier(0.3, 0.52, 0.49, 0.9)`. The closing and opening tabs move together.",
-        "Media fade: {fade}ms, `cubic-bezier(0.25, 1, 0.5, 1)`.",
-        "Chip hover: 150ms colour transition. Mobile chevron turn: 300ms `ease-out`.",
+        "{autoplay|true=Progress fill: {interval}ms, `{fillEase}`. The tab changes exactly when it completes.|*=}",
+        "Panel open / close: {duration}ms from 960px ({duration*1/2}ms below), `{ease}`. The closing and opening tabs move together.",
+        "Media fade: {fade}ms, `{fadeEase}`. The outgoing media hides instantly once the fade ends.",
+        "Chip hover: {chipDuration}ms `{chipEase}` colour transition. Mobile chevron turn: {iconDuration}ms `{iconEase}`.",
       ],
       interruption:
         "Clicking another title mid-transition retargets both panels from where they are, and the new media fades in over whatever is showing.{autoplay|true= Pausing (focus, off-screen, hidden browser tab{pauseOnHover|true=, hover|*=}) freezes the fill where it is and resumes from there; the fill is the timer, so it can't drift.|*=}",
@@ -2849,7 +2900,14 @@ export const registry: RegistryEntry[] = [
       { type: "boolean", name: "autoplay", label: "Autoplay", default: true },
       { type: "number", name: "interval", label: "Interval", default: 12000, min: 3000, max: 20000, step: 500, unit: "ms" },
       { type: "number", name: "duration", label: "Expand", default: 400, min: 0, max: 1000, step: 10, unit: "ms" },
+      { type: "select", name: "ease", label: "Expand easing", default: easings.inOut, options: easingOptions },
       { type: "number", name: "fade", label: "Media fade", default: 600, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "fadeEase", label: "Fade easing", default: "cubic-bezier(0.25, 1, 0.5, 1)", options: easingOptions },
+      { type: "select", name: "fillEase", label: "Fill easing", default: easings.linear, options: easingOptions },
+      { type: "number", name: "iconDuration", label: "Chevron turn", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "iconEase", label: "Chevron easing", default: easings.out, options: easingOptions, secondary: true },
+      { type: "number", name: "chipDuration", label: "Chip hover", default: 150, min: 0, max: 600, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "chipEase", label: "Chip easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions, secondary: true },
       { type: "boolean", name: "pauseOnHover", label: "Pause on hover", default: false },
       { type: "number", name: "radius", label: "Radius", default: 12, min: 0, max: 32, step: 1, unit: "px" },
       { type: "color", name: "activeBackground", label: "Open tab", default: "#F8F5F3" },
@@ -2867,7 +2925,7 @@ export const registry: RegistryEntry[] = [
     promptNotes: [
       "`items` is an array of `{ title, body?, links?, media, mediaBackground? }`. `body` is the copy under the open title; `links` render as small chips (`{ label, href }`). `media` fills the media panel and is sized to it (a muted looping video or an image with `object-cover`). `mediaBackground` shows behind that tab's media (defaults to `mediaBackground`, #F8F5F3).",
       "The section heading, intro and CTA above the tabs are not part of this component - render them separately in the section.",
-      "Ported from PandaDoc's BenefitsTabs (Next.js + Contentful). Values match it: 12000ms per tab, 400ms panel (200ms below 960px) on `cubic-bezier(0.3, 0.52, 0.49, 0.9)`, sand #F8F5F3 open card, #242424 text, #248567 hover, 2px progress bar, 31.25% / 65.625% columns, media sticky at 80px. Keep these unless asked.",
+      "Ported from PandaDoc's BenefitsTabs (Next.js + Contentful). Values match it: 12000ms per tab, 400ms panel (200ms below 960px) on `cubic-bezier(0.3, 0.52, 0.49, 0.9)` (the default here is a strong ease-in-out instead), sand #F8F5F3 open card, #242424 text, #248567 hover, 2px progress bar, 31.25% / 65.625% columns, media sticky at 80px. Keep these unless asked.",
       "Two deliberate changes from the original: the progress fill is the timer (the original runs a separate setTimeout next to a `width` animation), and the media crossfades over 600ms. The original's Splide slider is configured to fade over 600ms, but its CSS sets `transition: none !important` on the slides, so the live site swaps media instantly; set `fade={0}` to match that.",
       "Titles default to `text-[20px] sm:text-[28px] font-bold`; the original uses Graphik (licensed) - use the site's font, or a close Google Font such as Inter. Pass `titleClassName` to change them.",
       "Accessibility: each title is a button with `aria-expanded` / `aria-controls`, Arrow Up / Down, Home and End move between titles (roving tabindex), and closed panels are `inert`. Autoplay holds while keyboard focus is inside, and clicking a title restarts the timer. For WCAG 2.2.2 (motion over 5s needs a way to stop it), consider `pauseOnHover` or turning `autoplay` off if the site has no other pause control.",
@@ -2907,9 +2965,9 @@ export const registry: RegistryEntry[] = [
         "Image inside each card: `translateX({slideOffset}%)` when inactive, `translateX(0)` when active, clipped by its rounded (10px) box. The outgoing image slides back out to {slideOffset}% while its card fades.",
       ],
       timing: [
-        "Card crossfade: {fadeDuration}ms, CSS `ease`.",
-        "Image slide: {slideDuration}ms, `cubic-bezier(0.33, 1, 0.68, 1)` (easeOutCubic), both in and out.",
-        "Pill gradient, shadow and label colour: 300ms `ease-out`.",
+        "Card crossfade: {fadeDuration}ms, `{fadeEase}`.",
+        "Image slide: {slideDuration}ms, `{slideEase}`, both in and out.",
+        "Pill gradient, border, shadow and label colour: {tabDuration}ms `{tabEase}`. An `img` icon whitens over {tabDuration}ms `{iconEase}`.",
       ],
       interruption:
         "Everything is CSS transitions on state, so clicking another pill mid-transition retargets each card and image from where it is. Nothing jumps.",
@@ -2931,7 +2989,12 @@ export const registry: RegistryEntry[] = [
     },
     controls: [
       { type: "number", name: "fadeDuration", label: "Crossfade", default: 600, min: 0, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "fadeEase", label: "Crossfade easing", default: easings.ease, options: easingOptions },
       { type: "number", name: "slideDuration", label: "Image slide", default: 700, min: 0, max: 1400, step: 10, unit: "ms" },
+      { type: "select", name: "slideEase", label: "Slide easing", default: "cubic-bezier(0.33, 1, 0.68, 1)", options: easingOptions },
+      { type: "number", name: "tabDuration", label: "Pill change", default: 300, min: 0, max: 800, step: 10, unit: "ms", secondary: true },
+      { type: "select", name: "tabEase", label: "Pill easing", default: easings.out, options: easingOptions, secondary: true },
+      { type: "select", name: "iconEase", label: "Icon easing", default: "cubic-bezier(0.4, 0, 0.2, 1)", options: easingOptions, secondary: true },
       { type: "number", name: "slideOffset", label: "Slide from", default: 80, min: 0, max: 100, step: 5, unit: "%" },
       { type: "boolean", name: "connectors", label: "Connectors", default: true },
       { type: "color", name: "accentFrom", label: "Accent from", default: "#410051" },
@@ -2985,7 +3048,7 @@ export const registry: RegistryEntry[] = [
     usageProps: ["items={faqs}", 'heading="Frequently asked questions"'],
     motion: {
       intent:
-        "An FAQ list of rounded, numbered question cards. {collapsible|true=One answer is open at a time, and clicking the open card closes it.|*=One answer is always open: opening a card closes the one that was open, and clicking the open card does nothing.} The answer slides open to its own height while the chevron turns over, on one long ease-out, so it feels smooth and unhurried.",
+        "An FAQ list of rounded, numbered question cards. {collapsible|true=One answer is open at a time, and clicking the open card closes it.|*=One answer is always open: opening a card closes the one that was open, and clicking the open card does nothing.} The answer slides open to its own height while the chevron turns over, on one shared duration and curve, so it feels smooth and unhurried.",
       trigger:
         "Click anywhere on a closed card (the card's header row is a <button> and a closed card is all header), or Tab to it and press Enter or Space.",
       states: [
@@ -2996,7 +3059,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Duration: {duration}ms for the answer and the chevron.",
-        "Easing: `cubic-bezier(0, 0, 0.2, 1)` (Tailwind's `ease-out`) for both.",
+        "Easing: `{easing}` for both.",
         "Opening one card and closing the other start together.",
       ],
       interruption:
@@ -3020,7 +3083,8 @@ export const registry: RegistryEntry[] = [
     },
     controls: [
       { type: "text", name: "heading", label: "Heading", default: "Frequently asked questions" },
-      { type: "number", name: "duration", label: "Duration", default: 500, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "number", name: "duration", label: "Duration", default: 400, min: 100, max: 1200, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: easings.drawer, options: easingOptions },
       { type: "boolean", name: "collapsible", label: "Allow all closed", default: false },
       { type: "boolean", name: "numbered", label: "Step numbers", default: true },
       { type: "color", name: "cardColor", label: "Card color", default: "#F6F5F7" },
@@ -3042,6 +3106,7 @@ export const registry: RegistryEntry[] = [
     group: "backgrounds",
     level: "atom",
     componentName: "Aurora",
+    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its pace.",
     files: [
       {
         name: "aurora.tsx",
@@ -3102,6 +3167,7 @@ export const registry: RegistryEntry[] = [
     group: "backgrounds",
     level: "atom",
     componentName: "Curtain",
+    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its overall pace; Flow and Wave set how the layers drift and undulate.",
     files: [
       {
         name: "curtain.tsx",
@@ -3162,6 +3228,83 @@ export const registry: RegistryEntry[] = [
     ],
   },
   {
+    slug: "layer-cascade",
+    title: "Layer cascade",
+    description:
+      "A static four-cornered shape you can drag into any quadrilateral, on a stack of layers in a cyan-to-violet gradient, with new layers sliding out from under it and sinking into black, a WebGL shader background",
+    category: "shaders",
+    group: "backgrounds",
+    level: "atom",
+    componentName: "LayerCascade",
+    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its overall pace; Flow sets how fast layers sink down the stack.",
+    files: [
+      {
+        name: "layer-cascade.tsx",
+        path: "src/registry/shaders/backgrounds/layer-cascade.tsx",
+      },
+    ],
+    themeToggle: false,
+    fullBleed: true,
+    usageProps: ['className="absolute inset-0 -z-10"'],
+    motion: {
+      implementation: "required",
+      intent:
+        "A full-bleed animated background for a dark hero or section: a static rounded four-cornered shape on top of a stack of layers of the same outline, each a little larger and darker than the one in front, fanning out to black at the edges. New layers keep sliding out from under the top shape and sinking down through the stack, so the stack feels like it's slowly unfolding outward while the top stays still. Calm and premium, slow enough to read as texture.",
+      trigger: shader.trigger,
+      states: [
+        "Colour: one gradient across the frame, {colorTop} at the upper right, through {colorMid} in the middle, to {colorBottom} at the lower left. Each layer reveals it at its own brightness.",
+        "Top shape: a quadrilateral with corners at {corners} (clockwise from the top left, as [x, y] fractions of the section's width and height; values just outside 0–1 push a corner past the edge), its corners rounded to {radius} of the section height. It never moves.",
+        "Stack: {layers} layers behind it. Each one is the shape in front offset outward by {spread} of the section height (so the gaps stay even and the corners round off more), turned {twist}° further around the shape's centre, and keeps {falloff} of its brightness, so the back of the stack fades to the background colour {background}.",
+        "Depth: each layer casts a soft shadow of strength {shadow} on the layer behind it, strongest right at its edge.",
+        "Motion: the layers behind the top rectangle sink down the stack at {flow} layers per second. A new layer slides out from under the top shape (it starts exactly at its size, so nothing pops), then grows, turns and darkens as it recedes, and the deepest layer melts into the background. The loop is seamless. The top shape stays still.",
+      ],
+      timing: shader.timing,
+      interruption: shader.interruption,
+      reducedMotion: shader.reducedMotion,
+      responsive:
+        "It fills its section at any size and re-renders on resize. Rendering resolution is capped at {maxPixelRatio}× device pixels; lower it for very large sections.",
+      rules: [
+        ...shader.rules,
+        "Use light text on top: the stack runs from bright cyan and violet in the middle to black at the edges.",
+        "Keep the defaults (`LAYER_CASCADE_DEFAULTS`) for anything I haven't set.",
+      ],
+      checks: [
+        "It animates continuously behind the section's content: the top shape stays still while new layers slide out from under it and sink down the stack, with no popping when a layer is added or removed, and crisp, antialiased edges.",
+        "The section's text and buttons sit above it and stay readable.",
+        ...shader.checks,
+      ],
+      apply: shader.apply,
+    },
+    controls: [
+      { type: "color", name: "colorTop", label: "Top", default: "#00E5FF" },
+      { type: "color", name: "colorMid", label: "Middle", default: "#5200FF" },
+      { type: "color", name: "colorBottom", label: "Bottom", default: "#1C00A3" },
+      { type: "color", name: "background", label: "Background", default: "#000000" },
+      { type: "number", name: "speed", label: "Speed", default: 1, min: 0, max: 5, step: 0.1 },
+      { type: "number", name: "flow", label: "Flow", default: 0.12, min: 0, max: 1, step: 0.01 },
+      { type: "number", name: "layers", label: "Layers", default: 12, min: 2, max: 16, step: 1 },
+      {
+        type: "points",
+        name: "corners",
+        label: "Corners",
+        default: "0.141,0.139 0.815,0.147 0.814,0.828 0.138,0.828",
+        hint: "Drag the four corner handles in the preview to reshape the top layer.",
+      },
+      { type: "number", name: "radius", label: "Radius", default: 0.06, min: 0, max: 0.3, step: 0.01 },
+      { type: "number", name: "spread", label: "Spread", default: 0.04, min: 0.005, max: 0.15, step: 0.005 },
+      { type: "number", name: "twist", label: "Twist", default: 0, min: -10, max: 10, step: 0.5, unit: "°" },
+      { type: "number", name: "falloff", label: "Falloff", default: 0.8, min: 0.3, max: 1, step: 0.01 },
+      { type: "number", name: "shadow", label: "Shadow", default: 0.3, min: 0, max: 1, step: 0.05 },
+      { type: "number", name: "maxPixelRatio", label: "Max pixel ratio", default: 1.5, min: 0.5, max: 3, step: 0.5 },
+      { type: "boolean", name: "paused", label: "Paused", default: false },
+    ],
+    promptNotes: [
+      "It's a named export: `import { LayerCascade } from \"@/components/animations/layer-cascade\"`.",
+      "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
+      "Raw WebGL2, a single full-screen pass. Every layer shares the top shape's outline. Its corners are fractions of the section, so it stretches with the section rather than cropping. For the fallback background, use a dark violet such as #1C00A3 or black.",
+    ],
+  },
+  {
     slug: "ribbon-wave",
     title: "Ribbon wave",
     description:
@@ -3171,6 +3314,7 @@ export const registry: RegistryEntry[] = [
     level: "atom",
     source: "https://stripe.com/",
     componentName: "RibbonWave",
+    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its pace.",
     files: [
       {
         name: "ribbon-wave.tsx",
@@ -3238,7 +3382,7 @@ export const registry: RegistryEntry[] = [
       { type: "number", name: "rotationZ", label: "Rotation Z", default: 107.4, min: -180, max: 180, step: 0.1, unit: "°" },
       { type: "number", name: "positionX", label: "Position X", default: 593, min: -1200, max: 1200, step: 1, unit: "px" },
       { type: "number", name: "positionY", label: "Position Y", default: -302, min: -1200, max: 1200, step: 1, unit: "px" },
-      { type: "number", name: "scale", label: "Scale", default: 1, min: 0.2, max: 3, step: 0.01 },
+      { type: "number", name: "scale", label: "Scale", default: 1, min: 0.2, max: 3, step: 0.01, motion: false },
       { type: "number", name: "fibres", label: "Fibres", default: 1, min: 0, max: 3, step: 0.05 },
       { type: "number", name: "glow", label: "Sheen", default: 1.98, min: 0, max: 5, step: 0.05 },
       { type: "number", name: "saturation", label: "Saturation", default: 1, min: 0, max: 2, step: 0.01 },
@@ -3262,6 +3406,7 @@ export const registry: RegistryEntry[] = [
     group: "backgrounds",
     level: "atom",
     componentName: "PrismFlow",
+    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its overall pace; Colour cycle sets how fast the spectrum travels.",
     files: [
       {
         name: "prism-flow.tsx",
@@ -3337,6 +3482,7 @@ export const registry: RegistryEntry[] = [
     group: "backgrounds",
     level: "atom",
     componentName: "NeonMarble",
+    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its overall pace; Colour cycle sets how fast the palette travels.",
     files: [
       {
         name: "neon-marble.tsx",
@@ -3385,7 +3531,7 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "colorShadow", label: "Shadow", default: "#3A1468" },
       { type: "number", name: "speed", label: "Speed", default: 1, min: 0, max: 4, step: 0.1 },
       { type: "number", name: "cycle", label: "Colour cycle", default: 0.03, min: 0, max: 0.3, step: 0.01 },
-      { type: "number", name: "scale", label: "Scale", default: 0.5, min: 0.3, max: 3, step: 0.05 },
+      { type: "number", name: "scale", label: "Scale", default: 0.5, min: 0.3, max: 3, step: 0.05, motion: false },
       { type: "number", name: "warp", label: "Fold strength", default: 0.85, min: 0, max: 2, step: 0.05 },
       { type: "number", name: "stretch", label: "Streak length", default: 2.2, min: 1, max: 5, step: 0.1 },
       { type: "number", name: "angle", label: "Angle", default: -28, min: -90, max: 90, step: 1, unit: "°" },

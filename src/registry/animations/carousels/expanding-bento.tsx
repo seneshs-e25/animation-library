@@ -49,8 +49,10 @@ type ExpandingBentoProps = Omit<React.ComponentProps<"div">, "children"> & {
   expand?: number;
   /** How much wider an open strip is than a closed one (784 / 528 in the original). */
   stripExpand?: number;
-  /** Expand / collapse duration, in ms. */
+  /** Expand / collapse duration, in ms (the width and the detail card's fade). */
   duration?: number;
+  /** Expand / collapse easing, any CSS timing function. */
+  ease?: string;
   /** Marquee speed, in px per second. */
   speed?: number;
   /** Space between cards, in px. */
@@ -63,8 +65,6 @@ type ExpandingBentoProps = Omit<React.ComponentProps<"div">, "children"> & {
 
 /** Hatch's leaf shapes, used for cards that don't set `shape`. */
 const SHAPES = ["15px 7.5px 25px 25px", "15px 7.5px", "25px 7.5px 7.5px 15px", "25px 25px 7.5px 7.5px", "7.5px 7.5px 25px 25px"];
-
-const EASE = "cubic-bezier(0.12, 0.23, 0.5, 1)";
 
 const splitTitle = (title: string): [string, string?] => {
   const i = title.indexOf(" ");
@@ -85,11 +85,14 @@ type Variant = "panel" | "strip";
  * - Each row is a flex row; cards have `flex-grow: 1` and the open one gets
  *   `flex-grow: expand`. Only `flex-grow` transitions, so one rule animates
  *   every card's width, and the sizes scale with the row. Each row keeps its
- *   own open card.
+ *   own open card. The width and the detail card's fade run together over
+ *   `duration` (500ms) on `ease` (a strong ease-in-out by default; the
+ *   original uses Framer's tween, cubic-bezier(0.12, 0.23, 0.5, 1), over 400ms).
  * - The detail card is laid out at the open card's final width (a `cqw`
  *   calc), so its text never reflows while the card grows; the card clips it.
  * - Each marquee is two identical halves moving by -50% on a CSS keyframe;
- *   the duration comes from the measured unit width, so it runs at `speed`.
+ *   the duration comes from the measured unit width, so it runs at `speed`,
+ *   always `linear`.
  *
  * Below 900px of container width, each row becomes a horizontal scroll-snap
  * row of open cards. Reduced motion: no marquee, and cards switch instantly.
@@ -101,8 +104,9 @@ export function ExpandingBento({
   stripHeight = 200,
   expand = 1.39,
   stripExpand = 1.49,
-  duration = 400,
-  speed = 100,
+  duration = 500,
+  ease = "cubic-bezier(0.77, 0, 0.175, 1)",
+  speed = 40,
   gap = 8,
   radius = 0,
   ctaColor = "#FF562F",
@@ -117,7 +121,7 @@ export function ExpandingBento({
       style={
         {
           "--eb-duration": `${duration}ms`,
-          "--eb-ease": EASE,
+          "--eb-ease": ease,
           "--eb-gap": `${gap}px`,
           "--eb-radius": `${radius}px`,
           "--eb-cta": ctaColor,

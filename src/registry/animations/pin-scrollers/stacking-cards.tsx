@@ -24,6 +24,10 @@ type StackingCardsProps = Omit<React.ComponentProps<"div">, "children"> & {
   blur?: number;
   /** Fade covered cards out. */
   fade?: boolean;
+  /** CSS transition that smooths each style change behind the scroll, in ms. The original: 200. */
+  smoothDuration?: number;
+  /** Easing of that smoothing transition, a CSS timing function. The original: linear. */
+  smoothEase?: string;
   /**
    * Viewport width (px) from which cards stack. Below it they render as a
    * plain list. The original stacks from 992px; set 0 to stack everywhere.
@@ -47,8 +51,9 @@ const SMOOTHING = 0.2;
  *   eased with smoothstep, t²(3 − 2t), then drives translateY, scale, blur and
  *   opacity. The last card never changes.
  * - The value eases toward the scroll position each frame (0.2 per 60fps
- *   frame, frame-rate independent), and a 0.2s linear CSS transition smooths
- *   it further, matching the original's feel.
+ *   frame, frame-rate independent), and a CSS transition (`smoothDuration`, 300ms,
+ *   on `smoothEase`, a strong ease-out) smooths it further. The original uses
+ *   200ms linear.
  * - Styles are written straight to the DOM in a rAF loop that stops once
  *   every card has settled, so React never re-renders while scrolling. Only
  *   transform, opacity and filter change, so there is no layout work.
@@ -67,6 +72,8 @@ export function StackingCards({
   scale = 0.96,
   blur = 10,
   fade = true,
+  smoothDuration = 300,
+  smoothEase = "cubic-bezier(0.23, 1, 0.32, 1)",
   minWidth = 992,
   className,
   style,
@@ -182,6 +189,8 @@ export function StackingCards({
           "--stack-h": `${cardHeight}px`,
           "--stack-radius": `${radius}px`,
           "--stack-bg": background,
+          "--stack-smooth": `${smoothDuration}ms`,
+          "--stack-smooth-ease": smoothEase,
           ...style,
         } as React.CSSProperties
       }
@@ -189,7 +198,7 @@ export function StackingCards({
       {...props}
     >
       {/* Media queries can't read CSS variables, so the breakpoint is written here. */}
-      <style>{`@media (min-width:${minWidth}px){[data-stacking-cards="${id}"]>[data-card]{position:sticky;top:var(--stack-top);transition:transform .2s linear,opacity .2s linear,filter .2s linear;will-change:transform,opacity,filter}}@media (prefers-reduced-motion:reduce){[data-stacking-cards="${id}"]>[data-card]{transition:none}}`}</style>
+      <style>{`@media (min-width:${minWidth}px){[data-stacking-cards="${id}"]>[data-card]{position:sticky;top:var(--stack-top);transition-property:transform,opacity,filter;transition-duration:var(--stack-smooth);transition-timing-function:var(--stack-smooth-ease);will-change:transform,opacity,filter}}@media (prefers-reduced-motion:reduce){[data-stacking-cards="${id}"]>[data-card]{transition:none}}`}</style>
       {cards.map((card, i) => (
         <div
           key={i}

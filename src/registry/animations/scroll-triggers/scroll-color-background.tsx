@@ -50,7 +50,7 @@ function scrollParent(el: HTMLElement): HTMLElement | null {
 export function ScrollColorBackground({
   sections,
   arriveAt = 0.8,
-  duration = 500,
+  duration = 350,
   easing = "ease",
   className,
   style,

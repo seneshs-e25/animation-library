@@ -31,6 +31,7 @@ export function PreviewStage({
   fullBleed = false,
   defaultTheme = "dark",
   clickNotice = false,
+  panelOpen = false,
 }: {
   children: React.ReactNode;
   /** Show the light/dark background toggle. When false the stage stays dark. */
@@ -41,6 +42,8 @@ export function PreviewStage({
   defaultTheme?: StageTheme;
   /** Confirm clicks with a "Button clicked" notice. Only for button components. */
   clickNotice?: boolean;
+  /** The Customize panel is open over the stage's right edge (desktop), so keep the stage UI clear of it. */
+  panelOpen?: boolean;
 }) {
   const [selectedTheme, setTheme] = React.useState<StageTheme>(defaultTheme);
   const theme: StageTheme = themeToggle ? selectedTheme : "dark";
@@ -99,6 +102,7 @@ export function PreviewStage({
           aria-label="Preview background"
           className={cn(
             "absolute top-4 right-4 flex gap-0.5 rounded-full p-0.5 ring-1 transition-colors duration-200 ease-[ease]",
+            panelOpen && "md:right-[316px]",
             "group-data-[theme=light]/stage:bg-black/[0.04] group-data-[theme=light]/stage:ring-black/10",
             "group-data-[theme=dark]/stage:bg-white/[0.06] group-data-[theme=dark]/stage:ring-white/10",
           )}

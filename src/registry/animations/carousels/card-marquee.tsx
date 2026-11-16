@@ -29,6 +29,8 @@ type CardMarqueeProps = Omit<React.ComponentProps<"div">, "children"> & {
   hoverGrow?: number;
   /** Hover grow / reveal duration, in ms. */
   hoverDuration?: number;
+  /** Hover grow / reveal easing, any CSS timing function. */
+  hoverEase?: string;
   /** Card background at rest, and on hover. */
   restBackground?: string;
   hoverBackground?: string;
@@ -52,8 +54,8 @@ type CardMarqueeProps = Omit<React.ComponentProps<"div">, "children"> & {
  * px/s. Only `transform` is animated on the track.
  *
  * Hover: the card sits centred in a fixed-height slot and grows `hoverGrow`
- * px (half above, half below) over `hoverDuration`ms `ease`, so neighbours
- * never move. The copy opens with a `grid-template-rows: 0fr → 1fr` reveal
+ * px (half above, half below) over `hoverDuration`ms (300) on `hoverEase`
+ * (a strong ease-out by default), so neighbours never move. The copy opens with a `grid-template-rows: 0fr → 1fr` reveal
  * and fades in, pushing the heading up in step with the grow.
  *
  * Reduced motion: no marquee; the row becomes a horizontal scroll area with
@@ -61,13 +63,14 @@ type CardMarqueeProps = Omit<React.ComponentProps<"div">, "children"> & {
  */
 export function CardMarquee({
   items,
-  speed = 77,
+  speed = 52,
   direction = "left",
   pauseOnHover = true,
   cardWidth = 340,
   cardHeight = 324,
   hoverGrow = 58,
   hoverDuration = 300,
+  hoverEase = "cubic-bezier(0.23, 1, 0.32, 1)",
   restBackground = "rgb(163 9 187 / 0.05)",
   hoverBackground = "#FFFFFF",
   hoverBorder = "#D9CCDC",
@@ -128,6 +131,7 @@ export function CardMarquee({
           "--cm-h": `${cardHeight}px`,
           "--cm-grow": `${hoverGrow}px`,
           "--cm-hover": `${hoverDuration}ms`,
+          "--cm-ease": hoverEase,
           "--cm-rest-bg": restBackground,
           "--cm-hover-bg": hoverBackground,
           "--cm-border": hoverBorder,
@@ -169,7 +173,7 @@ function Card({ item, hidden }: { item: MarqueeCard; hidden: boolean }) {
         tabIndex={hidden ? -1 : item.href ? undefined : 0}
         className={cn(
           "group absolute inset-x-0 top-1/2 flex h-full -translate-y-1/2 flex-col justify-between overflow-hidden rounded-[20px] border border-transparent bg-(--cm-rest-bg) p-[30px] text-inherit no-underline outline-none min-[992px]:p-10",
-          "transition-[height,background-color,border-color,box-shadow] duration-(--cm-hover) ease-[ease] motion-reduce:transition-none",
+          "transition-[height,background-color,border-color,box-shadow] duration-(--cm-hover) ease-(--cm-ease) motion-reduce:transition-none",
           "hover:h-[calc(100%+var(--cm-grow))] hover:border-(--cm-border) hover:bg-(--cm-hover-bg) hover:shadow-[0_8px_28px_rgb(11_6_35/0.12)]",
           "focus-visible:h-[calc(100%+var(--cm-grow))] focus-visible:border-(--cm-border) focus-visible:bg-(--cm-hover-bg) focus-visible:shadow-[0_8px_28px_rgb(11_6_35/0.12)] focus-visible:ring-2 focus-visible:ring-[#E3308C]"
         )}
@@ -182,7 +186,7 @@ function Card({ item, hidden }: { item: MarqueeCard; hidden: boolean }) {
         <div className="min-w-0">
           <div className="line-clamp-3">{item.title}</div>
           {item.description && (
-            <div className="grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity] duration-(--cm-hover) ease-[ease] group-hover:grid-rows-[1fr] group-hover:opacity-100 group-focus-visible:grid-rows-[1fr] group-focus-visible:opacity-100 motion-reduce:transition-none">
+            <div className="grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity] duration-(--cm-hover) ease-(--cm-ease) group-hover:grid-rows-[1fr] group-hover:opacity-100 group-focus-visible:grid-rows-[1fr] group-focus-visible:opacity-100 motion-reduce:transition-none">
               <div className="min-h-0 overflow-hidden">
                 <div className="pt-[15px]">{item.description}</div>
               </div>

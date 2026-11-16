@@ -22,6 +22,16 @@ type ProgressTabsProps = Omit<React.ComponentProps<"div">, "children"> & {
   interval?: number;
   /** Time the panels take to slide between tabs, in ms. */
   duration?: number;
+  /** Panel slide easing, a CSS timing function. The original (Swiper): ease. */
+  ease?: string;
+  /** Easing of the progress fill across the active tab. The original: linear. */
+  fillEase?: string;
+  /** Active tab gradient fade and label colour change, in ms. */
+  tabDuration?: number;
+  /** Pause button hover dim, in ms. */
+  hoverDuration?: number;
+  /** Easing for the tab fade, label colour and pause button hover. The original: cubic-bezier(0.23, 1, 0.32, 1). */
+  tabEase?: string;
   /** Show the fill that sweeps across the active tab as its time runs out. */
   progress?: boolean;
   /** Hold the timer while the pointer is over the component. */
@@ -59,16 +69,21 @@ type ProgressTabsProps = Omit<React.ComponentProps<"div">, "children"> & {
  *
  * How it works:
  * - The active tab is the only state. The progress fill is a CSS animation
- *   (scaleX 0 → 1, linear, `interval` long) and its `animationend` advances
+ *   (scaleX 0 → 1, `interval` long, on `fillEase`, linear) and its `animationend` advances
  *   to the next tab, so pausing the animation pauses the timer exactly.
  * - Panels sit in one flex track that translates by whole panels over
- *   600ms `ease` with a 10px gap, like the original Swiper.
+ *   `duration` (700ms) on `ease` (a strong ease-in-out by default; the original
+ *   Swiper uses 600ms CSS `ease`) with a 10px gap.
  * - Autoplay waits while the component is off screen, the browser tab is
  *   hidden, keyboard focus is inside, and (optionally) while hovered. A pause
  *   button at the end of the tab bar stops it until pressed again (WCAG
  *   2.2.2). After the last tab it rewinds to the first.
  * - Tabs follow the WAI-ARIA tabs pattern: arrow keys, Home and End move
  *   between tabs; inactive panels are `inert`.
+ *
+ * The active tab's gradient and label colour fade over `tabDuration` (300ms)
+ * and the pause button dims on hover over `hoverDuration` (200ms), both on
+ * `tabEase`.
  *
  * Reduced motion: no autoplay, no progress fill, panels switch instantly.
  */
@@ -77,7 +92,12 @@ export function ProgressTabs({
   defaultIndex = 0,
   autoplay = true,
   interval = 4500,
-  duration = 600,
+  duration = 700,
+  ease = "cubic-bezier(0.77, 0, 0.175, 1)",
+  fillEase = "linear",
+  tabDuration = 300,
+  hoverDuration = 200,
+  tabEase = "cubic-bezier(0.23, 1, 0.32, 1)",
   progress = true,
   pauseOnHover = false,
   pauseButton = true,
@@ -171,6 +191,11 @@ export function ProgressTabs({
         {
           "--pt-interval": `${interval}ms`,
           "--pt-duration": `${reducedMotion ? 0 : duration}ms`,
+          "--pt-ease": ease,
+          "--pt-fill-ease": fillEase,
+          "--pt-tab": `${tabDuration}ms`,
+          "--pt-hover": `${hoverDuration}ms`,
+          "--pt-tab-ease": tabEase,
           "--pt-media-h": `${mediaHeight}px`,
           "--pt-radius": `${radius}px`,
           "--pt-media-bg": mediaBackground,
@@ -194,7 +219,7 @@ export function ProgressTabs({
     >
       <style>{`
 @keyframes pt-fill-${id}{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-[data-progress-tabs="${id}"] [data-fill]{animation:pt-fill-${id} var(--pt-interval) linear forwards}
+[data-progress-tabs="${id}"] [data-fill]{animation:pt-fill-${id} var(--pt-interval) var(--pt-fill-ease) forwards}
 [data-progress-tabs="${id}"][data-tray-border]{background:linear-gradient(color-mix(in srgb,var(--pt-tint) 30%,transparent),transparent)}
 [data-progress-tabs="${id}"] [data-tray]{background:linear-gradient(color-mix(in srgb,var(--pt-tint) 10%,transparent),transparent),var(--pt-tray)}
 @media (prefers-reduced-motion:reduce){[data-progress-tabs="${id}"] *{transition:none!important}}`}</style>
@@ -234,7 +259,7 @@ export function ProgressTabs({
                   <span
                     aria-hidden
                     className={cn(
-                      "absolute inset-0 -z-20 bg-[linear-gradient(90deg,var(--pt-from)_0%,var(--pt-to)_100%)] transition-opacity duration-300 ease-out",
+                      "absolute inset-0 -z-20 bg-[linear-gradient(90deg,var(--pt-from)_0%,var(--pt-to)_100%)] transition-opacity duration-(--pt-tab) ease-(--pt-tab-ease)",
                       selected ? "opacity-100" : "opacity-0"
                     )}
                   />
@@ -255,7 +280,7 @@ export function ProgressTabs({
                   )}
                   <span
                     className={cn(
-                      "leading-[1.6] whitespace-nowrap transition-colors duration-300 ease-out",
+                      "leading-[1.6] whitespace-nowrap transition-colors duration-(--pt-tab) ease-(--pt-tab-ease)",
                       selected ? "text-white" : "text-(--pt-label) group-hover:opacity-80",
                       tabClassName
                     )}
@@ -271,7 +296,7 @@ export function ProgressTabs({
               type="button"
               aria-label={userPaused ? "Play autoplay" : "Pause autoplay"}
               onClick={() => setUserPaused((p) => !p)}
-              className="flex w-[45px] shrink-0 self-stretch cursor-pointer items-center justify-center rounded-[10px] bg-white text-(--pt-label) outline-none transition-opacity duration-200 ease-out focus-visible:ring-2 focus-visible:ring-(--pt-to) focus-visible:ring-offset-2 [@media(hover:hover)]:hover:opacity-80"
+              className="flex w-[45px] shrink-0 self-stretch cursor-pointer items-center justify-center rounded-[10px] bg-white text-(--pt-label) outline-none transition-opacity duration-(--pt-hover) ease-(--pt-tab-ease) focus-visible:ring-2 focus-visible:ring-(--pt-to) focus-visible:ring-offset-2 [@media(hover:hover)]:hover:opacity-80"
             >
               <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="currentColor">
                 {userPaused ? <path d="M4 2.5v11l9.5-5.5z" /> : <path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" />}
@@ -302,7 +327,7 @@ export function ProgressTabs({
 
       <div className="mt-2.5 overflow-hidden">
         <div
-          className="flex gap-2.5 transition-transform duration-(--pt-duration) ease-[ease]"
+          className="flex gap-2.5 transition-transform duration-(--pt-duration) ease-(--pt-ease)"
           style={{ transform: `translateX(calc(${-active} * (100% + 10px)))` }}
         >
           {items.map((item, i) => (

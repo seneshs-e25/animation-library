@@ -16,6 +16,11 @@ type StretchHeadlineProps = Omit<React.HTMLAttributes<HTMLElement>, "children"> 
   stagger?: number;
   /** How long each letter takes to stretch and settle, in ms. */
   duration?: number;
+  /**
+   * Easing across each letter's whole keyframe run, as a CSS timing function.
+   * The default is GSAP's `power2.out`, the original's ease.
+   */
+  easing?: string;
   /** How hard the letters squash and stretch. 1 is the original; 0 is a plain fade. */
   intensity?: number;
   /** Which letter leads the stagger. */
@@ -29,9 +34,6 @@ type StretchHeadlineProps = Omit<React.HTMLAttributes<HTMLElement>, "children"> 
 const SCALE_X = [1.9, 0.82, 1.08, 1];
 const SCALE_Y = [0.25, 1.3, 0.94, 1];
 const OPACITY = [0, 1, 1, 1];
-/** GSAP `power2.out` (a cubic ease-out), applied across the whole keyframe run. */
-const EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
-
 /** Layout effect on the client, plain effect on the server, no warning. */
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
@@ -46,7 +48,7 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffec
  *   inline-block so letters never break mid-word; spaces stay as text.
  *   Screen readers get the headline once, from a visually hidden copy.
  * - Each letter runs one Web Animation (`element.animate`) of `scale(x, y)`
- *   and `opacity`, with the ease on the whole run (as the original does), a
+ *   and `opacity`, with `easing` on the whole run (as the original does), a
  *   per-letter delay, and `fill: backwards` so it's held hidden until its turn.
  * - A scoped stylesheet hides the letters before they play (so nothing
  *   flashes before hydration), only under `prefers-reduced-motion:
@@ -61,6 +63,7 @@ export function StretchHeadline({
   replay = true,
   stagger = 50,
   duration = 1100,
+  easing = "cubic-bezier(0.33, 1, 0.68, 1)",
   intensity = 1,
   from = "start",
   className,
@@ -90,7 +93,7 @@ export function StretchHeadline({
     const play = () => {
       running.forEach((a) => a.cancel());
       running = chars.map((el, i) =>
-        el.animate(keyframes, { duration, delay: order[i] * stagger, easing: EASE, fill: "backwards" }),
+        el.animate(keyframes, { duration, delay: order[i] * stagger, easing, fill: "backwards" }),
       );
       // The animations now hold each letter hidden through its own delay.
       root.setAttribute("data-played", "");
@@ -128,7 +131,7 @@ export function StretchHeadline({
       io.disconnect();
       reset();
     };
-  }, [text, trigger, replay, stagger, duration, intensity, from]);
+  }, [text, trigger, replay, stagger, duration, easing, intensity, from]);
 
   const s = `[data-stretch-headline="${id}"]`;
 

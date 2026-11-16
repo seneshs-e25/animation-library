@@ -30,10 +30,28 @@ type ExpandingCardsProps = Omit<React.ComponentProps<"div">, "children"> & {
   background?: string;
   /** Opacity of closed cards. */
   inactiveOpacity?: number;
-  /** Time a card takes to open or close, in ms. */
+  /** Time a card takes to open or close (its width), in ms. */
   duration?: number;
+  /** Easing of the card's width, any CSS timing function. */
+  ease?: string;
+  /** Time a card takes to light up or dim (its opacity), in ms. */
+  fadeDuration?: number;
+  /**
+   * Easing of the card's opacity and of the content's rise and fade, in and
+   * out, any CSS timing function.
+   */
+  fadeEase?: string;
   /** Time the open card's content takes to slide and fade in, in ms. */
   contentDuration?: number;
+  /** Wait after the card starts opening before its content comes in, in ms. */
+  contentDelay?: number;
+  /** Time the closing card's content takes to fade out, in ms (no delay). */
+  contentExitDuration?: number;
+  /**
+   * How long the pointer has to rest on a card before it opens, in ms. Cards
+   * the pointer only sweeps across don't open, so the row never flickers.
+   */
+  hoverDelay?: number;
   /** Darken the bottom-left of each card so white text stays readable. */
   overlay?: boolean;
   /**
@@ -43,9 +61,6 @@ type ExpandingCardsProps = Omit<React.ComponentProps<"div">, "children"> & {
   minWidth?: number;
 };
 
-/** After a card opens, hovers are ignored for this long, as in the original. */
-const HOVER_LOCK = 800;
-
 /**
  * Expanding cards: a row of slim, faded cards where the one you hover grows
  * to fill the row and reveals its content. Used on the Ironclad website for
@@ -53,20 +68,28 @@ const HOVER_LOCK = 800;
  *
  * How it works:
  * - Cards are flex items: closed cards are `flex: 0 0 80px` at 20% opacity,
- *   the open card adds `flex-grow: 1` at full opacity. Both animate together
- *   over 400ms cubic-bezier(0.4, 0, 1, 1), so the browser handles the width
- *   change in one transition.
- * - The open card's content fades in and rises 50px over 0.8s ease-in-out.
+ *   the open card adds `flex-grow: 1` at full opacity. The width runs
+ *   `duration` (600ms) on `ease`, a strong ease-out
+ *   cubic-bezier(0.23, 1, 0.32, 1) (responds at once, long soft settle); the
+ *   opacity runs `fadeDuration` (300ms) on `fadeEase`, the iOS drawer curve
+ *   cubic-bezier(0.32, 0.72, 0, 1), so the card lights up before it's done
+ *   growing.
+ * - The open card's content rises 24px and fades in over `contentDuration`
+ *   (500ms) on `fadeEase`, `contentDelay` (200ms) after the card starts
+ *   growing. Leaving, it fades out in `contentExitDuration` (150ms) with no
+ *   delay, so the old quote is gone before its card closes around it.
  *   Content keeps a fixed min width, so text never reflows while the card
  *   grows; the card clips it instead.
- * - Hovering a card opens it, then locks for 800ms so a pointer sweeping
- *   across the row doesn't make cards flicker. When the lock ends, the card
- *   under the pointer (if different) opens. Leaving the row keeps the last
- *   card open. Keyboard focus also opens a card.
+ * - A card opens once the pointer has rested on it for `hoverDelay` (120ms),
+ *   so sweeping across the row doesn't open every card on the way. Nothing is
+ *   ever blocked: every change is a CSS transition that retargets from where
+ *   it is. Leaving the row keeps the last card open. Keyboard focus opens a
+ *   card immediately.
  *
  * Below `minWidth`, cards become a horizontal scroll-snap row, all open,
  * at `mobileHeight` (480px) instead of the desktop `height`.
- * Reduced motion: cards switch instantly, without width or fade transitions.
+ * Reduced motion: the width and the rise snap; only a fixed 200ms `ease`
+ * opacity fade stays.
  */
 export function ExpandingCards({
   items,
@@ -78,8 +101,14 @@ export function ExpandingCards({
   radius = 20,
   background = "#1C212B",
   inactiveOpacity = 0.2,
-  duration = 400,
-  contentDuration = 800,
+  duration = 600,
+  ease = "cubic-bezier(0.23, 1, 0.32, 1)",
+  fadeDuration = 300,
+  fadeEase = "cubic-bezier(0.32, 0.72, 0, 1)",
+  contentDuration = 500,
+  contentDelay = 200,
+  contentExitDuration = 150,
+  hoverDelay = 120,
   overlay = true,
   minWidth = 1200,
   className,
@@ -88,23 +117,14 @@ export function ExpandingCards({
 }: ExpandingCardsProps) {
   const [active, setActive] = React.useState(defaultIndex);
   const id = React.useId().replace(/[^a-zA-Z0-9-]/g, "");
-  const locked = React.useRef(false);
-  const hovered = React.useRef<number | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout>>(undefined);
-  const activeRef = React.useRef(defaultIndex);
 
   React.useEffect(() => () => clearTimeout(timer.current), []);
 
-  const open = (i: number) => {
-    if (locked.current || i === activeRef.current) return;
-    locked.current = true;
-    activeRef.current = i;
-    setActive(i);
-    timer.current = setTimeout(() => {
-      locked.current = false;
-      const h = hovered.current;
-      if (h !== null && h !== i) open(h);
-    }, HOVER_LOCK);
+  /** Open `i` once the pointer has rested on it; moving on cancels it. */
+  const intend = (i: number) => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setActive(i), hoverDelay);
   };
 
   const s = `[data-expanding-cards="${id}"]`;
@@ -122,7 +142,12 @@ export function ExpandingCards({
           "--xc-bg": background,
           "--xc-dim": inactiveOpacity,
           "--xc-duration": `${duration}ms`,
+          "--xc-ease": ease,
+          "--xc-fade": `${fadeDuration}ms`,
+          "--xc-fade-ease": fadeEase,
           "--xc-content-duration": `${contentDuration}ms`,
+          "--xc-content-delay": `${contentDelay}ms`,
+          "--xc-content-exit": `${contentExitDuration}ms`,
           ...style,
         } as React.CSSProperties
       }
@@ -136,18 +161,17 @@ ${s}>[data-row]::-webkit-scrollbar{display:none}
 ${s} [data-card]{flex:0 0 min(85%,420px);scroll-snap-align:start;--xc-card-h:var(--xc-h-sm)}
 @media (min-width:${minWidth}px){
 ${s}>[data-row]{gap:var(--xc-gap);overflow:hidden;justify-content:flex-end}
-${s} [data-card]{--xc-card-h:var(--xc-h);flex:0 0 var(--xc-closed);opacity:var(--xc-dim);transition:flex-grow var(--xc-duration) cubic-bezier(.4,0,1,1),opacity var(--xc-duration) cubic-bezier(.4,0,1,1)}
+${s} [data-card]{--xc-card-h:var(--xc-h);flex:0 0 var(--xc-closed);opacity:var(--xc-dim);transition:flex-grow var(--xc-duration) var(--xc-ease),opacity var(--xc-fade) var(--xc-fade-ease)}
 ${s} [data-card][data-active]{flex-grow:1;opacity:1}
-${s} [data-content]{min-width:420px;opacity:0;transform:translateY(50px);transition:opacity var(--xc-content-duration) ease-in-out,transform var(--xc-content-duration) ease-in-out}
-${s} [data-card][data-active] [data-content]{opacity:1;transform:none}
+${s} [data-content]{min-width:420px;opacity:0;transform:translateY(24px);transition:opacity var(--xc-content-exit) var(--xc-fade-ease),transform var(--xc-content-exit) var(--xc-fade-ease)}
+${s} [data-card][data-active] [data-content]{opacity:1;transform:none;transition-duration:var(--xc-content-duration);transition-delay:var(--xc-content-delay)}
 }
-@media (prefers-reduced-motion:reduce){${s} [data-card],${s} [data-content]{transition:none!important}}`}</style>
+@media (prefers-reduced-motion:reduce){${s} [data-card]{transition:opacity 200ms ease!important}${s} [data-content]{transform:none!important;transition:opacity 200ms ease!important}}`}</style>
 
       <div
         data-row
-        onPointerLeave={() => {
-          hovered.current = null;
-        }}
+        // Leaving the row cancels a pending open; the last card stays open.
+        onPointerLeave={() => clearTimeout(timer.current)}
       >
         {items.map((item, i) => (
           <div
@@ -157,14 +181,11 @@ ${s} [data-card][data-active] [data-content]{opacity:1;transform:none}
             role="group"
             aria-label={item.label}
             tabIndex={0}
-            onPointerEnter={() => {
-              hovered.current = i;
-              open(i);
-            }}
+            onPointerEnter={() => intend(i)}
             onFocus={() => {
-              // Keyboard users shouldn't wait out the hover lock.
-              locked.current = false;
-              open(i);
+              // Keyboard users shouldn't wait for hover intent.
+              clearTimeout(timer.current);
+              setActive(i);
             }}
             className="relative isolate min-h-(--xc-card-h) overflow-hidden rounded-(--xc-radius) bg-(--xc-bg) outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-offset-2"
           >
