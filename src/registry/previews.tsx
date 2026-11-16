@@ -8,23 +8,35 @@ import { ColorSnapButton } from "./interactions/button-hovers/color-snap-button"
 import { CircleRevealButton } from "./interactions/button-hovers/circle-reveal-button";
 import { OutlineSweepButton } from "./interactions/button-hovers/outline-sweep-button";
 import { ZoomImageCard } from "./interactions/image-hovers/zoom-image-card";
+import { VideoHoverCard } from "./interactions/image-hovers/video-hover-card";
 import { RevealLinkCard } from "./interactions/image-hovers/reveal-link-card";
 import { RisingCopyCard } from "./interactions/image-hovers/rising-copy-card";
 import { BentoGrid, type BentoTile } from "./interactions/image-hovers/bento-grid";
 import { HoverCardList, HourglassIcon, ArmchairIcon, type HoverListItem } from "./interactions/image-hovers/hover-card-list";
 import { LogoMarquee } from "./animations/carousels/logo-marquee";
 import { CardMarquee } from "./animations/carousels/card-marquee";
+import { IntegrationLogoWall } from "./animations/carousels/integration-logo-wall";
+import { ShowcaseTicker, type ShowcaseItem } from "./animations/carousels/showcase-ticker";
+import { Outfit } from "next/font/google";
 import { StackingCards } from "./animations/pin-scrollers/stacking-cards";
+import { HorizontalScroll } from "./animations/pin-scrollers/horizontal-scroll";
 import { FocusScroll } from "./animations/pin-scrollers/focus-scroll";
 import { CollapsingStack } from "./animations/pin-scrollers/collapsing-stack";
 import { ExpandingCards } from "./animations/carousels/expanding-cards";
+import { StatCounterCards } from "./animations/carousels/stat-counter-cards";
 import { ExpandingBento, type BentoPanel, type BentoStrip } from "./animations/carousels/expanding-bento";
 import { SpotlightSlider, SpotlightSlide } from "./animations/carousels/spotlight-slider";
 import { AwardsCarousel } from "./animations/carousels/awards-carousel";
+import { ExpertCardCarousel } from "./animations/carousels/expert-card-carousel";
+import { TestimonialSlider } from "./animations/carousels/testimonial-slider";
+import { ProductTabs, ProductPanel } from "./animations/tabs/product-tabs";
 import { ScrollTextReveal } from "./animations/scroll-triggers/scroll-text-reveal";
 import { CountUp } from "./animations/text-effects/count-up";
+import { GradientSweepText } from "./animations/text-effects/gradient-sweep-text";
 import { ScrollShiftHeadline } from "./animations/scroll-triggers/scroll-shift-headline";
 import { RisingHeadline } from "./animations/text-effects/rising-headline";
+import { TypingHeadline } from "./animations/text-effects/typing-headline";
+import { RotatingPillHeadline, type PillWord } from "./animations/text-effects/rotating-pill-headline";
 import { WaveHeadline } from "./animations/text-effects/wave-headline";
 import { BlendThroughHeadline } from "./animations/text-effects/blend-through-headline";
 import { LineMaskReveal } from "./animations/text-effects/line-mask-reveal";
@@ -33,16 +45,18 @@ import { TextMarquee } from "./animations/text-effects/text-marquee";
 import { ScrollColorBackground } from "./animations/scroll-triggers/scroll-color-background";
 import { FaqAccordion } from "./animations/accordions/faq-accordion";
 import { ProgressTabs } from "./animations/tabs/progress-tabs";
+import { ScrollProgressTabs } from "./animations/tabs/scroll-progress-tabs";
 import { StepTabs } from "./animations/tabs/step-tabs";
 import { AccordionTabs } from "./animations/tabs/accordion-tabs";
 import { VerticalTabSlider } from "./animations/tabs/vertical-tab-slider";
-import { Bricolage_Grotesque, DM_Sans, Hanken_Grotesk, Instrument_Sans, Inter, Inter_Tight, Lexend_Exa, Mona_Sans, Montserrat, Space_Mono } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans, Hanken_Grotesk, Instrument_Sans, Inter, Inter_Tight, Lexend, Lexend_Exa, Mona_Sans, Montserrat, Newsreader, Public_Sans, Space_Mono } from "next/font/google";
 import { Aurora } from "./shaders/backgrounds/aurora";
 import { Curtain } from "./shaders/backgrounds/curtain";
 import { LayerCascade } from "./shaders/backgrounds/layer-cascade";
 import { RibbonWave } from "./shaders/backgrounds/ribbon-wave";
 import { PrismFlow } from "./shaders/backgrounds/prism-flow";
 import { NeonMarble } from "./shaders/backgrounds/neon-marble";
+import { DriftingGlow } from "./shaders/backgrounds/drifting-glow";
 
 /** The four "problem" cards from the Seemplicity homepage, with its live images and copy. */
 const seemplicityUpload = (path: string) => `https://seemplicity.ai/wp-content/uploads/${path}`;
@@ -101,6 +115,186 @@ function SeemplicityCard({ image, title, lead, body }: (typeof seemplicityProble
 }
 
 /** The three cards from the Sophos homepage's focus scroll, with its live assets. */
+const miroImage = (id: string) => `https://framerusercontent.com/images/${id}.png?scale-down-to=1024`;
+const miroFeatures = [
+  { title: "AI", body: "Accelerate your team with collaborative AI workflows", image: miroImage("qktnranaPpFcKWyM60NJD9VvI") },
+  { title: "Intelligent Canvas", body: "Empower teamwork on one, infinite, multiplayer canvas", image: miroImage("Yuc5oFlUGxrhIlp7DDzijhyh3k") },
+  { title: "Formats", body: "Move quickly from ideas to structured plans and work with Docs, Tables, Slides, Diagrams and more", image: miroImage("jEBfMRQ9CEbwCHlIsSZ8arK5Jt0") },
+  { title: "Blueprints", body: "Automate key processes and ensure your workflows are scalable, repeatable, and efficient", image: miroImage("UE6PN5AkKpZr9wiHr9XmecEwBe8") },
+  { title: "Enterprise Security & Scale", body: "Secure and scalable collaboration on an enterprise-grade platform you can trust", image: miroImage("t6nXozqt1IQNpt1ZoXulrivOM") },
+  { title: "Integrations", body: "Connects with 250+ apps so teams stay aligned and productive in one scalable, secure workspace.", image: miroImage("wIqLXdrx2cUUItCcoSjzFjBMQ") },
+];
+
+function MiroCard({ title, body, image }: (typeof miroFeatures)[number]) {
+  return (
+    <div className="flex flex-col">
+      <div className="aspect-video overflow-hidden rounded-xl bg-[#F1F1EF]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image} alt="" className="size-full object-cover" draggable={false} />
+      </div>
+      <h3 className="mt-6 text-[28px] leading-tight text-[#050038]">{title}</h3>
+      <p className="mt-3 max-w-[480px] text-lg leading-7 text-[#555]">{body}</p>
+      <a
+        href="#"
+        onClick={(e) => e.preventDefault()}
+        className="mt-6 inline-flex h-12 w-fit items-center rounded-lg bg-[#1C1C1E] px-5 text-lg text-white"
+      >
+        Learn more
+      </a>
+    </div>
+  );
+}
+
+/** Simplified boards standing in for the live Miro scenes in the Intelligent Canvas hero. */
+function MiroSticky({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <div
+      className="flex aspect-square w-[clamp(52px,9cqw,84px)] items-center justify-center p-1.5 text-center text-[clamp(8px,1.2cqw,11px)] leading-tight text-[#191812] shadow-[0_2px_4px_rgba(0,0,0,0.12)]"
+      style={{ background: color }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function MiroFrame({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-0 flex-col gap-2">
+      <span className="w-fit rounded-md bg-white px-2 py-1 text-[clamp(9px,1.3cqw,13px)] font-medium text-[#191812] shadow-sm">
+        <span className="mr-1 text-[#4262FF]">{icon}</span>
+        {title}
+      </span>
+      <div className="flex min-h-0 flex-1 flex-col rounded-xl bg-white p-[clamp(8px,1.6cqw,16px)] shadow-[0_4px_24px_rgba(110,79,3,0.08)]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const miroBoards: { label: string; board: ReactNode }[] = [
+  {
+    label: "Workshop planning",
+    board: (
+      <MiroFrame title="Wishlist prioritization" icon="#">
+        <div className="mb-2 flex items-center justify-between text-[clamp(10px,1.5cqw,15px)] font-medium text-[#191812]">
+          Impact vs. effort
+          <span className="rounded-full border border-black/10 px-2 py-0.5 text-[clamp(9px,1.2cqw,12px)]">05:00</span>
+        </div>
+        <div className="grid flex-1 grid-cols-2 gap-1.5 text-[clamp(8px,1cqw,10px)] font-medium text-[#191812]">
+          {[
+            ["Do now", [["#FFC6E1", "Warn me before the ETA slips"], ["#C6F0B5", "Reorder in one tap"]]],
+            ["Big bets", [["#FFF59B", "Live courier map"], ["#A7C7FF", "Group orders for the office"]]],
+            ["Fill-ins", [["#FFF59B", "Dark mode"]]],
+            ["Park it", []],
+          ].map(([name, notes]) => (
+            <div key={name as string} className="flex flex-col gap-1.5 rounded-md bg-[#EEF0FB] p-1.5">
+              {name as string}
+              <div className="flex flex-wrap gap-1.5">
+                {(notes as string[][]).map(([c, t]) => (
+                  <MiroSticky key={t} color={c}>
+                    {t}
+                  </MiroSticky>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </MiroFrame>
+    ),
+  },
+  {
+    label: "Concept review",
+    board: (
+      <MiroFrame title="Checkout concepts" icon="◇">
+        <div className="grid flex-1 grid-cols-3 gap-[clamp(6px,1.4cqw,14px)]">
+          {[
+            ["A · One page", "#FFD5C2"],
+            ["B · Stepper", "#D7E3FF"],
+            ["C · Express pay", "#DDF4D2"],
+          ].map(([name, tone], i) => (
+            <div key={name} className="flex flex-col gap-1.5">
+              <div className="relative min-h-0 flex-1 rounded-lg p-2" style={{ background: tone }}>
+                <div className="mb-1.5 h-1.5 w-2/3 rounded-full bg-black/15" />
+                <div className="mb-1 h-1.5 w-1/2 rounded-full bg-black/10" />
+                <div className="mt-3 h-[40%] rounded-md bg-white/70" />
+                {i !== 1 && (
+                  <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-[#4262FF] text-[10px] font-semibold text-white">
+                    {i + 2}
+                  </span>
+                )}
+              </div>
+              <span className="text-[clamp(8px,1.1cqw,11px)] font-medium text-[#191812]">{name}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex gap-1.5">
+          <MiroSticky color="#FFF59B">Fewer fields wins</MiroSticky>
+          <MiroSticky color="#FFC6E1">Test B with new users</MiroSticky>
+        </div>
+      </MiroFrame>
+    ),
+  },
+  {
+    label: "Technical design",
+    board: (
+      <MiroFrame title="Order tracking service" icon="⌘">
+        <div className="relative grid flex-1 grid-cols-3 items-center gap-[clamp(10px,3cqw,32px)] text-[clamp(8px,1.1cqw,11px)] font-medium text-[#191812]">
+          {[
+            ["Mobile app", "#D7E3FF", ["Courier map", "Push alerts"]],
+            ["API gateway", "#FFE7B3", ["Auth", "Rate limits"]],
+            ["Tracking service", "#DDF4D2", ["ETA model", "Event stream"]],
+          ].map(([name, tone, parts], i) => (
+            <div key={name as string} className="relative flex flex-col gap-1 rounded-lg border border-black/10 bg-white p-2">
+              <span className="rounded px-1.5 py-1" style={{ background: tone as string }}>
+                {name as string}
+              </span>
+              {(parts as string[]).map((part) => (
+                <span key={part} className="rounded border border-dashed border-black/15 px-1.5 py-1 font-normal text-[#555]">
+                  {part}
+                </span>
+              ))}
+              {i < 2 && (
+                <span className="absolute top-1/2 -right-[clamp(10px,3cqw,32px)] h-px w-[clamp(10px,3cqw,32px)] bg-[#4262FF]" />
+              )}
+            </div>
+          ))}
+        </div>
+      </MiroFrame>
+    ),
+  },
+  {
+    label: "Process mapping",
+    board: (
+      <MiroFrame title="Refund flow" icon="→">
+        <div className="flex flex-1 flex-col gap-1.5 text-[clamp(8px,1.1cqw,11px)] text-[#191812]">
+          {[
+            ["Customer", ["Requests refund", "Gets email"], "#EEF0FB"],
+            ["Support", ["Checks order", "Approves"], "#FFF4E0"],
+            ["Finance", ["Issues refund"], "#EAF7E4"],
+          ].map(([lane, steps, tone]) => (
+            <div key={lane as string} className="flex flex-1 items-center gap-2 rounded-md px-2" style={{ background: tone as string }}>
+              <span className="w-[18%] shrink-0 font-medium">{lane as string}</span>
+              {(steps as string[]).map((step, i) => (
+                <span key={step} className="flex items-center gap-2">
+                  {i > 0 && <span className="text-[#4262FF]">→</span>}
+                  <span className="rounded-md border border-black/10 bg-white px-2 py-1.5 shadow-sm">{step}</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </MiroFrame>
+    ),
+  },
+];
+
+const miroAsset = (path: string) => `https://framerusercontent.com/${path}`;
+const miroStories = [
+  { stat: "3.6x", label: "faster time to market", video: miroAsset("assets/HiaEWLgcnRSn2zuZ6KpM8fLquhU.mp4"), poster: miroAsset("images/uIRqtTqzgtqaVuWSUgkiU6DGgI.jpeg?scale-down-to=1024"), logo: miroAsset("images/qnmInj9GvDd6WOfIZhusYN3Zc.svg"), logoAlt: "PepsiCo", alt: "Two colleagues reviewing printed layouts at a table" },
+  { stat: "50%", label: "shorter planning process", video: miroAsset("assets/RFRFxk34lyIrm8YL9jefiBoUk8I.mp4"), poster: miroAsset("images/GHMgTmbz8qR7eeU8e7Oo86AVxIQ.jpeg?scale-down-to=1024"), logo: miroAsset("images/F9Usn38nwt2sWaJoruk1clYzR0g.svg"), logoAlt: "ASOS", alt: "Shirts hanging on a clothing rail" },
+  { stat: "2x", label: "faster time to market", video: miroAsset("assets/FNmet1EVdzlxlDw518uVkowKxw.mp4"), poster: miroAsset("images/ydQ4lfokqxcCYfp2CxNAzOzCc.jpeg?scale-down-to=1024"), logo: miroAsset("images/id3aQCVAlGsfjavYwoAaB4f3rWc.png?scale-down-to=512"), logoAlt: "Keller Williams", alt: "A man pointing at a screen by a window" },
+];
+
 const sophosFocusItems = [
   {
     image: "blt42a78cf9d8648881/6a54d4dad673fe0078ddeac3/compounding-intellingence.png",
@@ -151,14 +345,194 @@ function SophosArrowLink({ children, color }: { children: ReactNode; color: stri
 
 const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"] });
 const interTight = Inter_Tight({ weight: ["100", "300", "400"], subsets: ["latin"] });
+const interTightSemibold = Inter_Tight({ weight: ["600"], subsets: ["latin"] });
 const lexendExa = Lexend_Exa({ weight: ["300", "400"], subsets: ["latin"] });
+const lexend = Lexend({ weight: ["300", "400", "500"], subsets: ["latin"] });
+
+/** The four products from the Calendly homepage hero, with its copy and poster art. Icons are our own. */
+const calendlyPoster = (file: string) => `https://marketing-assets.calendly.com/generated/rive-posters/${file}.webp`;
+const iconProps = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+const calendlyProducts = [
+  {
+    name: "Scheduling",
+    color: "#6BB1FF",
+    ringColor: "#4890E3",
+    heading: "Book meetings with the world\u2019s #1 scheduling tool",
+    body: "Giving you complete control and total customization, Calendly is the easiest and most powerful way to find time to connect.",
+    poster: "b04d612fb74d5435",
+    icon: (
+      <svg aria-hidden {...iconProps}>
+        <path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9" />
+      </svg>
+    ),
+  },
+  {
+    name: "Callie",
+    badge: "Beta",
+    color: "#DBEE9F",
+    ringColor: "#BAD855",
+    heading: "Introducing your 24/7 AI scheduling assistant",
+    body: "Add Callie to any email thread to coordinate scheduling on your behalf without switching tools or sacrificing control.",
+    poster: "188ed0f298bfcd83",
+    icon: (
+      <svg aria-hidden {...iconProps}>
+        <path d="M12 3c.6 4.6 3.4 7.4 8 8-4.6.6-7.4 3.4-8 8-.6-4.6-3.4-7.4-8-8 4.6-.6 7.4-3.4 8-8Z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Notetaker",
+    badge: "New",
+    color: "#B89FFA",
+    ringColor: "#997EDF",
+    heading: "Actionable, shareable recaps for every meeting",
+    body: "Finish the day knowing every meeting was captured, next steps were tracked, and follow-ups were handled.",
+    poster: "b8bcdf65d8437a8a",
+    icon: (
+      <svg aria-hidden {...iconProps}>
+        <path d="M5 4h10l4 4v12H5Z" />
+        <path d="M9 11h6M9 15h4" />
+      </svg>
+    ),
+  },
+  {
+    name: "Payments",
+    badge: "New",
+    color: "#5DDFD7",
+    ringColor: "#14C1B6",
+    heading: "Flexible, built-in payment tools",
+    body: "Charge upfront for meetings, sell packages, and send invoices with payment features that make it easy to get paid.",
+    poster: "28b3b4b41373a86c",
+    icon: (
+      <svg aria-hidden {...iconProps}>
+        <rect x="3" y="5" width="18" height="14" rx="3" />
+        <path d="M3 10h18M15 15h2" />
+      </svg>
+    ),
+  },
+];
+
+/** The five customer stories from the Calendly homepage, with its live photos and copy. */
+const calendlyImage = (file: string, width: number) =>
+  `https://cdn.calendlycms.com/cdn-cgi/image/width=${width},quality=85,format=webp,fit=scale-down/${file}`;
+const calendlyStories = [
+  {
+    headline: "75 hours saved monthly",
+    quote: "\u201cCalendly helps us protect our team\u2019s time and make every support interaction count.\u201d",
+    name: "Marques Stewart",
+    role: "Managing Director of Technology at Achievement First",
+    photo: "achievement",
+  },
+  {
+    headline: "80% reduction in booking-related emails",
+    quote: "\u201cWe care deeply about the experience they have with us \u2014 and Calendly helps us start it off right.\u201d",
+    name: "Akira Bradley",
+    role: "Co-Founder at Barking with the Bradley\u2019s",
+    photo: "BarkingwithBradleys",
+  },
+  {
+    headline: "3 to 5 hours saved per week",
+    quote: "\u201cNotetaker organizes the chaos of dialogue into clarity.\u201d",
+    name: "Lizzie Lewis",
+    role: "Founder at Kitty of Angels",
+    photo: "Kitty-of-angels",
+  },
+  {
+    headline: "$1,200 annual savings",
+    quote: "\u201cI use Calendly every single day. Without it, I honestly couldn\u2019t run my business.\u201d",
+    name: "Pua Pakele",
+    role: "Founder at RBL Media",
+    photo: "RBL",
+  },
+  {
+    headline: "100% attendance rate",
+    quote: "\u201cAdding a booking fee didn\u2019t just reduce no-shows \u2014 it changed the tone of my consultations.\u201d",
+    name: "Elizabeth Saunders",
+    role: "Founder at Real Life E",
+    photo: "reallifee",
+  },
+];
+const newsreader = Newsreader({ weight: ["500"], subsets: ["latin"] });
+
+/** The five experts from the Medrio homepage, with its live photos and copy. */
+const medrioThumb = (file: string) => `https://medrio.com/wp-content/uploads/elementor/thumbs/${file}`;
+const medrioExperts = [
+  {
+    name: "Melissa Newara",
+    role: "VP, eClinical Consulting",
+    photo: "Melissa_Newara_Circle_Frame-rl1gngqfit9pl11070o4ebggl09kdwv0wiqo16syy0.png",
+    linkedin: "https://www.linkedin.com/in/melissa-newara-4934a05b/",
+    bio: "20+ years in clinical research, from running trials at UPMC to leading eClinical solution strategies, means Melissa has sat on both sides of the table. Her team runs every demo and protocol review so you know exactly what Medrio can do for your study goals.",
+  },
+  {
+    name: "Rod McGlashing",
+    role: "Data Sciences Subject Matter Expert",
+    photo: "Rod_McGlashing_Circle_Frame-rl1hgojtyf9kgol6l5bneg19b69an7unx4r01thfjc.png",
+    linkedin: "https://www.linkedin.com/in/mcglashing/",
+    bio: "25 years in clinical data management at PAREXEL, DFS Pharma, and beyond means Rod has seen every protocol edge case imaginable. He reviews yours before you commit, so your study is scoped right, risks are surfaced early, and nothing surprises you later.",
+  },
+  {
+    name: "Julie Tyson",
+    role: "Sr. Director, Clinical Data Services",
+    photo: "Julie_Tyson_Circle_Frame-rl1hhdxh2y8b65kbgyakrrmpcks7f1nf0md40afsvc.png",
+    linkedin: "https://www.linkedin.com/in/julie-tyson-80308811/",
+    bio: "Julie spent 25 years in clinical data management before joining Medrio, so when she says her team can handle your study end-to-end, she means it. eCRF builds, data management, biostatistics, and database lock. Clean data, protected timelines, every time.",
+  },
+  {
+    name: "Elizabeth Laws",
+    role: "Customer Enablement Manager",
+    photo: "Elizabeth_Laws_Circle_Frame-rl1hh4j36lvfy1xyzu8b2u03eq2ja2m3nbu97itqlk.png",
+    linkedin: "https://www.linkedin.com/company/medrio/",
+    bio: "Liz does not use generic training slides. She learns your protocol, your team, and your goals first. Then she builds everything around them. Customers who train with Elizabeth go live faster, open fewer support tickets, and actually know what they are doing.",
+  },
+  {
+    name: "Darshan Kansagara",
+    role: "Solutions Optimization Director",
+    photo: "Darshan_Kansagara_Circle_Frame-rl1hgw2jh3jv1ka9d8knye4y2988csoim5yvw16a5k.png",
+    linkedin: "https://www.linkedin.com/in/darshankansagara/",
+    bio: "25 years across PAREXEL, Onyx/Amgen, INC Research, and more means Darshan has solved complex clinical data problems at every level and in every setting. When your configuration is not working or your study is stuck, he is the person you want on the call.",
+  },
+];
 const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 const hankenGrotesk = Hanken_Grotesk({ weight: ["200", "300", "400"], subsets: ["latin"] });
 const monaSans = Mona_Sans({ subsets: ["latin"] });
 const bricolage = Bricolage_Grotesque({ weight: ["300"], subsets: ["latin"] });
 const montserrat = Montserrat({ weight: ["400", "500", "600"], subsets: ["latin"] });
 const inter = Inter({ weight: ["400", "700"], subsets: ["latin"] });
-const dmSans = DM_Sans({ weight: ["600", "800"], subsets: ["latin"] });
+const interSemibold = Inter({ weight: ["600"], subsets: ["latin"] });
+
+/** The words and colours from the notion.com hero pill, in its order. */
+const notionPillWords: PillWord[] = [
+  { text: "Think", background: "#E6F3FE", dot: "#097FE8" },
+  { text: "Ship", background: "#D0F4D8", dot: "#1AAE39" },
+  { text: "Create", background: "#FFDEC4", dot: "#FF6D00" },
+  { text: "Build", background: "#FFE4AF", dot: "#FFB110" },
+  { text: "Jam", background: "#EADBFA", dot: "#9849E8" },
+  { text: "Scale", background: "#BDE6E4", dot: "#27918D" },
+];
+const dmSans = DM_Sans({ weight: ["500", "600", "800"], subsets: ["latin"] });
+
+/** The "Shipped with Framer" gallery rows from the Framer homepage, with its live screenshots. */
+const framerShot = (file: string) => `https://framerusercontent.com/images/${file}`;
+const framerShowcase: ShowcaseItem[][] = [
+  [
+    { src: framerShot("QSALLMZz20lUztB4mySTDLq6mE.png?scale-down-to=1400"), alt: "Design studio site", kind: "site" },
+    { src: framerShot("ordt7SZDaUEWKA368UbAGtdIno.png?scale-down-to=1024"), alt: "Maggie site on a phone", kind: "mobile", position: "top" },
+    { src: framerShot("a1daVaOmbl26jqNCw1Q0P3vhWZQ.png?scale-down-to=1400"), alt: "Midlife Engineering site", kind: "site", position: "top" },
+    { src: framerShot("qgcb6nXCOIxXxk9CLxf9WOoOk.png?scale-down-to=1024"), alt: "i-D Elle Fanning site on a phone", kind: "mobile" },
+    { src: framerShot("wVxwU0qi5YsLHBFbDaX8c3jTcU.png?scale-down-to=1400"), alt: "ORO site", kind: "site", position: "top" },
+    { src: framerShot("AfVrJxeJkkgPpnO71Nw1tpmiiyI.jpg?scale-down-to=1024"), alt: "i-D site on a phone", kind: "mobile" },
+  ],
+  [
+    { src: framerShot("RtheNIazFJm6EqfeKh66Bi7wyGI.png?scale-down-to=1024"), alt: "Maggie site on a phone", kind: "mobile" },
+    { src: framerShot("CC3vnYoPhqbdIEFTrhc9At8bgWo.png?scale-down-to=1400"), alt: "Network intelligence site", kind: "site" },
+    { src: framerShot("YCWnviU2EZwsP64iysymO773I.png?scale-down-to=1024"), alt: "Tripadvisor site on a phone", kind: "mobile" },
+    { src: framerShot("wbyAS4r6FWaI1G1ena314OJs.png?scale-down-to=1400"), alt: "Legora site", kind: "site" },
+    { src: framerShot("Y6F5zkargty3ahKr9VGtA83ujXU.png?scale-down-to=1024"), alt: "Site on a phone", kind: "mobile" },
+    { src: framerShot("WDlxZ5aairNkZSH0cyHqAzB2w.png?scale-down-to=1400"), alt: "Site made in Framer", kind: "site" },
+  ],
+];
+const publicSans = Public_Sans({ weight: ["700"], subsets: ["latin"] });
 
 /** The six benefit tabs from the PandaDoc homepage, with its copy and video stills from Mux. */
 const pandadocMux = (id: string) => `https://image.mux.com/${id}/thumbnail.webp?width=1600&time=6`;
@@ -169,6 +543,40 @@ const pandadocFeatures = [
   { title: "Sign", mux: "SuTI3Vv8oCpHgz75v79dSgNcFeSWVBztJDlKPlzAlXI", body: "Not only can you capture signatures, but decide signing order, verify the identity of recipients, set signing groups, and even notarize documents.", links: ["Signing order", "eSignature"] },
   { title: "Analyze", mux: "d8lRBHkplQ4me9cAqISPvNOeXc14PVtciaRWTFFYkNg", body: "PandaDoc records an audit trail for every document, reports user activity, and tracks document metrics, too.", links: ["Document tracking", "Audit trail"] },
   { title: "Get paid", mux: "pc8X00oxxutB5FHXVPAabJYvL6rGYZkRBM00aKSi01LyDM", body: "Easily embed trusted payment gateways directly into bills and invoices so customers can pay with just a few clicks.", links: ["Payments"] },
+];
+
+/** UJET's two integration columns, with its live logo files. */
+const outfit = Outfit({ weight: ["400", "600"], subsets: ["latin"] });
+const ujetLogo = (file: string, alt: string) => ({ src: `https://assets.ujet.cx/${file}`, alt });
+const ujetIntegrations = [
+  [
+    ujetLogo("Zendesk_20250729030712.svg", "Zendesk"),
+    ujetLogo("microsoft-dynamics_20250729030812.svg", "Microsoft Dynamics"),
+    ujetLogo("observe-ai_20250729030928.svg", "Observe.AI"),
+    ujetLogo("Kustomer_20250917025244.svg", "Kustomer"),
+    ujetLogo("Alvaria_20250917024933.svg", "Alvaria"),
+    ujetLogo("Salesforce.com_logo%202_20250827105618.svg", "Salesforce"),
+    ujetLogo("google-cloud_20250729031042.svg", "Google Cloud"),
+    ujetLogo("genesys_20251113015737.svg", "Genesys"),
+    ujetLogo("gorgias_20251113020409.svg", "Gorgias"),
+    ujetLogo("Logo_de_Crisp.svg%201_20251113015910.svg", "Crisp"),
+    ujetLogo("APPFOLLOW_20251113030602.svg", "AppFollow"),
+    ujetLogo("Freshworks_20250917030647.svg", "Freshworks"),
+  ],
+  [
+    ujetLogo("hubspot_20250729031228.svg", "HubSpot"),
+    ujetLogo("servicenow_20250729031301.svg", "ServiceNow"),
+    ujetLogo("SuccessKPI_20250729031559.svg", "SuccessKPI"),
+    ujetLogo("Oracle_logo%201_20250917025350.svg", "Oracle"),
+    ujetLogo("calabrio_20250917030411.svg", "Calabrio"),
+    ujetLogo("verint_20250827105738.svg", "Verint"),
+    ujetLogo("SAP%201_20250917030848.svg", "SAP"),
+    ujetLogo("Freshdesk_20251113021031.svg", "Freshdesk"),
+    ujetLogo("Aircall_20251113021051.svg", "Aircall"),
+    ujetLogo("intercom-1-logo-png-transparent%201_20251113015258.svg", "Intercom"),
+    ujetLogo("Microsoft_logo_(2012)%201_20250917031529.svg", "Microsoft"),
+    ujetLogo("ZOHO_logo_2023%201_20250917031503.svg", "Zoho"),
+  ],
 ];
 
 /** Hatch's workspace bento, with its live Framer images and copy. */
@@ -187,7 +595,7 @@ const hatchPanels: BentoPanel[] = [
   {
     title: "Hot Desks",
     color: "#2076AD",
-    thumb: hatchImage("Jj6GeGuP0BEC3XYDVf0ER9Py1xo.jpg?scale-down-to=512"),
+    thumb: hatchImage("Jj6GeGuP0BEC3XYDVf0ER9Py1xo.jpg?scale-down-to=1024"),
     description:
       "A flexible seat in the shared space - come in, plug in, get to work. Best for solo founders and anyone who doesn\u2019t need the same desk twice.",
     ctaLabel: "Enquire about a space",
@@ -196,7 +604,7 @@ const hatchPanels: BentoPanel[] = [
   {
     title: "Private Offices",
     color: "#56BAA4",
-    thumb: hatchImage("VqwBfkbb9FUk8hITDMKIxrtfs.png?scale-down-to=512"),
+    thumb: hatchImage("VqwBfkbb9FUk8hITDMKIxrtfs.png?scale-down-to=1024"),
     description: "A lockable office for your team inside the community - your own door, with the coworking floor just outside it.",
     ctaLabel: "Enquire about a space",
     href: "#",
@@ -205,7 +613,7 @@ const hatchPanels: BentoPanel[] = [
     title: "Dedicated Desks",
     color: "#CDCEA6",
     accent: "#8E8F5E",
-    thumb: hatchImage("PkqEqFxz1sVL5bIrUNo5efpgNY.png?scale-down-to=512"),
+    thumb: hatchImage("PkqEqFxz1sVL5bIrUNo5efpgNY.png?scale-down-to=1024"),
     description: "Your own desk in the shared space, kept for you every day - leave your monitor, keep your spot.",
     ctaLabel: "Enquire about a space",
     href: "#",
@@ -230,7 +638,7 @@ const hatchStrips: BentoStrip[] = [
   {
     title: "Flexible Packages",
     color: "#CF7A8C",
-    thumb: hatchImage("JKaDrr1Vk1Xf8qen2oHaU0FzdDo.jpg?scale-down-to=512"),
+    thumb: hatchImage("JKaDrr1Vk1Xf8qen2oHaU0FzdDo.jpg?scale-down-to=1024"),
     image: hatchImage("JKaDrr1Vk1Xf8qen2oHaU0FzdDo.jpg?scale-down-to=1024"),
     description:
       "Access to Hatch on your terms, the community, the events, and the space when you need it, without a fixed desk. Come in for the people and the moments that matter, with a set number of days a month in the shared space.",
@@ -240,7 +648,7 @@ const hatchStrips: BentoStrip[] = [
   {
     title: "Virtual Package",
     color: "#D4674E",
-    thumb: hatchImage("mSA4N6BuHHTWNxTxKTebEqVA8.jpg?scale-down-to=512"),
+    thumb: hatchImage("mSA4N6BuHHTWNxTxKTebEqVA8.jpg?scale-down-to=1024"),
     image: hatchImage("mSA4N6BuHHTWNxTxKTebEqVA8.jpg?scale-down-to=1024"),
     description:
       "A business address at Hatch, without the desk, a professional address for correspondence and mail handling, so you can work from anywhere.",
@@ -490,6 +898,92 @@ const sophosBadges = [
   href: "#",
 }));
 
+/** The "AI That Moves the Needle" stats from the Seemplicity homepage, with its live copy. */
+const seemplicityStats = [
+  { value: 87, suffix: "%", label: "Proven Not Exploitable", description: "87% of one customer\u2019s priority findings ruled out with evidence. Analysts fixed the rest" },
+  { value: 75, suffix: "%", label: "Unowned Reports Traced to Code", description: "75% of one customer\u2019s unowned reports traced to the code behind them" },
+  { value: 33, suffix: "K", label: "Hours Back to Analysts", description: "Save an average of 33,000 hours per year by automating prioritization, coordination, and execution" },
+  { value: 1.7, prefix: "$", suffix: "M", label: "Annual Cost Savings", description: "Save an average of $1.7M annually by reducing manual effort, rework, and inefficient exposure workflows" },
+];
+
+/** The Seemplicity stat section, with a Replay button since the count runs once. */
+function StatCounterCardsDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className={`${monaSans.className} @container relative min-w-0 bg-[linear-gradient(180deg,#F0DCF3_0%,#FAF0FA_35%,#FFFFFF_60%)] px-5 pt-14 pb-16 @min-[960px]:pt-20`}>
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute top-4 right-4 rounded-full border border-[#410051]/15 bg-white/60 px-3 py-1 text-xs text-[#410051] hover:bg-white"
+      >
+        Replay count
+      </button>
+      <h2 className={`${bricolage.className} mb-10 text-center text-[36px] leading-[1.2] font-light tracking-[-0.72px] text-[#410051] md:mb-[75px] md:text-[clamp(36px,6cqi,66px)]`}>
+        AI That Moves the Needle
+      </h2>
+      <StatCounterCards
+        key={run}
+        className="mx-auto max-w-[1200px]"
+        items={seemplicityStats}
+        numberClassName={`${bricolage.className} text-[36px] leading-[1.2] font-light tracking-[-0.72px] @min-[960px]:text-[clamp(36px,4.6cqi,66px)] @min-[960px]:leading-none @min-[960px]:tracking-[-2.64px]`}
+        countDuration={values.countDuration as number}
+        countEase={values.countEase as string}
+        duration={values.duration as number}
+        ease={values.ease as string}
+        riseDuration={values.riseDuration as number}
+        sinkDuration={values.sinkDuration as number}
+        sinkDelay={values.sinkDelay as number}
+        revealDuration={values.revealDuration as number}
+        revealDelay={values.revealDelay as number}
+        revealExitDuration={values.revealExitDuration as number}
+        shadowDuration={values.shadowDuration as number}
+        leaveDelay={values.leaveDelay as number}
+        openWidth={values.openWidth as number}
+        minHeight={values.minHeight as number}
+        gap={values.gap as number}
+        radius={values.radius as number}
+        numberColor={values.numberColor as string}
+        labelColor={values.labelColor as string}
+        minWidth={values.minWidth as number}
+      />
+    </div>
+  );
+}
+
+/** The Lovable section headline, with a Replay button since the sweep plays once. */
+function GradientSweepTextDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className={`${interTightSemibold.className} relative w-full bg-[#FCFBF8] px-6 py-24 md:px-12`}>
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute top-4 right-4 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-normal text-neutral-600 hover:bg-neutral-50"
+      >
+        Replay
+      </button>
+      <h2 className="max-w-[1100px] text-[36px] leading-[1.1] font-semibold tracking-[-0.04em] text-[#1C1C1C] md:text-[56px]">
+        One platform.{" "}
+        <GradientSweepText
+          key={`${run}-${values.trigger}`}
+          colors={values.colors as string}
+          duration={values.duration as number}
+          delay={values.delay as number}
+          ease={values.ease as string}
+          blur={values.blur as number}
+          trigger={values.trigger as "view" | "load"}
+          threshold={values.threshold as number}
+        >
+          Endless possibilities.
+        </GradientSweepText>
+      </h2>
+      <p className={`${inter.className} mt-6 max-w-[760px] text-lg leading-[1.6] font-normal text-[#5F5F5D] md:text-xl`}>
+        If you can describe it, you can build it. Create, run, and manage entire products and businesses from scratch.
+      </p>
+    </div>
+  );
+}
+
 /** A single count-up number, with a Replay button since the count runs once. */
 function CountUpDemo({ values }: { values: ControlValues }) {
   const [run, setRun] = useState(0);
@@ -547,6 +1041,37 @@ function RisingHeadlineDemo({ values }: { values: ControlValues }) {
         type="button"
         onClick={() => setRun((n) => n + 1)}
         className="absolute right-4 bottom-4 rounded-full border border-black/15 bg-white px-4 py-1.5 text-sm text-neutral-700 hover:bg-black/5"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/** The Veracode "Start Your Journey_" headline on its #000416 page colour, with its type and spacing. Replay types it out. */
+function TypingHeadlineDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className={`relative flex min-h-[420px] w-full items-center bg-[#000416] px-6 py-20 md:px-12 ${publicSans.className}`}>
+      <TypingHeadline
+        key={run}
+        text={values.text as string}
+        cursor={values.cursor as string}
+        cursorColor={values.cursorColor as string}
+        // Replay always types the headline out, even with typing off (the
+        // original), so there's something to watch; it starts straight away.
+        typing={run > 0 || (values.typing as boolean)}
+        trigger={run > 0 ? "load" : (values.trigger as "load" | "view")}
+        speed={values.speed as number}
+        delay={values.delay as number}
+        blinkDuration={values.blinkDuration as number}
+        blinkEasing={values.blinkEasing as string}
+        className="text-[48px] leading-[1.2] font-bold tracking-[-2px] text-white min-[992px]:text-[72px] min-[992px]:leading-[86.4px]"
+      />
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/20 bg-[#000416] px-4 py-1.5 text-sm text-white/80 hover:bg-white/10"
       >
         Replay
       </button>
@@ -1017,6 +1542,25 @@ export const previews: Record<
       onClick={(e) => e.preventDefault()}
     />
   ),
+  "video-hover-card": ({ values }) => (
+    <div className={`${interTight.className} grid w-full max-w-[960px] grid-cols-1 gap-6 sm:grid-cols-3`}>
+      {miroStories.map((story) => (
+        <VideoHoverCard
+          key={story.stat + story.logoAlt}
+          {...story}
+          zoom={values.zoom as number}
+          duration={values.duration as number}
+          easing={values.easing as string}
+          radius={values.radius as number}
+          aspectRatio={values.aspectRatio as string}
+          scrim={values.scrim as boolean}
+          autoplayOnTouch={values.autoplayOnTouch as boolean}
+          href="#"
+          onClick={(e) => e.preventDefault()}
+        />
+      ))}
+    </div>
+  ),
   "reveal-link-card": ({ values }) => (
     <RevealLinkCard
       src="https://images.contentstack.io/v3/assets/blt7efec3660d1ae646/bltca51762d5e987ae0/6aba052344cd9a42234330eb/That_s_your_AI_advantage_-_3.webp?width=600&format=pjpg&disable=upscale"
@@ -1091,6 +1635,23 @@ export const previews: Record<
   },
   "rising-headline": ({ values }) => <RisingHeadlineDemo values={values} />,
   "count-up": ({ values }) => <CountUpDemo values={values} />,
+  "gradient-sweep-text": ({ values }) => <GradientSweepTextDemo values={values} />,
+  "typing-headline": ({ values }) => <TypingHeadlineDemo values={values} />,
+  // The notion.com hero headline: NotionInter 600 (Inter here), centred and balanced.
+  "rotating-pill-headline": ({ values }) => (
+    <div className="grid min-h-[420px] w-full place-items-center bg-white px-6 py-20">
+      <RotatingPillHeadline
+        before={values.before as string}
+        words={notionPillWords}
+        after={values.after as string}
+        interval={values.interval as number}
+        duration={values.duration as number}
+        easing={values.easing as string}
+        colorDuration={values.colorDuration as number}
+        className={`${interSemibold.className} max-w-[1000px] text-center text-[42px] leading-[48px] font-semibold tracking-[-1.5px] text-balance text-black/95 min-[600px]:text-[clamp(2.625rem,-25.5px_+_11.25vw,6rem)] min-[600px]:leading-[clamp(3rem,-17px_+_10.8333vw,6.25rem)] min-[600px]:tracking-[clamp(-0.2875rem,2.375px_-_0.645833vw,-0.09375rem)]`}
+      />
+    </div>
+  ),
   "faq-accordion": ({ values }) => (
     <div className="w-full max-w-[1280px] rounded-2xl bg-white px-6 py-12 md:px-10">
       <FaqAccordion
@@ -1163,6 +1724,37 @@ export const previews: Record<
       gap={values.gap as number}
       logoHeight={values.logoHeight as number}
     />
+  ),
+  "horizontal-scroll": ({ values }) => (
+    // Sticky needs a scroll container, so the preview scrolls inside itself.
+    <div className={`${interTight.className} h-[760px] overflow-y-auto overscroll-contain bg-[#F7F7F5]`}>
+      <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+      <HorizontalScroll
+        heading={
+          <h2 className="text-[44px] leading-[1.2] text-[#050038]">
+            Experience the
+            <br />
+            Intelligent Canvas
+          </h2>
+        }
+        speed={values.speed as number}
+        smoothing={values.smoothing as number}
+        stickyTop={values.stickyTop as number}
+        cardWidth={values.cardWidth as number}
+        headingWidth={values.headingWidth as number}
+        gap={values.gap as number}
+        panel={values.panel as boolean}
+        panelColor={values.panelColor as string}
+        radius={values.radius as number}
+        background={values.background as string}
+        minWidth={0}
+      >
+        {miroFeatures.map((card) => (
+          <MiroCard key={card.title} {...card} />
+        ))}
+      </HorizontalScroll>
+      <p className="py-40 text-center text-sm text-neutral-500">The page carries on</p>
+    </div>
   ),
   "stacking-cards": ({ values }) => (
     // Sticky needs a scroll container, so the preview scrolls inside itself.
@@ -1336,6 +1928,7 @@ export const previews: Record<
       <div className="h-[400px]" />
     </div>
   ),
+  "stat-counter-cards": ({ values }) => <StatCounterCardsDemo values={values} />,
   "spotlight-slider": ({ values }) => (
     <div className={`${lexendExa.className} min-w-0 bg-[#EDF2F9] py-16`}>
       <h2 className="mx-auto mb-12 max-w-[640px] px-6 text-center text-[32px] leading-[1.1] font-light tracking-[-0.1em] text-[#0A143A] md:text-[44px]">
@@ -1429,6 +2022,137 @@ export const previews: Record<
       />
     </div>
   ),
+  "integration-logo-wall": ({ values }) => (
+    <IntegrationLogoWall
+      className={outfit.className}
+      columns={ujetIntegrations}
+      speed={values.speed as number}
+      direction={values.direction as "up" | "down"}
+      stagger={values.stagger as number}
+      pauseOnHover={values.pauseOnHover as boolean}
+      cardWidth={values.cardWidth as number}
+      cardHeight={values.cardHeight as number}
+      gap={values.gap as number}
+      radius={values.radius as number}
+      columnHeight={values.columnHeight as number}
+      fade={values.fade as number}
+      background={values.background as string}
+      cardBackground={values.cardBackground as string}
+    >
+      <h2 className="mb-[15px] text-[32px] leading-none font-semibold tracking-[-0.6px] text-[#000843] @min-[1024px]:text-[60px]">
+        Seamless integration with key customer service solutions
+      </h2>
+      <p className="mb-5 text-xl leading-[1.5] text-[#000843] @min-[1024px]:mb-[47px]">
+        Ensure best-in-breed compatibility with UJET’s ecosystem of Customer Relationship Management (CRM), Workforce
+        Engagement Management (WEM), Outbound Dialing, Quality Management, Virtual Agent, Agent Assist, and Business
+        Intelligence (BI) partners.
+      </p>
+      <a
+        href="#"
+        onClick={(e) => e.preventDefault()}
+        className="group inline-flex items-center gap-2 rounded-[43px] bg-[#FF4E33] px-5 py-3 text-lg font-semibold text-white transition-colors hover:bg-[#FF715C]"
+      >
+        View All Integrations
+        <span
+          aria-hidden
+          className="inline-block transition-transform duration-400 ease-[cubic-bezier(0.45,0.05,0.55,0.95)] group-hover:-rotate-45"
+        >
+          →
+        </span>
+      </a>
+    </IntegrationLogoWall>
+  ),
+  "expert-card-carousel": ({ values }) => (
+    <div className={`${lexend.className} min-w-0 bg-black px-[40px] py-16 min-[992px]:py-24`}>
+      <div className="mx-auto max-w-[1280px]">
+        <h2 className="mb-4 text-center text-[32px] leading-[1.2] font-medium text-white text-balance md:text-[40px]">
+          Our experts help you make the right call
+        </h2>
+        <p className="mx-auto mb-12 max-w-[640px] text-center text-[16px] leading-[1.5] text-white text-balance">
+          From protocol design to database lock, Medrio&apos;s clinical and technical experts help you make decisions,
+          avoid common pitfalls, and move faster.
+        </p>
+        <ExpertCardCarousel
+          duration={values.duration as number}
+          ease={values.ease as string}
+          flipDuration={values.flipDuration as number}
+          flipEase={values.flipEase as string}
+          iconDuration={values.iconDuration as number}
+          iconEase={values.iconEase as string}
+          arrowDuration={values.arrowDuration as number}
+          arrowEase={values.arrowEase as string}
+          perView={values.perView as number}
+          minCardWidth={values.minCardWidth as number}
+          gap={values.gap as number}
+          cardHeight={values.cardHeight as number}
+          radius={values.radius as number}
+          cardColor={values.cardColor as string}
+          backColor={values.backColor as string}
+          accent={values.accent as string}
+          color={values.color as string}
+          loop={values.loop as boolean}
+          items={medrioExperts.map((expert) => ({
+            // eslint-disable-next-line @next/next/no-img-element
+            image: <img src={medrioThumb(expert.photo)} alt="" draggable={false} />,
+            name: expert.name,
+            role: expert.role,
+            bio: expert.bio,
+            href: expert.linkedin,
+          }))}
+        />
+      </div>
+    </div>
+  ),
+  "testimonial-slider": ({ values }) => (
+    <div
+      className={`${interTight.className} min-w-0 py-16 min-[992px]:py-24`}
+      style={{
+        background:
+          "radial-gradient(60% 50% at 10% 15%, #3F5FC9 0%, transparent 70%), radial-gradient(55% 60% at 95% 85%, #C59BEA 0%, transparent 70%), radial-gradient(50% 45% at 15% 95%, #F2C6D9 0%, transparent 70%), linear-gradient(180deg, #4A76D6 0%, #7E95E2 55%, #E9D6F1 100%)",
+      }}
+    >
+      <div className="mb-12 flex flex-col items-center gap-4 px-6 text-center text-white min-[992px]:mb-16">
+        <span className="text-[13px] font-semibold tracking-[0.08em] uppercase">Customer stories</span>
+        <h2 className="max-w-[640px] text-[40px] leading-[1.1] font-medium tracking-[-1.5px] text-balance md:text-[60px] md:tracking-[-2px]">
+          Real customers. Real results.
+        </h2>
+      </div>
+      <TestimonialSlider
+        autoplay={values.autoplay as boolean}
+        interval={values.interval as number}
+        duration={values.duration as number}
+        ease={values.ease as string}
+        fadeDuration={values.fadeDuration as number}
+        dotDuration={values.dotDuration as number}
+        cardWidth={values.cardWidth as number}
+        cardHeight={values.cardHeight as number}
+        sideWidth={values.sideWidth as number}
+        sideHeight={values.sideHeight as number}
+        edgeWidth={values.edgeWidth as number}
+        edgeHeight={values.edgeHeight as number}
+        gap={values.gap as number}
+        edgeGap={values.edgeGap as number}
+        radius={values.radius as number}
+        imageRadius={values.imageRadius as number}
+        connectors={values.connectors as boolean}
+        cardColor={values.cardColor as string}
+        color={values.color as string}
+        accent={values.accent as string}
+        trackColor="rgba(255, 255, 255, 0.45)"
+        quoteClassName={newsreader.className}
+        items={calendlyStories.map((story) => ({
+          headline: story.headline,
+          quote: story.quote,
+          name: story.name,
+          role: story.role,
+          // eslint-disable-next-line @next/next/no-img-element
+          image: <img src={calendlyImage(`${story.photo}-selected.jpg`, 722)} alt="" draggable={false} />,
+          // eslint-disable-next-line @next/next/no-img-element
+          thumbnail: <img src={calendlyImage(`${story.photo}-default.jpg`, 320)} alt="" draggable={false} />,
+        }))}
+      />
+    </div>
+  ),
   "card-marquee": ({ values }) => (
     <div className={`${monaSans.className} min-w-0 bg-white py-16`}>
       <div className="mb-10 px-6 text-center text-[#410051] min-[992px]:mb-[63px]">
@@ -1466,6 +2190,29 @@ export const previews: Record<
         }))}
       />
     </div>
+  ),
+  "showcase-ticker": ({ values }) => (
+    <ShowcaseTicker
+      className={dmSans.className}
+      rows={framerShowcase}
+      speed={values.speed as number}
+      direction={values.direction as "left" | "right"}
+      pauseOnHover={values.pauseOnHover as boolean}
+      height={values.height as number}
+      gap={values.gap as number}
+      radius={values.radius as number}
+      background={values.background as string}
+      heading={<h2 className="m-0 text-[clamp(32px,4vw,44px)] leading-[1.1] font-medium tracking-[-0.04em]">Shipped with Framer</h2>}
+      action={
+        <a
+          href="#"
+          onClick={(e) => e.preventDefault()}
+          className="inline-flex rounded-lg bg-white/10 px-3.5 py-2.5 text-sm leading-none font-medium text-white no-underline transition-colors hover:bg-white/15"
+        >
+          See Framer sites
+        </a>
+      }
+    />
   ),
   "expanding-bento": ({ values }) => (
     <div className="min-w-0 bg-[#FAFAFA] px-4 py-12 md:px-10" onClickCapture={(e) => e.preventDefault()}>
@@ -1530,6 +2277,90 @@ export const previews: Record<
     </div>
   ),
   "vertical-tab-slider": ({ values }) => <VerticalTabSliderDemo values={values} />,
+  "product-tabs": ({ values }) => (
+    <div
+      className={`${interTight.className} min-w-0 px-4 py-16 min-[992px]:py-24`}
+      style={{
+        background:
+          "radial-gradient(60% 50% at 10% 10%, #3F5FC9 0%, transparent 70%), radial-gradient(55% 60% at 95% 80%, #C59BEA 0%, transparent 70%), radial-gradient(50% 45% at 15% 95%, #F2C6D9 0%, transparent 70%), linear-gradient(180deg, #4A76D6 0%, #8E9BE6 55%, #E9C9E6 100%)",
+      }}
+    >
+      <ProductTabs
+        autoplay={values.autoplay as boolean}
+        interval={values.interval as number}
+        duration={values.duration as number}
+        ease={values.ease as string}
+        fadeDuration={values.fadeDuration as number}
+        hoverDuration={values.hoverDuration as number}
+        tabSize={values.tabSize as number}
+        gap={values.gap as number}
+        maxWidth={values.maxWidth as number}
+        radius={values.radius as number}
+        cardColor={values.cardColor as string}
+        iconColor={values.iconColor as string}
+        activeIconColor={values.activeIconColor as string}
+        arrows={values.arrows as boolean}
+        shadow={values.shadow as boolean}
+        progress={values.progress as boolean}
+        ringWidth={values.ringWidth as number}
+        aria-label="Calendly products"
+        items={calendlyProducts.map((product) => ({
+          label: product.name,
+          icon: product.icon,
+          color: product.color,
+          ringColor: product.ringColor,
+          content: (
+            <ProductPanel
+              icon={product.icon}
+              color={product.color}
+              name={product.name}
+              badge={product.badge}
+              heading={product.heading}
+              body={product.body}
+              href="#"
+              // eslint-disable-next-line @next/next/no-img-element
+              media={<img src={calendlyPoster(product.poster)} alt="" draggable={false} />}
+            />
+          ),
+        }))}
+      />
+    </div>
+  ),
+  "scroll-progress-tabs": ({ values }) => (
+    // Sticky needs a scroll container, so the preview scrolls inside itself.
+    <div
+      className={`${interTight.className} h-[760px] overflow-y-auto overscroll-contain`}
+      style={{
+        background:
+          "radial-gradient(40% 50% at 8% 85%, rgba(255,214,150,0.45), transparent), radial-gradient(35% 45% at 95% 40%, rgba(225,190,255,0.5), transparent), radial-gradient(30% 40% at 70% 5%, rgba(255,200,230,0.4), transparent), #FAFAF8",
+      }}
+    >
+      <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+      <ScrollProgressTabs
+        stepLength={values.stepLength as number}
+        intro={values.intro as boolean}
+        introLength={values.introLength as number}
+        introScale={values.introScale as number}
+        fadeDuration={values.fadeDuration as number}
+        riseDuration={values.riseDuration as number}
+        rise={values.rise as number}
+        panelDuration={values.panelDuration as number}
+        hoverDuration={values.hoverDuration as number}
+        ease={values.ease as string}
+        stickyTop={values.stickyTop as number}
+        canvasWidth={values.canvasWidth as number}
+        dots={values.dots as boolean}
+        screenColor={values.screenColor as string}
+        fillColor={values.fillColor as string}
+        labelColor={values.labelColor as string}
+        items={miroBoards.map((b) => ({
+          label: b.label,
+          content: <div className="@container flex flex-col p-[4%]">{b.board}</div>,
+        }))}
+      />
+      <p className="py-40 text-center text-sm text-neutral-500">The page carries on</p>
+    </div>
+  ),
   "progress-tabs": ({ values }) => (
     <div className="min-w-0 bg-white px-6 py-16 md:px-10">
       <ProgressTabs
@@ -1660,6 +2491,31 @@ export const previews: Record<
         <p className="text-sm font-medium tracking-[0.12em] text-[#1F5BC6] uppercase">Frequently asked questions</p>
         <h2 className="text-4xl leading-[1.05] font-light tracking-[-0.03em] text-[#141A26] md:text-6xl">
           Your data is ready for AI. We&apos;ll show you how.
+        </h2>
+      </div>
+    </section>
+  ),
+  "drifting-glow": ({ values }) => (
+    <section className="relative isolate flex h-[720px] min-w-0 flex-col items-center overflow-hidden bg-white px-6 pt-20 md:px-12">
+      <DriftingGlow
+        className="absolute inset-0 -z-10"
+        colorBase={values.colorBase as string}
+        color1={values.color1 as string}
+        color2={values.color2 as string}
+        speed={values.speed as number}
+        intensity={values.intensity as number}
+        size={values.size as number}
+        drift={values.drift as number}
+        softness={values.softness as number}
+        warp={values.warp as number}
+        grain={values.grain as number}
+        maxPixelRatio={values.maxPixelRatio as number}
+        paused={values.paused as boolean}
+      />
+      <div className="flex max-w-[760px] flex-col items-center gap-4 text-center">
+        <p className="text-sm font-semibold tracking-[0.12em] text-[#E8590C] uppercase">Integrations</p>
+        <h2 className="text-3xl leading-[1.1] font-semibold tracking-[-0.02em] text-[#111] md:text-5xl">
+          Connect your data to every tool you already use
         </h2>
       </div>
     </section>
