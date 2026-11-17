@@ -607,6 +607,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "video-hover-card",
+    added: "2026-11-17",
     title: "Video hover card",
     description:
       "A customer-story tile that shows a still photo until hovered, then crossfades into a muted looping video that grows slightly, used on Miro website",
@@ -1634,6 +1635,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "gradient-sweep-text",
+    added: "2026-11-17",
     title: "Gradient sweep text",
     description:
       "The last words of a headline are invisible until a band of blue, pink and orange sweeps through them and leaves them in the text colour, used on Lovable website",
@@ -1720,6 +1722,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "typing-headline",
+    added: "2026-11-17",
     title: "Typing headline",
     description:
       "A headline that ends on a blinking coloured cursor, like a terminal prompt, with an optional type-out, used in the \"Start Your Journey_\" CTA on the Veracode website",
@@ -1800,6 +1803,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "rotating-pill-headline",
+    added: "2026-11-17",
     title: "Rotating pill headline",
     description:
       "A headline with a coloured pill mid-sentence whose word, colours and width change every few seconds, used in the \"Where teams and agents Ship together.\" hero on the Notion website",
@@ -2295,6 +2299,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "integration-logo-wall",
+    added: "2026-11-17",
     title: "Integration logo wall",
     description:
       "Two columns of logo cards scroll endlessly in opposite directions beside the section copy, turning into sideways rows on phones, used on UJET website",
@@ -2392,6 +2397,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "showcase-ticker",
+    added: "2026-11-17",
     title: "Showcase ticker",
     description:
       "Two rows of site screenshots, wide desktop shots mixed with narrow phone shots, drift endlessly in opposite directions under the section heading, used on the Framer website",
@@ -2708,6 +2714,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "stat-counter-cards",
+    added: "2026-11-17",
     title: "Stat counter cards",
     description:
       "A row of stat cards whose numbers count up on scroll; hovering one widens it, lifts its number and reveals a line of copy, used on Seemplicity website",
@@ -3031,6 +3038,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "expert-card-carousel",
+    added: "2026-11-17",
     title: "Expert card carousel",
     description:
       "A looping row of people cards that round arrows or a drag move one card at a time; the Bio button flips a card over in 3D to show a short bio, used on Medrio website",
@@ -3130,6 +3138,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "testimonial-slider",
+    added: "2026-11-17",
     title: "Testimonial slider",
     description:
       "One open customer story between narrow portrait cards; picking a portrait or letting the progress bar run morphs every card at once, the portrait growing into the story as the open one shrinks away, used on Calendly website",
@@ -3308,6 +3317,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "horizontal-scroll",
+    added: "2026-11-17",
     title: "Horizontal scroll",
     description:
       "The section pins and scrolling down slides a row of cards sideways until the last one is in view, then the page carries on, used on Miro website",
@@ -3595,6 +3605,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "product-tabs",
+    added: "2026-11-17",
     title: "Product tabs",
     description:
       "Icon tabs above a card where the active tab lifts out in the card's colour, joined to it by a small bridge, and a colour fill slides through the row to land in the chosen tab, used on Calendly website",
@@ -3892,6 +3903,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "scroll-progress-tabs",
+    added: "2026-11-17",
     title: "Scroll progress tabs",
     description:
       "A canvas pins and zooms out, tabs drop in over its top edge, and scrolling fills each tab in turn while the canvas swaps to its content, used on Miro website",
@@ -4703,6 +4715,7 @@ export const registry: RegistryEntry[] = [
   },
   {
     slug: "drifting-glow",
+    added: "2026-11-17",
     title: "Drifting glow",
     description:
       "Two soft periwinkle and sky-blue glows drift slowly behind the content on a white page, deepening where they overlap, a WebGL shader background based on the Medrio website",

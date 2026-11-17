@@ -191,6 +191,11 @@ export type RegistryEntry = {
    * WordPress. Names that platform; shown on the component page and in the brief.
    */
   recreated?: string;
+  /**
+   * Date the component joined the library (YYYY-MM-DD). The Introduction page
+   * lists the most recent additions.
+   */
+  added?: string;
   /** Exported component name, used in the usage snippet and prompt. */
   componentName: string;
   files: RegistryFile[];
