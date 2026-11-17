@@ -36,10 +36,13 @@ import { GradientSweepText } from "./animations/text-effects/gradient-sweep-text
 import { ScrollShiftHeadline } from "./animations/scroll-triggers/scroll-shift-headline";
 import { RisingHeadline } from "./animations/text-effects/rising-headline";
 import { TypingHeadline } from "./animations/text-effects/typing-headline";
+import { CipherReveal } from "./animations/text-effects/cipher-reveal";
 import { RotatingPillHeadline, type PillWord } from "./animations/text-effects/rotating-pill-headline";
 import { WaveHeadline } from "./animations/text-effects/wave-headline";
+import { StaggeredText } from "./animations/text-effects/staggered-text";
 import { BlendThroughHeadline } from "./animations/text-effects/blend-through-headline";
 import { LineMaskReveal } from "./animations/text-effects/line-mask-reveal";
+import { BlurHighlight } from "./animations/text-effects/blur-highlight";
 import { StretchHeadline } from "./animations/text-effects/stretch-headline";
 import { TextMarquee } from "./animations/text-effects/text-marquee";
 import { ScrollColorBackground } from "./animations/scroll-triggers/scroll-color-background";
@@ -56,7 +59,6 @@ import { LayerCascade } from "./shaders/backgrounds/layer-cascade";
 import { RibbonWave } from "./shaders/backgrounds/ribbon-wave";
 import { PrismFlow } from "./shaders/backgrounds/prism-flow";
 import { NeonMarble } from "./shaders/backgrounds/neon-marble";
-import { DriftingGlow } from "./shaders/backgrounds/drifting-glow";
 
 /** The four "problem" cards from the Seemplicity homepage, with its live images and copy. */
 const seemplicityUpload = (path: string) => `https://seemplicity.ai/wp-content/uploads/${path}`;
@@ -346,6 +348,7 @@ function SophosArrowLink({ children, color }: { children: ReactNode; color: stri
 const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"] });
 const interTight = Inter_Tight({ weight: ["100", "300", "400"], subsets: ["latin"] });
 const interTightSemibold = Inter_Tight({ weight: ["600"], subsets: ["latin"] });
+const interTightBold = Inter_Tight({ weight: ["700"], subsets: ["latin"] });
 const lexendExa = Lexend_Exa({ weight: ["300", "400"], subsets: ["latin"] });
 const lexend = Lexend({ weight: ["300", "400", "500"], subsets: ["latin"] });
 
@@ -495,6 +498,8 @@ const medrioExperts = [
 ];
 const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 const hankenGrotesk = Hanken_Grotesk({ weight: ["200", "300", "400"], subsets: ["latin"] });
+/** Closest Google match to Ironclad's Moderat (same label width at 18px/500). */
+const hankenGroteskMedium = Hanken_Grotesk({ weight: ["500"], subsets: ["latin"] });
 const monaSans = Mona_Sans({ subsets: ["latin"] });
 const bricolage = Bricolage_Grotesque({ weight: ["300"], subsets: ["latin"] });
 const montserrat = Montserrat({ weight: ["400", "500", "600"], subsets: ["latin"] });
@@ -1048,6 +1053,43 @@ function RisingHeadlineDemo({ values }: { values: ControlValues }) {
   );
 }
 
+/** React Bits' "Ideas into reality" on a near-black stage, in Inter Tight 600. Replay decodes it again. */
+function CipherRevealDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className={`relative flex min-h-[420px] w-full items-center justify-center bg-[#0B0B0B] px-6 py-20 sm:px-12 ${interTightSemibold.className}`}>
+      <CipherReveal
+        key={`${run}-${values.text}-${values.charset}`}
+        text={values.text as string}
+        from={values.from as "blank" | "scrambled"}
+        order={values.order as "left" | "right" | "center" | "random"}
+        charset={(values.charset as string) || "auto"}
+        hover={values.hover as "trail" | "replay" | "none"}
+        hoverRadius={values.hoverRadius as number}
+        // Replay always plays straight away, whatever the trigger.
+        trigger={run > 0 ? "mount" : (values.trigger as "view" | "mount" | "manual")}
+        color={values.color as string}
+        scrambleColor={values.scrambleColor as string}
+        scrambleOpacity={values.scrambleOpacity as number}
+        loop={values.loop as boolean}
+        duration={values.duration as number}
+        scramble={values.scramble as number}
+        rate={values.rate as number}
+        interval={values.interval as number}
+        lockFade={values.lockFade as number}
+        className="max-w-full text-center text-[min(80px,11vw)] leading-[1.1] font-semibold tracking-[-0.03em]"
+      />
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/20 bg-[#0B0B0B] px-4 py-1.5 text-sm text-white/80 hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
 /** The Veracode "Start Your Journey_" headline on its #000416 page colour, with its type and spacing. Replay types it out. */
 function TypingHeadlineDemo({ values }: { values: ControlValues }) {
   const [run, setRun] = useState(0);
@@ -1206,6 +1248,51 @@ function BlendThroughHeadlineDemo({ values }: { values: ControlValues }) {
 }
 
 /**
+ * The React Bits Pro stage: 24/32 sans, white on near-black, max-w-xl. It
+ * plays on scroll, so the preview is a scroll area; Replay remounts it.
+ */
+function BlurHighlightDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className="relative w-full bg-[#0e0e0e]">
+      <div className="h-[560px] overflow-y-auto overscroll-contain">
+        <p className="py-16 text-center text-sm text-neutral-500">Scroll inside the preview ↓</p>
+        {/* Just enough runway that the text starts below the play line, so a short scroll plays it. */}
+        <div className="h-[260px]" />
+        <div className="grid place-items-center px-6 py-16">
+          <BlurHighlight
+            key={run}
+            text={values.text as string}
+            highlightColor={values.highlightColor as string}
+            direction={values.direction as "left" | "right" | "top" | "bottom"}
+            blur={values.blur as number}
+            inactiveOpacity={values.inactiveOpacity as number}
+            once={values.once as boolean}
+            amount={values.amount as number}
+            blurDuration={values.blurDuration as number}
+            blurEase={values.blurEase as string}
+            blurDelay={values.blurDelay as number}
+            highlightDuration={values.highlightDuration as number}
+            highlightEase={values.highlightEase as string}
+            highlightDelay={values.highlightDelay as number}
+            highlightStagger={values.highlightStagger as number}
+            className={`${inter.className} max-w-xl text-[24px] leading-[32px] text-white`}
+          />
+        </div>
+        <div className="h-[200px]" />
+      </div>
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm text-neutral-300 hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/**
  * The Weo Motion playground stage: DM Sans lead copy on near-black. Into view
  * gets a scroll area so re-entry can be tried; both get a Replay button.
  */
@@ -1281,6 +1368,35 @@ function StretchHeadlineDemo({ values }: { values: ControlValues }) {
       ) : (
         <div className="grid min-h-[560px] place-items-center px-6">{headline}</div>
       )}
+      <button
+        type="button"
+        onClick={() => setRun((n) => n + 1)}
+        className="absolute right-4 bottom-4 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm text-neutral-300 hover:bg-white/10"
+      >
+        Replay
+      </button>
+    </div>
+  );
+}
+
+/** A centred display heading on near-black, with a Replay button since it plays once. */
+function StaggeredTextDemo({ values }: { values: ControlValues }) {
+  const [run, setRun] = useState(0);
+  return (
+    <div className="relative flex min-h-[560px] w-full items-center justify-center bg-[#0A0A0A] px-5 py-24 text-center text-white">
+      <StaggeredText
+        key={run}
+        text={values.text as string}
+        split={values.split as "letter" | "word" | "line"}
+        trigger={values.trigger as "view" | "load"}
+        delay={values.delay as number}
+        stagger={values.stagger as number}
+        duration={values.duration as number}
+        easing={values.easing as string}
+        distance={values.distance as number}
+        blur={values.blur as number}
+        className={`${interTightBold.className} max-w-[9.5ch] text-[52px] leading-[1.05] font-bold tracking-[-0.055em] md:text-[88px]`}
+      />
       <button
         type="button"
         onClick={() => setRun((n) => n + 1)}
@@ -1455,6 +1571,7 @@ export const previews: Record<
       reducedFadeEase={values.reducedFadeEase as string}
       arrow={values.arrow as boolean}
       href="#"
+      className={hankenGroteskMedium.className}
     >
       Request Demo
     </CornerBloomButton>
@@ -1609,8 +1726,10 @@ export const previews: Record<
   },
   "scroll-shift-headline": ({ values }) => <ScrollShiftHeadlineDemo values={values} />,
   "wave-headline": ({ values }) => <WaveHeadlineDemo values={values} />,
+  "staggered-text": ({ values }) => <StaggeredTextDemo values={values} />,
   "blend-through-headline": ({ values }) => <BlendThroughHeadlineDemo values={values} />,
   "line-mask-reveal": ({ values }) => <LineMaskRevealDemo values={values} />,
+  "blur-highlight": ({ values }) => <BlurHighlightDemo values={values} />,
   "stretch-headline": ({ values }) => <StretchHeadlineDemo values={values} />,
   // The Weo Motion playground stage for pattern 070: DM Sans 800 on near-black.
   // Scroll boost listens to the page, so scrolling the docs page drives it.
@@ -1637,6 +1756,7 @@ export const previews: Record<
   "count-up": ({ values }) => <CountUpDemo values={values} />,
   "gradient-sweep-text": ({ values }) => <GradientSweepTextDemo values={values} />,
   "typing-headline": ({ values }) => <TypingHeadlineDemo values={values} />,
+  "cipher-reveal": ({ values }) => <CipherRevealDemo values={values} />,
   // The notion.com hero headline: NotionInter 600 (Inter here), centred and balanced.
   "rotating-pill-headline": ({ values }) => (
     <div className="grid min-h-[420px] w-full place-items-center bg-white px-6 py-20">
@@ -2491,31 +2611,6 @@ export const previews: Record<
         <p className="text-sm font-medium tracking-[0.12em] text-[#1F5BC6] uppercase">Frequently asked questions</p>
         <h2 className="text-4xl leading-[1.05] font-light tracking-[-0.03em] text-[#141A26] md:text-6xl">
           Your data is ready for AI. We&apos;ll show you how.
-        </h2>
-      </div>
-    </section>
-  ),
-  "drifting-glow": ({ values }) => (
-    <section className="relative isolate flex h-[720px] min-w-0 flex-col items-center overflow-hidden bg-white px-6 pt-20 md:px-12">
-      <DriftingGlow
-        className="absolute inset-0 -z-10"
-        colorBase={values.colorBase as string}
-        color1={values.color1 as string}
-        color2={values.color2 as string}
-        speed={values.speed as number}
-        intensity={values.intensity as number}
-        size={values.size as number}
-        drift={values.drift as number}
-        softness={values.softness as number}
-        warp={values.warp as number}
-        grain={values.grain as number}
-        maxPixelRatio={values.maxPixelRatio as number}
-        paused={values.paused as boolean}
-      />
-      <div className="flex max-w-[760px] flex-col items-center gap-4 text-center">
-        <p className="text-sm font-semibold tracking-[0.12em] text-[#E8590C] uppercase">Integrations</p>
-        <h2 className="text-3xl leading-[1.1] font-semibold tracking-[-0.02em] text-[#111] md:text-5xl">
-          Connect your data to every tool you already use
         </h2>
       </div>
     </section>

@@ -12,7 +12,7 @@ type CornerBloomButtonProps = Omit<React.ComponentProps<"a">, "color"> & {
   duration?: number;
   /** Bloom-in easing (any CSS timing function). */
   ease?: string;
-  /** Bloom-out duration in milliseconds. Quicker than the way in. */
+  /** Bloom-out duration in milliseconds. */
   exitDuration?: number;
   /** Bloom-out easing (any CSS timing function). */
   exitEase?: string;
@@ -39,9 +39,9 @@ type CornerBloomButtonProps = Omit<React.ComponentProps<"a">, "color"> & {
  * every corner of the pill. It scales from that corner (transform only, GPU),
  * which is visually identical to growing its width/height from 0.
  *
- * The way in and the way out have their own duration and curve (the way out
- * is quicker), on CSS transitions so leaving mid-bloom reverses from where
- * it is. A slight press scale (`pressDuration` / `pressEase`) confirms the click.
+ * The way in and the way out have their own duration and curve (both 400ms
+ * ease-in-out by default, matching Ironclad), on CSS transitions so leaving
+ * mid-bloom reverses from where it is. A slight press scale (`pressDuration` / `pressEase`) confirms the click.
  *
  * Reduced motion: no growth and no press; the bloom fades in and out over
  * `reducedFade` (150ms, `ease`) instead, so the change is still soft
@@ -51,10 +51,10 @@ export function CornerBloomButton({
   color = "#308970",
   bloomColor = "#1C212B",
   textColor = "#F2F1EE",
-  duration = 300,
-  ease = "cubic-bezier(0.23, 1, 0.32, 1)",
-  exitDuration = 200,
-  exitEase = "cubic-bezier(0.32, 0.72, 0, 1)",
+  duration = 400,
+  ease = "ease-in-out",
+  exitDuration = 400,
+  exitEase = "ease-in-out",
   pressScale = 0.97,
   pressDuration = 160,
   pressEase = "cubic-bezier(0.23, 1, 0.32, 1)",
@@ -102,7 +102,7 @@ export function CornerBloomButton({
         className={cn(
           "pointer-events-none absolute -right-[50px] -bottom-[50px] -z-10 h-[calc(100%+100px)] w-[calc(100%+100px)]",
           "origin-bottom-right scale-0 rounded-[50%] bg-(--bloom-fill)",
-          // Leaving: the quicker exit timing.
+          // Leaving: the exit timing.
           "[transition-property:scale,transform] [transition-duration:var(--bloom-out)] [transition-timing-function:var(--bloom-out-ease)]",
           // Arriving: the entry timing (a transition uses the state it's heading to).
           "group-hover:[transition-duration:var(--bloom-in)] group-hover:[transition-timing-function:var(--bloom-in-ease)]",

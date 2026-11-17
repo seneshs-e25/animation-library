@@ -140,7 +140,7 @@ export const registry: RegistryEntry[] = [
     usageChildren: "Request Demo",
     motion: {
       intent:
-        "A hover state for a pill call-to-action. An ellipse in a second colour grows out of a point just past the bottom-right corner until it floods the whole pill, like ink spreading from the corner. It should feel buttery: quick to respond, even all the way, settling softly, never bouncy. Leaving is quicker than arriving, and a slight press confirms the click.",
+        "A hover state for a pill call-to-action. An ellipse in a second colour grows out of a point just past the bottom-right corner until it floods the whole pill, like ink spreading from the corner. It should feel calm and smooth: easing in gently, sweeping across, settling softly, never bouncy. In and out run at the same pace, and a slight press confirms the click.",
       trigger: hoverTrigger("flooded state"),
       states: [
         "Bloom: an ellipse (`border-radius: 50%`) behind the label, sized to the button plus 100px on each axis (`width/height: calc(100% + 100px)`) and positioned 50px outside the bottom-right corner (`right: -50px; bottom: -50px`). At full size it covers all four corners of the pill. At rest it is `scale(0)` with `transform-origin: bottom right`; when active it is `scale(1)`.",
@@ -150,7 +150,7 @@ export const registry: RegistryEntry[] = [
       ],
       timing: [
         "Bloom in: {duration}ms, easing `{ease}`.",
-        "Bloom out: {exitDuration}ms, easing `{exitEase}`. Exits are quicker than entries so the button feels light when you leave it.",
+        "Bloom out: {exitDuration}ms, easing `{exitEase}`.",
         pressTiming,
         "No delay.",
       ],
@@ -162,11 +162,11 @@ export const registry: RegistryEntry[] = [
         "Animate the bloom with `transform: scale` on its own absolutely positioned layer. Don't animate its width, height or border-radius: those trigger layout and paint every frame.",
         "The pill needs `overflow: hidden`, and a stacking context (`isolation: isolate`) with the bloom on a negative z-index. Also add `mask-image: radial-gradient(white, black)` on the pill: without it Safari doesn't clip a transforming child to the rounded corners.",
         "Give the bloom `pointer-events: none` so it never interferes with the hover.",
-        "Use the curves exactly as given. Never use an ease-in or ease-in-out curve on the way in: they start slow, and the bloom already spends its first frames outside the pill, so the hover feels late.",
+        "Use the curves exactly as given. Don't swap in a different curve or duration.",
       ],
       checks: [
         "Hover: the ellipse grows from just past the bottom-right corner over {duration}ms, starting to show straight away. At full size it covers the whole pill, including the rounded left end.",
-        "Move the pointer off halfway: the bloom shrinks back from where it was, quicker than it came in, with no snap.",
+        "Move the pointer off halfway: the bloom shrinks back from where it was, with no snap.",
         "Press it{pressScale|1= (press scale is off: nothing should scale)|*=: it dips to {pressScale} and comes back}.",
         "In Safari: the pill's rounded corners stay clipped while the bloom grows.",
         "Tab to the button: it shows the same flooded state, plus a visible focus outline.",
@@ -178,23 +178,23 @@ export const registry: RegistryEntry[] = [
       { type: "color", name: "color", label: "Button color", default: "#308970" },
       { type: "color", name: "bloomColor", label: "Bloom color", default: "#1C212B" },
       { type: "color", name: "textColor", label: "Text color", default: "#F2F1EE" },
-      { type: "select", name: "ease", label: "Easing in", default: easings.out, options: easingOptions },
+      { type: "select", name: "ease", label: "Easing in", default: easings.easeInOut, options: easingOptions },
       {
         type: "number",
         name: "duration",
         label: "Duration in",
-        default: 300,
+        default: 400,
         min: 150,
         max: 1000,
         step: 10,
         unit: "ms",
       },
-      { type: "select", name: "exitEase", label: "Easing out", default: easings.drawer, options: easingOptions },
+      { type: "select", name: "exitEase", label: "Easing out", default: easings.easeInOut, options: easingOptions },
       {
         type: "number",
         name: "exitDuration",
         label: "Duration out",
-        default: 200,
+        default: 400,
         min: 100,
         max: 1000,
         step: 10,
@@ -1222,6 +1222,97 @@ export const registry: RegistryEntry[] = [
   },
 
   {
+    slug: "staggered-text",
+    added: "2026-11-17",
+    title: "Staggered text",
+    description: "Text that staggers in by letter, word or line, each piece fading up out of a soft blur",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    componentName: "StaggeredText",
+    files: [
+      {
+        name: "staggered-text.tsx",
+        path: "src/registry/animations/text-effects/staggered-text.tsx",
+      },
+    ],
+    usageProps: ['as="h1"'],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A heading that arrives piece by piece: each {split|letter=letter|line=rendered line|*=word} fades up from just below its seat and sharpens out of a soft blur, one after another in reading order. It should feel quick and settled, a confident reveal rather than a show.",
+      trigger:
+        "{trigger|load=On mount, once.|*=The first time 20% of the text is in view (an IntersectionObserver), once; the observer then disconnects.} Every piece's animation is armed paused at first paint and released together by a `data-play` stamp on the element, so they keep their timing relative to each other.",
+      states: [
+        "From: `opacity: 0; translate: 0 {distance}em; filter: blur({blur}px)`.",
+        "To: `opacity: 1; translate: 0 0; filter: blur(0)`.",
+        "{split|letter=Slots are counted per letter across words and lines in reading order; a space keeps a slot, so the rhythm holds across word gaps.|line=Slots are the rows the browser actually rendered: every word on the same row shares a slot. Rows depend on the width, so they're measured just before the animation is released, not split on sentences or `\\n` alone.|*=Slots are counted per word across lines in reading order.}",
+      ],
+      timing: [
+        "Each piece: {duration}ms, easing `{easing}`, `fill-mode: backwards` (held hidden through its own delay).",
+        "Piece n starts at {delay}ms + n × {stagger}ms.",
+      ],
+      interruption: "A one-shot entrance: it plays once and can't be interrupted or reversed.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` there's no animation at all: the settled text, nothing hidden. The animations are only declared inside `@media (prefers-reduced-motion: no-preference)`.",
+      rules: [
+        "CSS keyframes on every piece, not JavaScript per frame: one `@keyframes`, a per-piece `--slot` custom property, and `animation-delay: calc(delay + slot × stagger)`.",
+        "Arm the animations `paused` and release them with one attribute on the element, so every piece starts on one clock. Under `@media (scripting: none)` release them outright, or the text would stay hidden without JavaScript.",
+        "Pieces must be `display: inline-block` (`translate` does nothing to an inline box). Wrap each word in a `white-space: nowrap` inline-block so the text only breaks at spaces; keep the spaces as text between words.",
+        "For lines, measure each word's `offsetTop` (it ignores the starting `translate`) and give words on the same row the same slot.",
+        "Animate only `opacity`, `translate` and `filter`. Keep the blur small: a large blur on many letters at once is expensive.",
+        "Screen readers get the text once from a visually hidden copy; the split spans are `aria-hidden`.",
+      ],
+      checks: [
+        "{trigger|load=Reload|*=Scroll the text into view}: the first {split|letter=letter|line=line|*=word} fades up out of a blur after {delay}ms, and the rest follow {stagger}ms apart.",
+        "Nothing flashes visible before it starts.",
+        "{split|line=Narrow the window and reload: the rows stagger as they now wrap, top to bottom.|*=Narrow the window: the text wraps only between words.}",
+        "Turn on reduced motion: the text is just there, sharp, with no movement.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "text", label: "Text", default: "Build faster than ever", always: true },
+      {
+        type: "select",
+        name: "split",
+        label: "Split by",
+        default: "word",
+        always: true,
+        options: [
+          { label: "Letter", value: "letter" },
+          { label: "Word", value: "word" },
+          { label: "Line", value: "line" },
+        ],
+      },
+      {
+        type: "select",
+        name: "trigger",
+        label: "Plays on",
+        default: "view",
+        options: [
+          { label: "Into view", value: "view" },
+          { label: "Load", value: "load" },
+        ],
+      },
+      { type: "number", name: "delay", label: "Delay", default: 0, min: 0, max: 2000, step: 10, unit: "ms" },
+      { type: "number", name: "stagger", label: "Stagger", default: 80, min: 5, max: 400, step: 5, unit: "ms" },
+      { type: "number", name: "duration", label: "Piece duration", default: 700, min: 100, max: 2000, step: 10, unit: "ms" },
+      { type: "select", name: "easing", label: "Easing", default: easings.out, options: easingOptions },
+      { type: "number", name: "distance", label: "Rise", default: 0.4, min: 0, max: 1.5, step: 0.02, unit: "em" },
+      { type: "number", name: "blur", label: "Blur", default: 8, min: 0, max: 30, step: 1, unit: "px" },
+    ],
+    promptNotes: [
+      "`text` must be a plain string because it's split into spans: marks and links can't survive the split. Use \"\\n\" for a hard line break.",
+      "This is a base component: it only handles the split and the motion. Font, size, colour, alignment and width come from `className` (it renders one `as` element, `h1` by default).",
+      "A good stagger depends on the split: about 25-40ms for letters, 60-100ms for words, 120-180ms for lines.",
+      "Splitting letters into inline-blocks drops kerning pairs across letters.",
+      "The demo sets it in Inter Tight 700 with tight tracking, white on near-black, centred.",
+      "It's a Client Component (\"use client\") only for the play stamp and line measuring; the motion itself is CSS.",
+    ],
+  },
+
+  {
     slug: "line-mask-reveal",
     title: "Line mask reveal",
     description:
@@ -1317,6 +1408,102 @@ export const registry: RegistryEntry[] = [
       "In the original it's pattern 056 (Line-by-line Reveal) in the Weo Motion playground: `data-wm-split=\"lines\"`, `data-wm-effect=\"mask\"`, 120ms stagger, 1000ms, `power4.out`, replaying on re-entry. The other effects in that playground (rise, blur, flip...) aren't part of this component.",
       "Original typography: DM Sans (Google Font) 24px / 600 at 1.5 leading, max width 24ch, light text on a near-black stage. The demo matches it.",
       "It's a Client Component (\"use client\") and registers the SplitText plugin at module level.",
+    ],
+  },
+
+  {
+    slug: "blur-highlight",
+    added: "2026-11-17",
+    title: "Blur highlight",
+    description:
+      "A paragraph comes into focus from a blur as it scrolls into view, then a marker highlight sweeps across each key phrase, used on React Bits Pro",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://pro.reactbits.dev/docs/components/blur-highlight",
+    componentName: "BlurHighlight",
+    files: [
+      {
+        name: "blur-highlight.tsx",
+        path: "src/registry/animations/text-effects/blur-highlight.tsx",
+      },
+    ],
+    usageProps: ['as="p"'],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A key-message paragraph that sharpens into focus as you reach it, then points at what matters: a marker-pen highlight sweeps across each key phrase. The blur is quick and settles softly; the highlight follows a beat later so the eye reads the copy first, then the emphasis.",
+      trigger:
+        "Scroll into view: it plays when {amount} of the paragraph is visible above the bottom 20% of the viewport (an IntersectionObserver with `rootMargin: 0px 0px -20% 0px`). A paragraph taller than the viewport (on a phone) plays once it fills {amount} of the viewport, since it could never show that share of itself. {once|true=It plays once, then the observer disconnects.|*=When it drops below that it reverses (no delays on the way out), and plays again on the way back.}",
+      states: [
+        "Paragraph: `opacity: {inactiveOpacity}` and `filter: blur({blur}px)` → `opacity: 1`, `filter: blur(0px)`. The whole element, not per word.",
+        "Each key phrase is a `<mark>` with a solid fill drawn as `background-image: linear-gradient({highlightColor}, {highlightColor})`, `no-repeat`. Its `background-size` grows {direction|left=`0% 100%` → `100% 100%` anchored at the left (`background-position: 0% 0%`), so it sweeps left to right|right=`0% 100%` → `100% 100%` anchored at the right (`background-position: 100% 0%`), so it sweeps right to left|top=`100% 0%` → `100% 100%` anchored at the top, so it sweeps downward|*=`100% 0%` → `100% 100%` anchored at the bottom, so it fills upward}.",
+        "The mark has `box-decoration-break: clone`, rounded corners (0.2em) and a little inline padding, so a phrase that wraps gets its own rounded fill on each line.",
+      ],
+      timing: [
+        "Blur-in: {blurDuration}s, `{blurEase}`, after {blurDelay}s.",
+        "Highlights: {highlightDuration}s each, `{highlightEase}`, starting {highlightDelay}s after the blur-in starts{highlightStagger|0=, all together|*=, then {highlightStagger}s between one phrase and the next}.",
+        "Delays only apply when it plays in; reversing on exit starts at once.",
+      ],
+      interruption:
+        "These are CSS transitions, so leaving mid-play reverses from wherever each property is, and coming back resumes forward from there. Nothing snaps.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` there's no blur, fade or sweep: the text and highlights show at rest. All the hidden-state CSS sits inside `@media (prefers-reduced-motion: no-preference)`.",
+      rules: [
+        "Blur the paragraph as one element. A blur per word or per letter costs a layer each and isn't what the original does.",
+        "Draw the highlight as a background (gradient + `background-size`), not a pseudo-element or `scaleX` bar: only a background follows the text across line breaks, with `box-decoration-break: clone` (and `-webkit-` prefix).",
+        "Put the transition delays on the active state only, so the exit reverses immediately.",
+        "Set the hidden state in CSS so it's right before hydration (no flash of sharp text), and add a `<noscript>` rule that shows it.",
+      ],
+      checks: [
+        "Scroll the paragraph into view: it sharpens from a blur, then the highlights sweep in from the {direction}, {highlightDelay}s after the blur starts.",
+        "Narrow the width so a phrase wraps: each line of that phrase has its own rounded fill, and the sweep covers both lines.",
+        "{once|true=Scroll away and back: it stays shown.|*=Scroll it out of the lower part of the viewport: it blurs out and the highlights retract; scroll back and it plays again.}",
+        "Turn on reduced motion: the text and highlights are shown at rest.",
+      ],
+    },
+    controls: [
+      {
+        type: "text",
+        name: "text",
+        label: "Text ([phrase] = highlight)",
+        default:
+          "Our [cutting-edge technology] transforms how businesses [analyze data] and make decisions. From [real-time insights] to [predictive analytics], we deliver solutions that drive growth and innovation.",
+        always: true,
+      },
+      { type: "color", name: "highlightColor", label: "Highlight", default: "#7C3AED" },
+      {
+        type: "select",
+        name: "direction",
+        label: "Sweep from",
+        default: "left",
+        options: [
+          { label: "Left", value: "left" },
+          { label: "Right", value: "right" },
+          { label: "Top", value: "top" },
+          { label: "Bottom", value: "bottom" },
+        ],
+      },
+      { type: "number", name: "blur", label: "Blur", default: 8, min: 0, max: 24, step: 1, unit: "px", motion: true },
+      { type: "number", name: "inactiveOpacity", label: "Hidden opacity", default: 0, min: 0, max: 1, step: 0.05, motion: true },
+      { type: "boolean", name: "once", label: "Play once", default: false },
+      { type: "number", name: "amount", label: "Visible to play", default: 0.5, min: 0.1, max: 1, step: 0.05 },
+      { type: "number", name: "blurDuration", label: "Blur duration", default: 0.8, min: 0.1, max: 3, step: 0.05, unit: "s" },
+      { type: "select", name: "blurEase", label: "Blur easing", default: easings.out, options: easingOptions },
+      { type: "number", name: "blurDelay", label: "Blur delay", default: 0, min: 0, max: 2, step: 0.05, unit: "s" },
+      { type: "number", name: "highlightDuration", label: "Highlight duration", default: 1, min: 0.1, max: 3, step: 0.05, unit: "s" },
+      { type: "select", name: "highlightEase", label: "Highlight easing", default: easings.drawer, options: easingOptions },
+      { type: "number", name: "highlightDelay", label: "Highlight delay", default: 0.4, min: 0, max: 2, step: 0.05, unit: "s" },
+      { type: "number", name: "highlightStagger", label: "Highlight stagger", default: 0, min: 0, max: 0.6, step: 0.02, unit: "s" },
+    ],
+    promptNotes: [
+      "`text` is a plain string; wrap each key phrase in square brackets (`\"Our [cutting-edge technology] transforms...\"`). From a CMS, map a rich-text bold/highlight mark to brackets, or adapt the component to take children with `<mark>` elements: the motion only needs the marks to carry the `bh-mark` class.",
+      "The highlights are `<mark>` elements, so screen readers can announce them as highlighted; the copy is never split or hidden from assistive tech.",
+      "`highlightTextColor` (optional) sets the text colour inside highlights; by default it inherits. Pick a highlight colour with enough contrast against the text (the demo is white on #7C3AED). The original's light-mode colour is #FF9FFC with dark text.",
+      "Recreated from the live React Bits Pro preview (its source is behind a paywall): whole-element blur + opacity, highlights as a gradient `background-size` sweep with `box-decoration-break: clone`. Its default timings are kept (8px, 0.8s blur, highlight 0.4s later for 1s, 50% visible, replays). Its easings aren't documented, so ours use the library's strong ease-out for the blur and the drawer curve for the sweep. Its docs list a 0.3 inactive opacity, but the live preview starts from 0; 0 is the default here.",
+      "Original typography: the system UI sans at 24px / 32px, weight 400, max width 36rem, white on near-black. The demo matches it with Inter.",
+      "It's a Client Component (\"use client\") with no dependencies: the motion is CSS transitions; the only JS is the IntersectionObserver.",
     ],
   },
 
@@ -1798,6 +1985,127 @@ export const registry: RegistryEntry[] = [
       "This is a base component: font, size, colour and width come from `className` (it renders one `as` element, `h2` by default).",
       "In the original it opens the bottom CTA band (`bs-section--bottom-cta-v2`, overflow hidden): a 7/5 column split (6/6 from 1200px), vertically centred. Left column: 60px top and bottom padding, centred text; from 768px 80px padding, left-aligned. Under the headline, two buttons 17px apart: \"Request a Live Demo\" (#FAD100, #0D1117 text, padding 16px 25px) and \"Contact Us\" (1px rgba(117,119,123,.5) border, #FAD100 text, padding 16px 30px), both 18px / 21.2px weight 700, 10px radius. Right column: an illustration, max 300px tall and centred on mobile; from 768px right-aligned, max 467px tall and shifted `translate: 80px -5px` so it bleeds off the edge. The page behind is #000416 with a full-page wave background (decoration, not part of this component). That layout is the section's.",
       "Original typography: Public Sans (Google Font) weight 700, -2px tracking, white: 48px / 1.2 with a 40px bottom margin, and 72px / 86.4px with an 80px bottom margin from 992px. The cursor inherits the headline's type.",
+      "It's a Client Component (\"use client\").",
+    ],
+  },
+  {
+    slug: "cipher-reveal",
+    added: "2026-11-17",
+    title: "Cipher reveal",
+    description:
+      "A headline that decodes out of scrambled characters letter by letter, then re-scrambles under the pointer, from the Cipher Reveal text effect in React Bits Pro",
+    category: "animations",
+    group: "text-effects",
+    level: "atom",
+    source: "https://pro.reactbits.dev/docs/components/cipher-reveal",
+    componentName: "CipherReveal",
+    files: [
+      {
+        name: "cipher-reveal.tsx",
+        path: "src/registry/animations/text-effects/cipher-reveal.tsx",
+      },
+    ],
+    usageProps: ['as="h2"'],
+    themeToggle: false,
+    fullBleed: true,
+    motion: {
+      intent:
+        "A headline that decodes itself: {from|scrambled=the whole line starts as cycling cipher characters|*=letters type in as cycling cipher characters} and each one locks into the real letter in turn, {order|right=right to left|center=from the middle outwards|random=in a random order|*=left to right}. It should feel precise and technical, like a message being decrypted, and the line must never shift while it happens.",
+      trigger:
+        "{trigger|mount=The reveal plays once on mount.|manual=Nothing plays on its own: the text is static until `replay()` is called on the ref.|*=The reveal plays once, the first time 50% of the headline is visible (an IntersectionObserver).}{loop|true= It then decodes again every {interval}ms while the headline is on screen.|*=}{hover|trail= On hover (fine pointers only), the letters within {hoverRadius}em of the pointer re-scramble and decode again behind it.|replay= When a fine pointer enters the headline, the whole reveal plays again.|*=}",
+      states: [
+        "Order: each letter gets a rank from 0 to 1 ({order|right=last letter first|center=distance from the middle|random=a fresh shuffle each play|*=its index}). Letter start = rank × ({duration}ms − {scramble}ms); it locks {scramble}ms later, so the last letter locks at {duration}ms.",
+        "{from|scrambled=Before its turn: every letter already shows a scrambled glyph.|*=Before its turn: the letter is invisible (its space is kept).}",
+        "Scrambling: the real letter is at `opacity: 0` and a glyph on top of it changes {rate} times a second, {charset|auto=picked from characters of the same case and a similar width (narrow i/l/t, wide m/w, digits, symbols)|*=picked from `{charset}`}. It is {scrambleColor} at opacity {scrambleOpacity}, brightening linearly to 1 as it nears its lock.",
+        "Every scrambled glyph is scaled on X (`scaleX`, centred) to the exact width of the letter it covers, so the line never shifts.",
+        "Locked: the glyph disappears and the real letter fades to `opacity: 1`.",
+      ],
+      timing: [
+        "Whole reveal: {duration}ms. Each letter scrambles {scramble}ms before it locks. Glyphs change {rate}×/s, staggered per letter so they don't all flip on the same frame.",
+        "Lock fade: {lockFade}ms, `cubic-bezier(0.2, 0.7, 0.2, 1)`.",
+        "{hover|trail=Hover trail: a touched letter scrambles while the pointer moves over it and locks {scramble}ms after the pointer last came within reach.|*=}",
+      ],
+      interruption:
+        "Replaying mid-reveal restarts it from the `from` state. The hover trail is ignored while a reveal is playing. Changing the text renders the new letters and plays the reveal again. Off screen the loop timer stops; it resumes when the headline is back. On unmount, cancel the frame loop, timers and observers.",
+      reducedMotion:
+        "Under `prefers-reduced-motion: reduce` the text shows from the first paint: no scramble, no hover trail, no loop. The pre-hydration hiding is only declared inside `@media (prefers-reduced-motion: no-preference)`.",
+      rules: [
+        "Split the text into words (`white-space: nowrap`) of inline-block letters, so lines only break between words. Each letter holds the real character (keeps the layout) and an absolutely positioned glyph on top (`left: 50%`, `translateX(-50%) scaleX(…)`, `pointer-events: none`).",
+        "Measure glyph widths with a canvas `measureText` in the letter's computed font plus its letter-spacing, cached per character; measure letter widths once, again after `document.fonts.ready` and on resize. Never read layout per frame.",
+        "Run one requestAnimationFrame loop that writes `opacity`, `transform` and `textContent` straight to the DOM, and stop it as soon as every letter is locked. Don't put per-frame state in React.",
+        "Hide the letters with CSS before hydration so nothing flashes, and add a `<noscript>` rule that shows them.",
+        "Screen readers get the text once from visually hidden text inside the heading; the letters are `aria-hidden`, so the scramble isn't announced.",
+      ],
+      checks: [
+        "{trigger|mount=Reload|manual=Call `replay()`|*=Scroll to the headline}: letters decode {order|right=right to left|center=from the middle out|random=in a random order|*=left to right} and the last one locks at about {duration}ms.",
+        "Watch the line's edges during the reveal: nothing shifts or re-wraps. Narrow the window so it wraps: words stay whole.",
+        "{hover|trail=Move the pointer along the headline: letters under it scramble and decode again behind it.|replay=Move the pointer onto the headline: it decodes again.|*=Hover the headline: nothing happens.}",
+        "After the reveal, confirm in the Performance panel that no frame loop is still running.",
+        "Turn on reduced motion: the headline is static from the first paint.",
+      ],
+    },
+    controls: [
+      { type: "text", name: "text", label: "Text", default: "Ideas into reality", always: true },
+      {
+        type: "select",
+        name: "from",
+        label: "Start",
+        default: "blank",
+        options: [
+          { label: "Blank", value: "blank" },
+          { label: "Scrambled", value: "scrambled" },
+        ],
+      },
+      {
+        type: "select",
+        name: "order",
+        label: "Order",
+        default: "left",
+        options: [
+          { label: "Left to right", value: "left" },
+          { label: "Right to left", value: "right" },
+          { label: "Centre out", value: "center" },
+          { label: "Random", value: "random" },
+        ],
+      },
+      { type: "text", name: "charset", label: "Charset", default: "auto" },
+      {
+        type: "select",
+        name: "hover",
+        label: "Hover",
+        default: "trail",
+        options: [
+          { label: "Trail", value: "trail" },
+          { label: "Replay", value: "replay" },
+          { label: "None", value: "none" },
+        ],
+      },
+      { type: "number", name: "hoverRadius", label: "Hover radius", default: 0.6, min: 0.2, max: 2, step: 0.05, unit: "em", motion: false },
+      {
+        type: "select",
+        name: "trigger",
+        label: "Plays on",
+        default: "view",
+        options: [
+          { label: "Into view", value: "view" },
+          { label: "Mount", value: "mount" },
+          { label: "Manual (ref)", value: "manual" },
+        ],
+      },
+      { type: "color", name: "color", label: "Text colour", default: "#FFFFFF" },
+      { type: "color", name: "scrambleColor", label: "Scramble colour", default: "#FFFFFF" },
+      { type: "number", name: "scrambleOpacity", label: "Scramble opacity", default: 0.42, min: 0, max: 1, step: 0.01 },
+      { type: "boolean", name: "loop", label: "Loop", default: false },
+      { type: "number", name: "duration", label: "Duration", default: 1400, min: 300, max: 5000, step: 50, unit: "ms", motion: true },
+      { type: "number", name: "scramble", label: "Scramble per letter", default: 450, min: 100, max: 2000, step: 25, unit: "ms", motion: true },
+      { type: "number", name: "rate", label: "Glyph changes", default: 14, min: 4, max: 40, step: 1, unit: "/s", motion: true },
+      { type: "number", name: "interval", label: "Loop interval", default: 5000, min: 1500, max: 15000, step: 250, unit: "ms", motion: true },
+      { type: "number", name: "lockFade", label: "Lock fade", default: 200, min: 0, max: 800, step: 10, unit: "ms", motion: true, secondary: true },
+    ],
+    promptNotes: [
+      "`text` must be plain text. Font, size, weight, tracking and alignment come from `className` (it renders one `as` element, `h2` by default); the scramble glyphs use the same font.",
+      "`ref` exposes `{ replay() }` (React 19 ref-as-prop). `onComplete` fires when a reveal finishes, not after a hover trail.",
+      "React Bits' demo type: the page font at weight 600, `-0.03em` tracking, line-height 1.1, `clamp(2.75rem, 8vw, 6.5rem)` (`min(80px, 11vw)` in the docs preview), white, centred on a near-black stage. The demo uses Inter Tight 600.",
       "It's a Client Component (\"use client\").",
     ],
   },
@@ -4713,76 +5021,8 @@ export const registry: RegistryEntry[] = [
       "Raw WebGL2, one fullscreen pass: a rotated, stretched frame, three layers of three-octave value-noise domain warping, a looping five-colour palette and a shadow mix. Use the shadow colour as the section's fallback background.",
     ],
   },
-  {
-    slug: "drifting-glow",
-    added: "2026-11-17",
-    title: "Drifting glow",
-    description:
-      "Two soft periwinkle and sky-blue glows drift slowly behind the content on a white page, deepening where they overlap, a WebGL shader background based on the Medrio website",
-    category: "shaders",
-    group: "backgrounds",
-    level: "atom",
-    componentName: "DriftingGlow",
-    motionNote: "A continuous shader loop: it has no duration or easing. Speed sets its pace; Drift sets how far the glows wander.",
-    files: [
-      {
-        name: "drifting-glow.tsx",
-        path: "src/registry/shaders/backgrounds/drifting-glow.tsx",
-      },
-    ],
-    themeToggle: false,
-    fullBleed: true,
-    usageProps: ['className="absolute inset-0 -z-10"'],
-    motion: {
-      implementation: "required",
-      intent:
-        "A calm, light background for a content section (cards, logos, a heading): a few large, very soft colour glows on white that drift slowly, so the section feels quietly alive without pulling attention from the content on top. Dark text must stay fully readable over it.",
-      trigger: shader.trigger,
-      states: [
-        "Base: the page colour {colorBase}.",
-        "Two flat, soft-edged ellipses of colour lie over the base at opacity {intensity}, like blurred solid shapes: a tall {color1} one left of centre that bleeds off the bottom edge, and a wide {color2} one at the lower right. They overlap in the middle, where the blue deepens. Each holds its colour across its whole area, so the two hues stay distinct.",
-        "Sizes, measured from the original on a 1440 × 860 section: 668 × 790 and 993 × 615, scaled with the section's diagonal and multiplied by {size}. Edge blur: {softness} of each radius.",
-        "Each glow wanders up to {drift} (in section-diagonal units) from its home on its own slow looping path, so they never move in sync.",
-        "A low-frequency noise warp ({warp}) ripples the glow edges out of round.",
-        "A one-step dither ({grain}) over everything stops the soft gradients from banding.",
-      ],
-      timing: [
-        "The glows drift continuously at speed {speed}: slow enough that the movement is felt rather than watched (a full loop of a glow's path takes about half a minute at speed 1).",
-        "Each frame advances time by at most 0.1s, so coming back to a background tab doesn't jump.",
-        "{paused|true=`paused` is on: it renders one still frame and the loop stays idle.|*=}",
-      ],
-      interruption: shader.interruption,
-      reducedMotion: shader.reducedMotion,
-      responsive:
-        "Positions are fractions of the section and sizes are fractions of its diagonal, so the layout holds at any width or height. It's soft, so rendering is capped at {maxPixelRatio}× device pixels without visible loss.",
-      rules: [...shader.rules, "Keep the defaults (`DRIFTING_GLOW_DEFAULTS`) for anything I haven't set."],
-      checks: [
-        "The section reads as white with soft periwinkle and sky-blue light behind the content, and the glows drift slowly with no flicker, banding or hard edges.",
-        "Dark text and white cards over it stay crisp and readable. If the colour is too strong, lower `intensity` (opacity) rather than adding an overlay.",
-        ...shader.checks,
-      ],
-      apply: shader.apply,
-    },
-    controls: [
-      { type: "color", name: "colorBase", label: "Base", default: "#FFFFFF" },
-      { type: "color", name: "color1", label: "Glow 1", default: "#748BFF" },
-      { type: "color", name: "color2", label: "Glow 2", default: "#46B9FF" },
-      { type: "number", name: "speed", label: "Speed", default: 1, min: 0, max: 4, step: 0.1 },
-      { type: "number", name: "drift", label: "Drift", default: 0.1, min: 0, max: 0.5, step: 0.01 },
-      { type: "number", name: "intensity", label: "Opacity", default: 0.22, min: 0, max: 1, step: 0.01 },
-      { type: "number", name: "size", label: "Glow size", default: 1, min: 0.4, max: 2.5, step: 0.05, motion: false },
-      { type: "number", name: "softness", label: "Edge blur", default: 0.45, min: 0.05, max: 1, step: 0.05, motion: false },
-      { type: "number", name: "warp", label: "Edge ripple", default: 0.35, min: 0, max: 1, step: 0.05 },
-      { type: "number", name: "grain", label: "Dither", default: 1, min: 0, max: 2, step: 0.1 },
-      { type: "number", name: "maxPixelRatio", label: "Max pixel ratio", default: 1, min: 0.5, max: 2, step: 0.5 },
-      { type: "boolean", name: "paused", label: "Paused", default: false },
-    ],
-    promptNotes: [
-      "It's a named export: `import { DriftingGlow } from \"@/components/animations/drifting-glow\"`.",
-      "It renders a bare `<canvas>` (aria-hidden) that fills its parent.",
-      "Raw WebGL2, one fullscreen pass: two flat, soft-edged ellipses on Lissajous paths, mixed over the base colour, with a value-noise edge warp and a triangular dither. Use the base colour as the section's fallback background.",
-    ],
-  },
+
+
 ];
 
 export function getEntry(slug: string) {

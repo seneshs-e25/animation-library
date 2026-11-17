@@ -45,26 +45,7 @@ const promptSections = [
   },
 ];
 
-/** How far back "Recently added" reaches from the newest addition. */
-const RECENT_DAYS = 14;
-
-/** Components added within RECENT_DAYS of the newest one, newest first. */
-function recentlyAdded() {
-  const dated = registry.filter((e) => e.added);
-  if (!dated.length) return [];
-  const newest = Math.max(...dated.map((e) => Date.parse(e.added!)));
-  const cutoff = newest - RECENT_DAYS * 24 * 60 * 60 * 1000;
-  return dated
-    .filter((e) => Date.parse(e.added!) >= cutoff)
-    .sort((a, b) => Date.parse(b.added!) - Date.parse(a.added!));
-}
-
-function groupTitle(id: string) {
-  return categories.flatMap((c) => c.groups).find((g) => g.id === id)?.title ?? id;
-}
-
 export default function Home() {
-  const recent = recentlyAdded();
   return (
     <main className="mx-auto w-full max-w-4xl px-6 pt-6 pb-16 md:px-10 md:pt-8">
       <h1 className="text-4xl font-medium tracking-tight md:text-5xl">Animation Library</h1>
@@ -104,28 +85,6 @@ export default function Home() {
           );
         })}
       </div>
-
-      {recent.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-sm font-medium text-muted-foreground">Recently added</h2>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {recent.map((entry) => (
-              <li key={entry.slug}>
-                <Link
-                  href={`/components/${entry.slug}`}
-                  className="flex h-full flex-col rounded-xl border px-4 py-3 transition-colors duration-150 ease-[ease] hover:bg-white/[0.04]"
-                >
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="font-medium">{entry.title}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{groupTitle(entry.group)}</span>
-                  </span>
-                  <span className="mt-1 line-clamp-2 text-sm text-muted-foreground">{entry.description}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <LevelBrowser
         items={registry.map(({ slug, title, level }) => ({ slug, title, level }))}
